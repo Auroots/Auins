@@ -5,8 +5,8 @@
 
 Archiso_Version_check =
 CPU_Name =
-CPU_Vendor =
-LinuxKernel =
+CPU_Vendor = 
+LinuxKernel = dwadwad dawd
 Ethernet_ip =
 Wifi_ip =
 Patterns =
