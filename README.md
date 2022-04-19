@@ -12,7 +12,7 @@
 
 使用`curl` 下载`auin.sh` 其他脚本我会内置到主体Script中，可以大大缩短你的安装时间：
 
-更新速度：auroot.cn -> gitee -> github
+更新速度：github -> gitee -> auroot.cn 
 
 - 稳定版：`http://auroot.cn/auin.sh`
 - 测试版：`http://auroot.cn/auin_test.sh`
@@ -23,15 +23,13 @@
 ### wget与curl工具的使用方法 -> [查看全部更新日志](https://gitee.com/auroot/Auins/blob/master/doc/update.md)
 
 ```bash
+# auroot.cn (推荐)
 curl -fsSL http://auins.auroot.cn > auin.sh  
-或
-#稳定版 测试全通过！
+#Gitee
 curl -fsSL https://gitee.com/auroot/Auins/raw/master/auin.sh > auin.sh
-chmod +x auin.sh && bash auin.sh
-
-# Git工具使用方法
-git clone https://gitee.com/auroot/Auins.git
-cd Auins
+# Github
+curl -fsSL https://raw.githubusercontent.com/Auroots/Auins/main/auin.sh > auin.sh
+# 执行
 chmod +x auin.sh && bash auin.sh
 ```
 
@@ -68,7 +66,7 @@ Optional arguments:
 
 **由于ArchLinux经常更新，安装方式也随之改变，导致脚本无法与之匹配，发生在某阶段出现错误，如果您发现问题，或以加以改进，可以创建Pull Request 提交脚本.**
 
-### **下一个版本 v4.3.1 更新什么？**
+### **下一个版本 v4.3.5 更新什么？**
 
 * 我也不知道；
 * 继续优化模块化，有些东西可能还会转C；
