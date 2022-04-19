@@ -3,7 +3,8 @@
 # QQ： 2763833502
 # Description： Process Manages v2.1 
 # URL Blog  : www.auroot.cn 
-# URL Gitee : https://gitee.com/auroot
+# URL GitHub: https://github.com/Auroots/Auins
+# URL Gitee : https://gitee.com/auroot/Auins
 # set -x
 for i in "$@"; do
     num=$((num + 1))

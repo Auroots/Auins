@@ -2,8 +2,8 @@
 # Author/Wechat: Auroot
 # Script name：Auins (ArchLinux User Installation Scripts) 
 # Arch Image: archlinux-2022.5.01-x86_64.iso
-# URL GitHub: https://github.com/BaSierL/arch_install.git
-# URL Gitee : https://gitee.com/auroot/Auins.git
+# URL GitHub: https://github.com/Auroots/Auins
+# URL Gitee : https://gitee.com/auroot/Auins
 # Home URL: : https://www.auroot.cn
 # set -xe
 echo &>/dev/null

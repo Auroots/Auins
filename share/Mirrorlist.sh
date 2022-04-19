@@ -1,10 +1,10 @@
 #!/bin/bash
-# Author: Auroot/BaSierl
+# Author: Auroot
 # QQ： 2763833502
 # Description： Configure Mirrorlist -> auin V4.0.5
 # URL Blog  : www.auroot.cn 
-# URL GitHub: https://github.com/BaSierL/arch_install.git
-# URL Gitee : https://gitee.com/auroot/arch_install.git
+# URL GitHub: https://github.com/Auroots/Auins
+# URL Gitee : https://gitee.com/auroot/Auins
 clear;
 #==============-------------mirrorlist----------------==============
 cat > /etc/pacman.d/mirrorlist << EOF

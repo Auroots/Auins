@@ -1,10 +1,11 @@
 #!/bin/bash
-# Author: Auroot/BaSierl
+# Author: Auroot
 # QQ： 2763833502
 # Description： Edit Database -> auin V4.3
 # URL Blog  : www.auroot.cn 
-# URL GitHub: https://github.com/BaSierL/arch_install.git
-# URL Gitee : https://gitee.com/auroot/arch_install.git
+# URL GitHub: https://github.com/Auroots/Auins
+# URL Gitee : https://gitee.com/auroot/Auins
+
 echo &>/dev/null
 # set -xe
 Auins_record="${1}/auins.info"  # Configure file
