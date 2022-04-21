@@ -28,9 +28,6 @@ function facts(){
     PSG=$(echo -e "${g} ::==>${h}")
     PSY=$(echo -e "${y} ::==>${h}")
 
-# Initialize Variable
-    # entries_a="/run/archiso/bootmnt/loader/entries/01-archiso-x86_64.conf"  # Uefi test
-    # entries_b="/run/archiso/bootmnt/loader/entries/01-archiso-x86_64-linux.conf"  # Boot test
 
 # Detect boot
     if [ -d /sys/firmware/efi ]; then
@@ -44,6 +41,8 @@ function facts(){
         bash "${Share_Dir}/Edit_Database.sh" "${Local_Dir}" "_Write_" "_Info_" "Disk_Type" "${Disk_Type}"
     System_Root="/mnt"
 }
+
+showDisk(){ echo; lsblk -o+UUID | grep -E "sd..|vd..|nvme|mmc"; }
 
 # Stript Management; 脚本进程管理 [start]开启 [restart]重新开启 [stop]杀死脚本进程
 function Process_Management(){
@@ -65,7 +64,7 @@ function Process_Management(){
 # 磁盘分区
 function partition(){
     local read_text_output
-    echo;lsblk -o+UUID | grep -E "sd.|nvme|mmc"    # 显示磁盘
+    showDisk
     read_text_output=$(echo -e "\n${PSY} ${y}Select disk: ${g}/dev/sdX | sdX ${h}${JHB}")
     read -rp "${read_text_output}"  input_disk  #给用户输入接口
     partition_facts _disk_ "$input_disk"
@@ -166,9 +165,7 @@ function partition_type(){
 
 # 自定义文件系统列表
 function Disk_Filesystem_List(){
-    local Disk=$1
-    echo -e "${g}\t File System List${h}"
-cat << EOF
+echo -e "${g}\n\t File System List${h}
 ------------------------------------
 | 1. ext2 | 4. btrfs | 7. jfs      |
 ------------------------------------
@@ -176,7 +173,8 @@ cat << EOF
 ------------------------------------
 | 3. ext4 | 6. f2fs  | 9. reiserfs |
 ------------------------------------
-EOF
+"
+    local Disk=$1
     read_output=$(echo -e "$PSG ${g}Select File System. [Default: 3]${h} $JHG")
     read -rp "${read_output}" input_Fs_type
     if [ "$input_Fs_type" = "" ]; then
@@ -242,7 +240,7 @@ function partition_other(){
             Format_mount "${path}"
         fi
         partition_facts _Open_mount_ "/dev/$userinput_disk" "${path}"
-        echo;lsblk -o+UUID | grep -E "sd.|nvme|mmc" | grep -E "sd.|nvme|mmc"  
+        showDisk  
     }
     read_output=$(echo -e "$PSG ${g}Continue to mount directory. [Quit/exit]?${h} $JHG")
     read -rp "${read_output}" Input_mount_dir
@@ -298,7 +296,7 @@ function Format_mount(){
     export Directory="$Dir"
     local Rename=$2
     local Dir=${Rename:-$Dir} 
-    echo;lsblk -o+UUID | grep -E "sd.|nvme|mmc" | grep -E "sd.|nvme|mmc"  
+    showDisk 
     read_text_output=$(echo -e "\n${PSY} ${y}Choose your [${Dir}] partition: ${g}/dev/sdX[0-9] | sdX[0-9] ${h}${JHB}")
     read -rp "${read_text_output}"  input_Disk
     partition_facts _partition_root_ "$input_Disk"
@@ -346,7 +344,7 @@ function partition_booting(){
 # 格式化并挂载虚拟的Swap分区，可自定义大小
 function partition_swap(){
     local read_text_output
-    echo;lsblk -o+UUID | grep -E "sd.|nvme|mmc" | grep -E "sd.|nvme|mmc"  
+    showDisk
     read_text_output=$(echo -e "\n${PSY} ${y}lease select the size of swapfile: ${g}[example:256M-10000G ~] ${y}Skip: ${g}[No]${h} ${JHB}")
     read -rp "${read_text_output}"  input_swap_size
     case ${input_swap_size} in

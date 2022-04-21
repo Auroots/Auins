@@ -611,29 +611,13 @@ function Install_Font(){
     esac
 }
 # 包安装
-# function Install_Program() {
-#     set +e
-#     IFS=' ';
-#     PACKAGES=("$@");
-#     for VARIABLE in {1..3}
-#     do
-#         if ! pacman -Syu --noconfirm --needed ${PACKAGES[@]} ; then
-#             sleep 2;
-#         else
-#             break;
-#         fi
-#     done
-#     echo "$VARIABLE" &> /dev/null
-#     set -e
-# }
-# @包安装  -- Test
 function Install_Program() {
     set +e
     IFS=' ';
-    PACKAGES=$(echo "$@" | awk '{for(i=0;++i<=NF;)a[i]=a[i]?a[i] FS $i:$i}END{for(i=0;i++<NF;)print a[i]}');
+    PACKAGES=("$@");
     for VARIABLE in {1..3}
     do
-        if ! pacman -Syu --noconfirm --needed "${PACKAGES}"; then
+        if ! pacman -Syu --noconfirm --needed ${PACKAGES[@]} ; then
             sleep 2;
         else
             break;
@@ -642,7 +626,7 @@ function Install_Program() {
     echo "$VARIABLE" &> /dev/null
     set -e
 }
-# @Install I/O Driver
+# @I/O Driver
 function Install_Io_Driver(){
     echo -e "${PSG} ${g}Installing Audio driver.${h}"  
     Install_Program "$AudioDriver_PKG"
@@ -654,7 +638,7 @@ function Install_Io_Driver(){
     echo -e "${PSG} ${g}Installing Bluetooth driver.${h}"  
     Install_Program "$BluetoothDriver_PKG"
 }
-# @Install CPU GPU Driver
+# @CPU GPU Driver
 function Install_Processor_Driver(){
     echo -e "\n$PSG ${g}Install the cpu ucode and driver.$h"
     if [[ "$CPU_Vendor" = 'intel' ]]; then
@@ -699,7 +683,7 @@ function Install_Processor_Driver(){
         ;;
         esac   
 }
-# @Install/Configure Grub
+# @Configure Grub
 function Configure_Grub(){
     echo -e "${wg}Installing grub tools.${h}"  #安装grub工具   UEFI与Boot传统模式判断方式：ls /sys/firmware/efi/efivars  
     if ls /sys/firmware/efi/efivars &>/dev/null ; then    # 判断文件是否存在，存在为真，执行EFI，否则执行 Boot
@@ -733,7 +717,7 @@ function Configure_Grub(){
         fi
     fi
 }
-# @配置本地化 时区 主机名 语音等
+# @本地化 时区 主机名 语音
 function Configure_System(){
     echo -e "${PSG} ${w}Configure enable Network.${h}"    
     systemctl enable NetworkManager  
@@ -752,7 +736,7 @@ function Configure_System(){
     echo -e "${PSG} ${w}Configure local language defaults 'en_US.UTF-8'. ${h}"  
     echo "LANG=en_US.UTF-8" > /etc/locale.conf       # 系统语言 "英文" 默认为英文   
 }
-# @Install/Configure virtualbox-guest-utils / open-vm-tools
+# @Configure virtualbox-guest-utils / open-vm-tools
 function install_virtualization_service(){
     if [[ "$Virtualization" = "vmware" ]]; then
         pacman -Syu --noconfirm --needed open-vm-tools gtkmm3 gtkmm gtk2 xf86-video-vmware xf86-input-vmmouse
@@ -767,7 +751,7 @@ function install_virtualization_service(){
     fi 
 }
 
-# @Archlive版本提醒，1.30天内不提示，2.超过30天提示更新ISO，3.超过60天提示更新ISO并询问继续使用，4.超过90天提示当前ISO不可以，请更新;
+# @Archlive update tips
 function Archiso_Version(){
     Patterns=$(bash "${Share_Dir}/Edit_Database.sh" "${Local_Dir}" "_Read_" "_Info_" "Patterns") 
     
@@ -832,8 +816,8 @@ function Process_Management(){
 
 
 # Start Script
-Script_init_Variable # 脚本初始化变量
-Set_Color_Variable   # 颜色
+Script_init_Variable 
+Set_Color_Variable  
 # Detect File and Directory
 if [ ! -d "${Local_Dir}" ]; then
     mkdir -p "${Local_Dir}"
@@ -886,7 +870,7 @@ case ${principal_variable} in
         printf "${PSG} ${y} Please enter[1,2,21..] Exit[Q] ${h}%s" "${JHB}"
         read -r Tasks
         case ${Tasks} in
-            0) # chroot 进入新系统
+            0) # chroot 
                 Auin_chroot; 
             ;;
             1) #磁盘分区

@@ -1,22 +1,19 @@
 #!/usr/bin/env bash
 # Author/Wechat: Auroot
 # Script name：Auins (ArchLinux User Installation Scripts) 
-# Arch Image: archlinux-2022.5.01-x86_64.iso
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
-# Home URL: : https://www.auroot.cn
 # set -xe
+
 echo &>/dev/null
-# @初始化变量
 function Script_init_Variable(){
-# The contents of the variable are customizable
     Version="ArchLinux user installation scripts V4.3.5" 
     Auins_Dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd )
     [ "$Auins_Dir" = "/" ] && Auins_Dir=""
-    Share_Dir="${Auins_Dir}/share" # The script module directory
-    Local_Dir="${Auins_Dir}/local" # Temp Directory
-    Auins_Config="${Local_Dir}/install.conf"  # Configure file
-    Auins_record="${Local_Dir}/auins.info"  # Info file
+    Share_Dir="${Auins_Dir}/share" 
+    Local_Dir="${Auins_Dir}/local" 
+    Auins_Config="${Local_Dir}/install.conf"  
+    Auins_record="${Local_Dir}/auins.info"  
     entries_a="/run/archiso/bootmnt/loader/entries/01-archiso-x86_64.conf"  # Uefi test
     entries_b="/run/archiso/bootmnt/loader/entries/01-archiso-x86_64-linux.conf"  # Boot test
     # Module URL: Default settings
@@ -27,7 +24,6 @@ function Script_init_Variable(){
     Auins_Share="${Auins_Home}/share"
     Auins_Local="${Auins_Home}/local"
 }
-# @读取配置文件 local/install.conf
 function Read_Config(){ 
     # 头部参数 $1 , 地址 $2（如果是查install.conf，可以不用写）（如果是auins.info，必须写INFO）  
     if [[ $2 == "INFO" ]]; then
@@ -36,7 +32,6 @@ function Read_Config(){
         local Files="${Auins_Config}"
     fi 
     grep -w "${1}" < ${Files} | awk -F "=" '{print $2}'; 
-    # grep -w "${1}" < ${Files} | awk -F "=" '{print $2}' | awk -F " " '{print $1}'; 
 }
 # @写入信息文件 local/auins.info
 function Write_Data(){
@@ -47,78 +42,78 @@ function Write_Data(){
 }
 function Printf_Info(){
     function Logos(){
-        #----------------------------------------------------------------------------
-        ECHOA=$(echo -e "${w}          _             _       _     _                    ${h}") 
-        ECHOB=$(echo -e "${g}         / \   _ __ ___| |__   | |   (_)_ __  _   ___  __  ${h}")
-        ECHOC=$(echo -e "${b}        / _ \ | '__/ __| '_ \  | |   | | '_ \| | | \ \/ /  ${h}")
-        ECHOD=$(echo -e "${y}       / ___ \| | | (__| | | | | |___| | | | | |_| |>  <   ${h}")
-        ECHOE=$(echo -e "${r}      /_/   \_\_|  \___|_| |_| |_____|_|_| |_|\__,_/_/\_\  ${h}")
-        echo -e "$ECHOA\n$ECHOB\n$ECHOC\n$ECHOD\n$ECHOE" | lolcat 2>/dev/null || echo -e "$ECHOA\n$ECHOB\n$ECHOC\n$ECHOD\n$ECHOE"
-        echo -e "${b}||============================================================||${h}"
-        echo -e "${b}|| Script Name:    ${Version}.                                  ${h}"
-        echo -e "${g}|| Patterns:        ${ChrootPatterns}                           ${h}"
-        echo -e "${g}|| Ethernet:       ${Ethernet_ip:-No_network..} - [${Ethernet_Name:- }]${h}"
-        echo -e "${g}|| WIFI:           ${Wifi_ip:-No_network.} - [${Wifi_Name:-No}] ${h}"
-        echo -e "${g}|| SSH:            ssh $USER@${Ethernet_ip:-IP_Addess.}         ${h}"
-        echo -e "${g}|| SSH:            ssh $USER@${Wifi_ip:-IP_Addess.}             ${h}"
-        echo -e "${g}||============================================================||${h}"
+        echo -e "
+${white}          _             _       _     _                     ${suffix}
+${green}         / \   _ __ ___| |__   | |   (_)_ __  _   ___  __   ${suffix}
+${blue}        / _ \ | '__/ __| '_ \  | |   | | '_ \| | | \ \/ /    ${suffix}
+${yellow}       / ___ \| | | (__| | | | | |___| | | | | |_| |>  <   ${suffix}
+${red}      /_/   \_\_|  \___|_| |_| |_____|_|_| |_|\__,_/_/\_\     ${suffix}
 
-        echo -e "${PSB} ${g}Configure Mirrorlist   [1]${h}"
-        echo -e "${PSB} ${g}Configure Network      [2]${h}"
-        echo -e "${PSG} ${g}Configure SSH          [3]${h}"
-        echo -e "${PSY} ${g}Install System         [4]${h}"
-        echo -e "${PSG} ${g}Exit Script            [Q]${h}"
-    }
+${blue}||============================================================|| ${suffix}
+${blue}|| Script Name:    ${Version}.                                   ${suffix}
+${green}|| Patterns:        ${ChrootPatterns}                           ${suffix}
+${green}|| Ethernet:       ${Ethernet_ip:-No_network..} - [${Ethernet_Name:- }]${suffix}
+${green}|| WIFI:           ${Wifi_ip:-No_network.} - [${Wifi_Name:-No}] ${suffix}
+${green}|| SSH:            ssh $USER@${Ethernet_ip:-IP_Addess.}         ${suffix}
+${green}|| SSH:            ssh $USER@${Wifi_ip:-IP_Addess.}             ${suffix}
+${green}||============================================================||${suffix}
+
+${outB} ${green}Configure Mirrorlist   [1]${suffix}
+${outB} ${green}Configure Network      [2]${suffix}
+${outG} ${green}Configure SSH          [3]${suffix}
+${outY} ${green}Install System         [4]${suffix}
+${outG} ${green}Exit Script            [Q]${suffix}"
+}
     # @Auins的帮助文档 Auin_help
-function usage() {
-  cat <<EOF
+    function usage() {
+        echo -e "
     usage: ${0##*/} [-h] [-V] command ...
       Options:
-        -m --mirror   Automatically configure mirrorlist file and exit."
-        -w --cwifi    Connect to a WIFI and exit."
-        -s --openssh  Open SSH service (default password: 123456) and exit."
-        -vm --virtual Install Vmware/Virtualbox Tools and exit."
-        -i --info     View the computer information of script record, file: ./local/auins.info"
-        -h --help     Show this help message and exit. "
-        -V --version  Show the conda version number and exit."
-    :: Auins is a script for ArchLinux installation and deployment.
-EOF
+        -m --mirror   Automatically configure mirrorlist file and exit.
+        -w --cwifi    Connect to a WIFI and exit.
+        -s --openssh  Open SSH service (default password: 123456) and exit.
+        -vm --virtual Install Vmware/Virtualbox Tools and exit.
+        -i --info     View the computer information of script record, file: ./local/auins.info
+        -h --help     Show this help message and exit. 
+        -V --version  Show the conda version number and exit.
+    :: Auins is a script for ArchLinux installation and deployment."
 }
     # @Auins版本号，Stript Version
     function Version(){    
-        echo -e "${wg}${Version}${h}"
-        echo -e "${wg}$(grep "archisolabel=" < "$entries" | grep -v grep | awk '{print $3}')${h}\n"
+        echo -e "${wg}${Version}${suffix}"
+        echo -e "${wg}$(grep "archisolabel=" < "$entries" | grep -v grep | awk '{print $3}')${suffix}\n"
     }
     # @首选项 [4] 的列表
     function input_System_Module(){    # print list 4
-        echo -e "\n     ${w}*** ${r}Install System Module ${w}***${h}  "  
-        echo "---------------------------------------------"
-        echo -e "${PSY} ${g}   Disk Partition.         ${r}**  ${w}[1]${h}"
-        echo -e "${PSY} ${g}   Install System Files.   ${r}**  ${w}[2]${h}"
-        echo -e "${PSY} ${g}   Configurt System.       ${r}**  ${w}[3]${h}"
-        echo -e "${PSG} ${g}   Installation Desktop.   ${b}*   ${w}[4]${h}"  
-        echo -e "${PSG} ${g}   Installation Drive.     ${b}*   ${w}[11]${h}" 
-        echo -e "${PSY} ${g}   Install virtual tools.  ${b}*   ${w}[22]${h}"
-        echo -e "${PSY} ${g}   arch-chroot /mnt.       ${r}**  ${w}[0]${h}"
-        echo -e "---------------------------------------------\n" 
-    }
+        echo -e "
+\t${white}*** ${red}Install System Module ${white}***${suffix}  
+--------------------------------------------
+${outY} ${green}   Disk Partition.         ${red}**  ${white}[1]  ${suffix}
+${outY} ${green}   Install System Files.   ${red}**  ${white}[2]  ${suffix}
+${outY} ${green}   Configurt System.       ${red}**  ${white}[3]  ${suffix}
+${outG} ${green}   Installation Desktop.   ${blue}*   ${white}[4] ${suffix}
+${outG} ${green}   Installation Drive.     ${blue}*   ${white}[11]${suffix}
+${outY} ${green}   Install virtual tools.  ${blue}*   ${white}[22]${suffix}
+${outY} ${green}   arch-chroot /mnt.       ${red}**  ${white}[0]  ${suffix}
+--------------------------------------------\n" 
+}
     # @桌面环境选择列表
     function input_Desktop_env(){
-        echo -e "\n     ${w}***${h} ${b}Install Desktop${h} ${w}***${h}  "  
-        echo "------------------------------------------------"
-        echo -e "${PSB} ${g}   KDE plasma.     ${b}[1]  ${b}default: sddm${h}"
-        echo -e "${PSB} ${g}   Gnome.          ${w}[2]  ${w}default: gdm${h}"
-        echo -e "${PSB} ${g}   Deepin.         ${b}[3]  ${b}default: lightdm${h}"    
-        echo -e "${PSB} ${g}   Xfce4.          ${w}[4]  ${w}default: lightdm${h}"  
-        echo -e "${PSB} ${g}   i3wm.           ${b}[5]  ${b}default: sddm${h}"
-        echo -e "${PSB} ${g}   i3gaps.         ${w}[6]  ${w}default: lightdm${h}"
-        echo -e "${PSB} ${g}   lxde.           ${b}[7]  ${b}default: lxdm${h}"
-        echo -e "${PSB} ${g}   Cinnamon.       ${w}[8]  ${w}default: lightdm${h}"
-        echo -e "${PSB} ${g}   Mate.           ${b}[9]  ${b}default: lightdm${h}"
-        # echo -e "${PSB} ${g}   Openbox.        ${b}[10] ${b}default: sddm${h}"
-        #echo -e "${PSB} ${g}   Dwm.        ${b}[10] ${b}default: sddm${h}"
-        echo -e "------------------------------------------------\n"                          
-    }
+        echo -e "
+\t   ${white}***${suffix} ${blue}Install Desktop${suffix} ${white}***${suffix}    
+------------------------------------------------
+${outB} ${green}   KDE plasma.     ${blue}[1]  ${blue}default: sddm     ${suffix}
+${outB} ${green}   Gnome.          ${white}[2]  ${white}default: gdm    ${suffix}
+${outB} ${green}   Deepin.         ${blue}[3]  ${blue}default: lightdm  ${suffix}  
+${outB} ${green}   Xfce4.          ${white}[4]  ${white}default: lightdm${suffix}
+${outB} ${green}   i3wm.           ${blue}[5]  ${blue}default: sddm     ${suffix}
+${outB} ${green}   i3gaps.         ${white}[6]  ${white}default: lightdm${suffix}
+${outB} ${green}   lxde.           ${blue}[7]  ${blue}default: lxdm     ${suffix}
+${outB} ${green}   Cinnamon.       ${white}[8]  ${white}default: lightdm${suffix}
+${outB} ${green}   Mate.           ${blue}[9]  ${blue}default: lightdm  ${suffix}
+${outB} ${green}   Openbox.        ${blue}[10] ${blue}default: sddm     ${suffix}
+------------------------------------------------\n"                       
+}
     # Printf_Info
     case ${1} in
         "Logos")
@@ -137,12 +132,10 @@ EOF
 }
 # @脚本颜色变量
 function Set_Color_Variable(){
-    r='\033[1;31m'  #---红
-    g='\033[1;32m'  #---绿
-    y='\033[1;33m'  #---黄
-    b='\033[1;36m'  #---蓝
-    w='\033[1;37m'  #---白
-    h='\033[0m'     #---后缀
+    # 红 绿 黄 蓝 白 后缀
+    red='\033[1;31m'; green='\033[1;32m'  
+    yellow='\033[1;33m'; blue='\033[1;36m'  
+    white='\033[1;37m'; suffix='\033[0m'     
     #-----------------------------#
     # rw='\033[1;41m'  #--红白
     wg='\033[1;42m'  #--白绿
@@ -152,17 +145,17 @@ function Set_Color_Variable(){
     # wa='\033[1;46m'  #--白青
     # bx='\033[1;4;36m'  #---蓝 下划线
     #-----------------------------#
-    # 交互 蓝  红 绿 黄
-    JHB=$(echo -e "${b}-=>${h} ")
-    # JHR=$(echo -e "${r}-=>${h} ")
-    # JHG=$(echo -e "${g}-=>${h} ")
-    # JHY=$(echo -e "${y}-=>${h} ")
+    # 交互 蓝  红 绿 黄 in_J
+    inB=$(echo -e "${blue}-=>${suffix} ")
+    # inR=$(echo -e "${red}-=>${suffix} ")
+    # inG=$(echo -e "${green}-=>${suffix} ")
+    # inY=$(echo -e "${yellow}-=>${suffix} ")
     #-----------------------------
     # 提示 蓝 红 绿 黄
-    PSB=$(echo -e "${b} ::==>${h}")
-    PSR=$(echo -e "${r} ::==>${h}")
-    PSG=$(echo -e "${g} ::==>${h}")
-    PSY=$(echo -e "${y} ::==>${h}")
+    outB=$(echo -e "${blue} ::==>${suffix}")
+    outR=$(echo -e "${red} ::==>${suffix}")
+    outG=$(echo -e "${green} ::==>${suffix}")
+    outY=$(echo -e "${yellow} ::==>${suffix}")
 }
 # @脚本自检
 function Script_init(){
@@ -293,9 +286,9 @@ function Ethernet(){
     }
     # @配置WIFI，Configure WIFI
     function Configure_wifi() {
-        printf "${PSG} ${g} Wifi SSID 'TP-Link...' :${h} %s" "${JHB}"
+        printf "${outG} ${green} Wifi SSID 'TP-Link...' :${suffix} %s" "${inB}"
         read -r WIFI_SSID
-        printf "${PSG} ${g} Wifi Password :${h} %s" "${JHB}"
+        printf "${outG} ${green} Wifi Password :${suffix} %s" "${inB}"
         read -r WIFI_PASSWD
         iwctl --passphrase "$WIFI_PASSWD" station "$Wifi_Name" connect "$WIFI_SSID"
         sleep 2;
@@ -326,34 +319,34 @@ function Ethernet(){
         ;;
     esac
 }
-# @开启SSH服务， Start ssh service  [可优化：1.自定义用户名与密码，2.配置ssh文件]
+# @开启SSH服务， Start ssh service 
 function Open_SSH(){    
-    echo
-    echo -e "${y}:: Setting SSH Username / password.${h}" 
-    echo "${USER}:$(Read_Config "Password_live")" | chpasswd &>/dev/null 
-    echo -e "${g} ||=================================||${h}"
-    echo -e "${g}       $ ssh $USER@${Ethernet_ip:-IP_Addess..}  ${h}" 
-    echo -e "${g}       $ ssh $USER@${Wifi_ip:-IP_Addess..}      ${h}"
-    echo -e "${g}       Username --=>  $USER           ${h}"
-    echo -e "${g}       Password --=>  $(Read_Config "Password_live")           ${h}"
-    echo -e "${g} ||=================================||${h}"
+    echo -e "\n
+${yellow}:: Setting SSH Username / password.${suffix}
+${USER}:$(Read_Config "Password_live") | chpasswd &>/dev/null 
+${green} ---------------------------------${suffix}
+${green}    $ ssh $USER@${Ethernet_ip:-IP_Addess..}      ${suffix}
+${green}    $ ssh $USER@${Wifi_ip:-IP_Addess..}          ${suffix}
+${green}    Username --=>  $USER           ${suffix}
+${green}    Password --=>  $(Read_Config "Password_live")${suffix}
+${green} =================================${suffix}"
     systemctl start sshd.service 
     netstat -antp | grep sshd 
 }
-# @设置root密码 用户  判断/etc/passwd文件中最后一个用户是否大于等于1000的普通用户，如果没有请先创建用户
+# @设置root密码 用户 
 function ConfigurePassworld(){
     local UserName UserID PasswdFile Query Number CheckingUsers CheckingID 
     UserName=$(Read_Config "Users" "INFO")
     UserID=$(Read_Config "UsersID" "INFO")
     if [ "${UserName}" = "" ]; then
         PasswdFile="/etc/passwd"
-        for ((Number=1;Number<=50;Number++))  # 设置变量Number 等于1 ；小于等于50 ； Number 1+1直到50
+        for ((Number=1;Number<=50;Number++))  
         do
             Query=$(tail -n "${Number}" "${PasswdFile}" | head -n 1 | cut -d":" -f3)
             if [[ $Query -gt 1000 && $Query -lt 2000 ]]; then
                 CheckingUsers=$(grep "$Query" < ${PasswdFile} | cut -d":" -f1)
                 CheckingID=$(grep "$Query" < ${PasswdFile} | cut -d":" -f3)
-                printf "${PSG} ${g}A normal user already exists, The UserName:${h} ${b}%s${h} ${g}ID: ${b}%s${h}." "${CheckingUsers}" "${CheckingID}"
+                printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}." "${CheckingUsers}" "${CheckingID}"
                 break;
             fi
         done
@@ -362,15 +355,15 @@ function ConfigurePassworld(){
             sleep 1;
         fi
     else
-        printf "${PSG} ${g}A normal user already exists, The UserName:${h} ${b}%s${h} ${g}ID: ${b}%s${h}." "${CheckingUsers}" "${UserID}"
+        printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}." "${CheckingUsers}" "${UserID}"
     fi
 }
 # @安装系统、内核、基础包等，Install system kernel / base...
 function Install_Archlinux(){    
-    echo -e "${wg}Update the system clock.${h}"   # update time
+    echo -e "${wg}Update the system clock.${suffix}"   # update time
     timedatectl set-ntp true
     sleep 2;
-    echo -e "\n${PSG} ${g}Install the base packages.${h}\n"
+    echo -e "\n${outG} ${green}Install the base packages.${suffix}\n"
     bash "${Share_Dir}/Mirrorlist.sh"
     if [[ $(Read_Config "Linux_kernel") = "linux" ]]; then
         pacstrap -i /mnt linux linux-headers linux-firmware base base-devel networkmanager net-tools vim 
@@ -380,7 +373,7 @@ function Install_Archlinux(){
         pacstrap -i /mnt linux-zen linux-zen-headers linux-firmware base base-devel networkmanager net-tools vim
     fi
     sleep 2;
-    echo -e "\n${PSG}  ${g}Configure Fstab File.${h}"   # Configure fstab file
+    echo -e "\n${outG}  ${green}Configure Fstab File.${suffix}"  
     genfstab -U /mnt >> /mnt/etc/fstab  
     LinuxKernel=$(arch-chroot /mnt /usr/bin/uname -a | /usr/bin/cut -d"#" -f1)
 
@@ -397,14 +390,15 @@ function Auin_chroot(){
 }
 # @桌面管理器选择列表，选择后，自动安装及配置服务；
 function Desktop_Manager(){
-    echo "---------------------------------"
-    echo -e "${PSB} ${g}   sddm.     ${w}[1]${h}"  
-    echo -e "${PSB} ${g}   gdm.      ${w}[2]${h}" 
-    echo -e "${PSB} ${g}   lightdm.  ${w}[3]${h}"   
-    echo -e "${PSB} ${g}   lxdm.     ${w}[4]${h}"  
-    echo -e "${PSB} ${g}   default.  ${w}[*]${h}" 
-    echo "---------------------------------"
-    printf "${PSG} ${y} Please select Desktop Manager: ${h} %s" "${JHB}"
+echo -e "
+----------------------------
+${outB} ${green}sddm.            ${white}[1]${suffix}
+${outB} ${green}gdm.             ${white}[2]${suffix}
+${outB} ${green}lightdm.         ${white}[3]${suffix}  
+${outB} ${green}lxdm.            ${white}[4]${suffix} 
+${outB} ${green}default.         ${white}[*]${suffix}
+============================"
+    printf "${outG} ${yellow} Please select Desktop Manager: ${suffix} %s" "${inB}"
     read -r DM_ID
     case ${DM_ID} in
         1)
@@ -446,7 +440,7 @@ function Install_DesktopEnv(){
     Desktop_Xinit=$2
     Desktop_Program=$3
     
-    echo -e "${PSG} ${g}Configuring desktop environment.${h}"
+    echo -e "${outG} ${green}Configuring desktop environment.${suffix}"
     sleep 1;
     Install_Program "$(Read_Config P_xorgGroup)"
     Install_Program "$Desktop_Program"
@@ -455,11 +449,11 @@ function Install_DesktopEnv(){
     Desktop_Env_Config "$Desktop_Name" "$Desktop_Xinit" 
     Write_Data "Desktop_Env" "${Desktop_Name}"
 }
-# @桌面环境最终安装，在提示中输入序号即可自动安装;
+# @选择桌面环境
 function Set_Desktop_Env(){
     input_Desktop_env
     DESKTOP_ID="0"  
-    printf "${PSG} ${y} Please select desktop:${h} %s" "${JHB}"
+    printf "${outG} ${yellow} Please select desktop:${suffix} %s" "${inB}"
     read -rp DESKTOP_ID
     case ${DESKTOP_ID} in
         1)
@@ -528,13 +522,13 @@ function Set_Desktop_Env(){
                 chown -R "$CheckingUsers":users "${UserHomeDir}"
                 echo -e "sed -i '/obconf\|sed\|rangerRc/d' ${openboxDir}/autostart" >> "${openboxDir}"/autostart
             }
-            echo -e "${PSG} ${g}Configuring desktop environment.${h}"
+            echo -e "${outG} ${green}Configuring desktop environment.${suffix}"
             sleep 1;
             Install_Program "$(Read_Config P_xorgGroup)"
             Install_Program "$(Read_Config P_openbox)"
             Install_Program "$(Read_Config P_gui)"
             sleep 1;
-            printf "${PSG} ${g} Using the default Desktop manager:'${b}slim${g}'[Y/*]?${h} %s" "${JHB}"
+            printf "${outG} ${green} Using the default Desktop manager:'${blue}slim${green}'[Y/*]?${suffix} %s" "${inB}"
             read -r slim_ID
             case "$slim_ID" in
                 [Yy]*)
@@ -561,29 +555,29 @@ function Set_Desktop_Env(){
         #     DmS="lightdm"
         # ;;
         *)
-            echo -e "${PSR} ${r} Selection error.${h}"    
+            echo -e "${outR} ${red} Selection error.${suffix}"    
             Process_Management stop "$0"
         esac 
 }
-# @桌面环境配置
+# @configure desktop environment
 function Desktop_Env_Config(){
     if [ -e /home/"$CheckingUsers"/.xinitrc ];then
-        echo -e "${PSR} ${y}Repeated execution !${h}";sleep 2; 
+        echo -e "${outR} ${yellow}Repeated execution !${suffix}";sleep 2; 
     else
         xinitrc_file="/etc/X11/xinit/xinitrc"
-        startLine=$(sed -n '/twm &/=' $xinitrc_file) #先计算带adc字符串行的行号
+        startLine=$(sed -n '/twm &/=' $xinitrc_file) 
         lineAfter=4
         endLine=$(("$startLine" + "$lineAfter"))
         sed -i "$startLine"','"$endLine"'d' "$xinitrc_file"
         echo "exec ${2}" >> /etc/X11/xinit/xinitrc 
         cp -rf /etc/X11/xinit/xinitrc  /home/"$CheckingUsers"/.xinitrc 
-        echo -e "${PSG} ${w}${1} ${g}Desktop environment configuration completed.${h}"  
+        echo -e "${outG} ${white}${1} ${green}Desktop environment configuration completed.${suffix}"  
         sleep 2;   
     fi
 }
-# @安装字体
+# @install fonts 
 function Install_Font(){
-    printf "${PSG} ${y}Whether to install the Font. Install[y] No[*]${h} %s" "${JHB}"
+    printf "${outG} ${yellow}Whether to install the Font. Install[y] No[*]${suffix} %s" "${inB}"
     read -r UserInf_Font
     case ${UserInf_Font} in
         [Yy]*)
@@ -591,14 +585,14 @@ function Install_Font(){
         ;;
     esac
 }
-# @包安装  -- Test
+# @install Programs 
 function Install_Program() {
     set +e
     IFS=' ';
-    PACKAGES=$(echo "$@" | awk '{for(i=0;++i<=NF;)a[i]=a[i]?a[i] FS $i:$i}END{for(i=0;i++<NF;)print a[i]}');
+    PACKAGES=("$@");
     for VARIABLE in {1..3}
     do
-        if ! pacman -Syu --noconfirm --needed "${PACKAGES}"; then
+        if ! pacman -Syu --noconfirm --needed ${PACKAGES[@]} ; then
             sleep 2;
         else
             break;
@@ -609,25 +603,25 @@ function Install_Program() {
 }
 # @Install I/O Driver
 function Install_Io_Driver(){
-    echo -e "${PSG} ${g}Installing Audio driver.${h}"  
+    echo -e "${outG} ${green}Installing Audio driver.${suffix}"  
     Install_Program "$(Read_Config P_audioDriver)"
     systemctl enable alsa-state.service
     echo "load-module module-bluetooth-policy" >> /etc/pulse/system.pa
     echo "load-module module-bluetooth-discover" >> /etc/pulse/system.pa
-    echo -e "${PSG} ${g}Installing input driver.${h}"  
+    echo -e "${outG} ${green}Installing input driver.${suffix}"  
     Install_Program "$(Read_Config P_inputDriver)"
-    echo -e "${PSG} ${g}Installing Bluetooth driver.${h}"  
+    echo -e "${outG} ${green}Installing Bluetooth driver.${suffix}"  
     Install_Program "$(Read_Config P_bluetoothDriver)"
 }
 # @Install CPU GPU Driver
 function Install_Processor_Driver(){
-    echo -e "\n$PSG ${g}Install the cpu ucode and driver.$h"
+    echo -e "\n${outG} ${green}Install the cpu ucode and driver.${suffix}"
     if [[ "$CPU_Vendor" = 'intel' ]]; then
         Install_Program "$(Read_Config P_intel)"
     elif [[ "$CPU_Vendor" = 'amd' ]]; then
         Install_Program "$(Read_Config P_amd)"
     else
-        printf "${PSG} ${y}Please select: Intel[1] AMD[2].${h} %s" "${JHB}"
+        printf "${outG} ${yellow}Please select: Intel[1] AMD[2].${suffix} %s" "${inB}"
         read -r DRIVER_GPU_ID
         case $DRIVER_GPU_ID in
             1)
@@ -639,7 +633,7 @@ function Install_Processor_Driver(){
         esac
     fi
     lspci -k | grep -A 2 -E "(VGA|3D)"  
-    printf "\n${PSG} ${y}Whether to install the Nvidia driver? [y/N]:${h} %s" "${JHB}"
+    printf "\n${outG} ${yellow}Whether to install the Nvidia driver? [y/N]:${suffix} %s" "${inB}"
     read -r DRIVER_NVIDIA_ID
     case $DRIVER_NVIDIA_ID in
         [Yy]*)
@@ -666,24 +660,24 @@ function Install_Processor_Driver(){
 }
 # @Install/Configure Grub
 function Configure_Grub(){
-    echo -e "${wg}Installing grub tools.${h}"  #安装grub工具   UEFI与Boot传统模式判断方式：ls /sys/firmware/efi/efivars  
-    if ls /sys/firmware/efi/efivars &>/dev/null ; then    # 判断文件是否存在，存在为真，执行EFI，否则执行 Boot
+    echo -e "${wg}Installing grub tools.${suffix}"  
+    if ls /sys/firmware/efi/efivars &>/dev/null ; then   
         #-------------------------------------------------------------------------------#   
-        echo -e "\n${PSG} ${w}Your startup mode has been detected as ${g}UEFI${h}.\n"  
+        echo -e "\n${outG} ${white}Your startup mode has been detected as ${green}UEFI${suffix}.\n"  
         Install_Program "$(Read_Config P_uefi_grub)"
         grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$(Read_Config "Grub_Hostname")" --recheck
         echo "GRUB_DISABLE_OS_PROBER=false" >> /etc/default/grub
         grub-mkconfig -o /boot/grub/grub.cfg
         echo;
         if efibootmgr | grep "$(Read_Config "Grub_Hostname")" &>/dev/null ; then
-            echo -e "${g} Grub installed successfully -=> [Archlinux] ${h}"  
-            echo -e "${g}     $(efibootmgr | grep "$(Read_Config "Grub_Hostname")")  ${h}\n"  
+            echo -e "${green} Grub installed successfully -=> [Archlinux] ${suffix}"  
+            echo -e "${green}     $(efibootmgr | grep "$(Read_Config "Grub_Hostname")")  ${suffix}\n"  
         else
-            echo -e "${r} Grub installed failed ${h}"
-            echo -e "${g}     $(efibootmgr)  ${h}\n"
+            echo -e "${red} Grub installed failed ${suffix}"
+            echo -e "${green}     $(efibootmgr)  ${suffix}\n"
         fi
     else  
-        echo -e "\n${PSG} ${w}Your startup mode has been detected as ${g}Boot Legacy${h}.\n"  
+        echo -e "\n${outG} ${white}Your startup mode has been detected as ${green}Boot Legacy${suffix}.\n"  
         Install_Program "$(Read_Config P_boot_grub)"
         local Boot_Partition
         Boot_Partition=$(Read_Config "Disk" "INFO") 
@@ -692,29 +686,27 @@ function Configure_Grub(){
         grub-mkconfig -o /boot/grub/grub.cfg
         echo;
         if echo $? &>/dev/null ; then
-                echo -e "${g} Grub installed successfully -=> [Archlinux] ${h}\n"  
+                echo -e "${green} Grub installed successfully -=> [Archlinux] ${suffix}\n"  
         else
-                echo -e "${r} Grub installed failed ${h}\n"
+                echo -e "${red} Grub installed failed ${suffix}\n"
         fi
     fi
 }
 # @配置本地化 时区 主机名 语音等
 function Configure_System(){
-    echo -e "${PSG} ${w}Configure enable Network.${h}"    
+    echo -e "${outG} ${white}Configure enable Network.${suffix}"    
     systemctl enable NetworkManager  
-    echo -e "${PSG} ${w}Time zone changed to 'Shanghai'. ${h}"  
+    echo -e "${outG} ${white}Time zone changed to 'Shanghai'. ${suffix}"  
     ln -sf /usr/share/zoneinfo"$(Read_Config "Area")" /etc/localtime && hwclock --systohc # 将时区更改为"上海" / 生成 /etc/adjtime
-    echo -e "${PSG} ${w}Set the hostname 'ArchLinux'. ${h}"
+    echo -e "${outG} ${white}Set the hostname 'ArchLinux'. ${suffix}"
     Read_Config "Hostname" > /etc/hostname
-    # 本地化设置 "英文"
-    echo -e "${PSG} ${w}Localization language settings. ${h}"
+    echo -e "${outG} ${white}Localization language settings. ${suffix}"
     sed -i 's/#.*en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
-    echo -e "${PSG} ${w}Write 'en_US.UTF-8 UTF-8' To /etc/locale.gen. ${h}"  
-    # 本地化设置 "中文"
+    echo -e "${outG} ${white}Write 'en_US.UTF-8 UTF-8' To /etc/locale.gen. ${suffix}"  
     sed -i 's/#.*zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/' /etc/locale.gen 
-    echo -e "${PSG} ${w}Write 'zh_CN.UTF-8 UTF-8' To /etc/locale.gen. ${h}" 
+    echo -e "${outG} ${white}Write 'zh_CN.UTF-8 UTF-8' To /etc/locale.gen. ${suffix}" 
     locale-gen
-    echo -e "${PSG} ${w}Configure local language defaults 'en_US.UTF-8'. ${h}"  
+    echo -e "${outG} ${white}Configure local language defaults 'en_US.UTF-8'. ${suffix}"  
     echo "LANG=en_US.UTF-8" > /etc/locale.conf       # 系统语言 "英文" 默认为英文   
 }
 # @Install/Configure virtualbox-guest-utils / open-vm-tools
@@ -731,10 +723,9 @@ function install_virtualization_service(){
         systemctl start vboxservice.service
     fi 
 }
-# @Archlive版本提醒，1.30天内不提示，2.超过30天提示更新ISO，3.超过60天提示更新ISO并询问继续使用，4.超过90天提示当前ISO不可以，请更新;
+# @Archlive update tips 
 function Archiso_Version(){
     Patterns=$(Read_Config "Patterns" "INFO") 
-    
     Archiso_Version_Enter="${1}"
     if [ "$Patterns" = "Chroot-OFF" ]; then
             ArchisoVersion=$(grep "archisolabel=" < "$Archiso_Version_Enter" | grep -v grep | awk '{print $3}' | cut -d"_" -f2)
@@ -742,34 +733,34 @@ function Archiso_Version(){
             Write_Data "Archiso_Version_check" "no"
             if [[ "$Archiso_Time" -gt 121 ]]; then
                 clear;
-                echo -e "\n${PSR} ${r}You haven't updated in more than 120 days Archiso !${h}\n${PSR} ${r}Archiso Version: ${ArchisoVersion}01.${h}"
-                echo -e "${PSR} ${r}Please update your archiso !!!  After 10 seconds, Exit(Ctrl+c).${h}"
+                echo -e "\n${outR} ${red}You haven't updated in more than 120 days Archiso !${suffix}\n${outR} ${red}Archiso Version: ${ArchisoVersion}01.${suffix}"
+                echo -e "${outR} ${red}Please update your archiso !!!  After 10 seconds, Exit(Ctrl+c).${suffix}"
                 sleep 10;
                 exit 1;
                 Write_Data "Archiso_Version_check" "no"
             elif [[ "$Archiso_Time" -ge 91 ]]; then
                 clear;
-                echo -e "\n${PSY} ${y}You haven't updated in more than 90 days Archiso !${h}\n${PSY} ${y}Archiso Version: ${ArchisoVersion}01.${h}"
+                echo -e "\n${outY} ${yellow}You haven't updated in more than 90 days Archiso !${suffix}\n${outY} ${yellow}Archiso Version: ${ArchisoVersion}01.${suffix}"
                 read -rp "Whether to start the script [Y]: " Version_check
                 case $Version_check in
                     [Yy]*)
                         sleep 2;
                     ;;
                     *)
-                        echo -e "\n${PSY} ${y}Please update Archiso."
+                        echo -e "\n${outY} ${yellow}Please update Archiso."
                         exit 1;
                     ;;
                 esac
                 Write_Data "Archiso_Version_check" "no"
             elif [[ "$Archiso_Time" -ge 61 ]]; then
                 clear;
-                echo -e "\n${PSY} ${y}You haven't updated in more than 60 days Archiso !${h}\n${PSY} ${y}Archiso Version: ${ArchisoVersion}01.${h}"
+                echo -e "\n${outY} ${yellow}You haven't updated in more than 60 days Archiso !${suffix}\n${outY} ${yellow}Archiso Version: ${ArchisoVersion}01.${suffix}"
                 Write_Data "Archiso_Version_check" "yes"
                 sleep 2;
             elif [[ "$Archiso_Time" -ge 31 ]]; then
 
                 clear;
-                echo -e "\n${PSY} ${y}Please update as soon as possible Archiso !${h}\n${PSY} ${y}Archiso Version: ${ArchisoVersion}01.${h}"
+                echo -e "\n${outY} ${yellow}Please update as soon as possible Archiso !${suffix}\n${outY} ${yellow}Archiso Version: ${ArchisoVersion}01.${suffix}"
                 Write_Data "Archiso_Version_check" "yes"
                 sleep 2;
             fi 
@@ -789,13 +780,14 @@ function Process_Management(){
         ;;
         stop)
             bash "${Share_Dir}/Process_manage.sh" stop "${PM_Enter_2}"
-            echo -e "\n\n${wg}---------Script Exit---------${h}"  
+            echo -e "\n\n${wg}---------Script Exit---------${suffix}"  
         ;;
     esac
 }
+
 # Start Script
-Script_init_Variable # 脚本初始化变量
-Set_Color_Variable   # 颜色
+Script_init_Variable 
+Set_Color_Variable   
 # Detect File and Directory
 if [ ! -d "${Local_Dir}" ]; then
     mkdir -p "${Local_Dir}"
@@ -803,19 +795,20 @@ fi
 if [ ! -d "${Share_Dir}" ]; then
     mkdir -p "${Share_Dir}"
 fi
-Update_Share         # 下载其他脚本
-Script_init          # 脚本初始化
-Set_System_Variable  # 新系统配置变量
-Auin_Options "${1}"  # 选项功能 auin.sh [--help]
-Ethernet INFO        # 网络信息
+
+Update_Share        
+Script_init         
+Set_System_Variable  
+Auin_Options "${1}"  
+Ethernet INFO       
 if [ "${ChrootPatterns}" = "Chroot-ON" ]; then
-    ChrootPatterns="${g}Chroot-ON${h}"
+    ChrootPatterns="${green}Chroot-ON${suffix}"
 else
-    ChrootPatterns="${r}Chroot-OFF${h}"
+    ChrootPatterns="${red}Chroot-OFF${suffix}"
 fi
 # 
-Printf_Info Logos;   # 显示LOGO
-printf "\n${PSG} ${y} Please enter[1,2,3..] Exit[Q]${h} %s" "${JHB}"
+Printf_Info Logos;   
+printf "\n${outG} ${yellow} Please enter[1,2,3..] Exit[Q]${suffix} %s" "${inB}"
 read -r principal_variable 
 case ${principal_variable} in
     1) 
@@ -823,9 +816,9 @@ case ${principal_variable} in
         bash "${0}"
     ;;
     2)
-        echo -e "\n$w:: Checking the currently available network."; sleep 2;
-        echo -e "$w:: Ethernet: ${r}${Ethernet_Name}${h}\n$w:: Wifi:   ${r}${Wifi_Name}${h}"
-        printf "${PSG} ${y}Query Network: Ethernet[1] Wifi[2] Exit[3]? ${h}%s" "${JHB}"
+        echo -e "\n${white}:: Checking the currently available network."; sleep 2;
+        echo -e "${white}:: Ethernet: ${red}${Ethernet_Name}${suffix}\n${white}:: Wifi:   ${red}${Wifi_Name}${suffix}"
+        printf "${outG} ${yellow}Query Network: Ethernet[1] Wifi[2] Exit[3]? ${suffix}%s" "${inB}"
         read -r wlink 
         case "$wlink" in
             1) 
@@ -844,10 +837,10 @@ case ${principal_variable} in
     ;;
     4)
         Printf_Info input_System_Module;
-        printf "${PSG} ${y} Please enter[1,2,21..] Exit[Q] ${h}%s" "${JHB}"
+        printf "${outG} ${yellow} Please enter[1,2,21..] Exit[Q] ${suffix}%s" "${inB}"
         read -r Tasks
         case ${Tasks} in
-            0) # chroot 进入新系统
+            0) # chroot 
                 Auin_chroot; 
             ;;
             1) #磁盘分区
@@ -856,78 +849,75 @@ case ${principal_variable} in
                 bash "${0}" 
             ;;
             2) # 安装及配置系统文件
-                Root_partition=$(Read_Config "Root_partition" "INFO")    # 查 Root_partition
-                
-                # 如果"$Local_Dir/auin.info" 文件中Boot_partition存在值 则安装系统
+                Root_partition=$(Read_Config "Root_partition" "INFO")  
                 if [ -n "$Root_partition" ]; then 
                     Install_Archlinux
                 else
-                    echo -e "${PSR} ${r}The partition is not mounted.${h}"; sleep 3;
+                    echo -e "${outR} ${red}The partition is not mounted.${suffix}"; sleep 3;
                     Process_Management restart "$0"
                 fi
-                sleep 1;echo -e "\n${wg}#======================================================#${h}"
-                echo -e "${wg}#::  System components installation completed.         #${h}"            
-                echo -e "${wg}#::  Entering chroot mode.                             #${h}"
-                echo -e "${wg}#::  Execute in 3 seconds.                             #${h}"
-                echo -e "${wg}#::  Later operations are oriented to the new system.  #${h}"
-                echo -e "${wg}#======================================================#${h}"
+                sleep 1;echo -e "\n${wg}#======================================================#${suffix}"
+                echo -e "${wg}#::  System components installation completed.         #${suffix}"            
+                echo -e "${wg}#::  Entering chroot mode.                             #${suffix}"
+                echo -e "${wg}#::  Execute in 3 seconds.                             #${suffix}"
+                echo -e "${wg}#::  Later operations are oriented to the new system.  #${suffix}"
+                echo -e "${wg}#======================================================#${suffix}"
                 sleep 3
-                echo    # Chroot到新系统中完成基础配置，第一步配置
+                echo    # Chroot到新系统中完成基础配置
                 cp -rf /etc/pacman.conf /mnt/etc/pacman.conf 
                 cp -rf /etc/pacman.d/mirrorlist /mnt/etc/pacman.d/mirrorlist
                 Auin_chroot;
             ;;
-            3) # 进入系统后的配置
+            3) 
                 LinuxKernel=$(Read_Config "LinuxKernel" "INFO")
                 if [ -n "$LinuxKernel" ]; then 
                     echo;Configure_Grub
                     Configure_System
-                    ConfigurePassworld    # 引用：设置密码
+                    ConfigurePassworld 
                     #---------------------------------------------------------------------------#
-                    Install_Program "$(Read_Config P_common)" # install Common tools Package
-                    Install_Program "$(Read_Config P_fs)"     # install System File Package
-                    Install_Font  # 安装字体
-                    echo -e "${ws}#======================================================#${h}" #本区块退出后的提示
-                    echo -e "${ws}#::                 Exit in 3/s                        #${h}" 
-                    echo -e "${ws}#::  When finished, restart the computer.              #${h}"
-                    echo -e "${ws}#::  If there is a problem during the installation     #${h}"
-                    echo -e "${ws}#::  please contact me. QQ:2763833502                  #${h}"
-                    echo -e "${ws}#======================================================#${h}"
+                    Install_Program "$(Read_Config P_common)"
+                    Install_Program "$(Read_Config P_fs)" 
+                    Install_Font  
+echo -e "
+${ws}#======================================================#${suffix}
+${ws}#::                 Exit in 3/s                        #${suffix}
+${ws}#::  When finished, restart the computer.              #${suffix}
+${ws}#::  If there is a problem during the installation     #${suffix}
+${ws}#::  please contact me. QQ:2763833502                  #${suffix}
+${ws}#======================================================#${suffix}"
                     sleep 3
                 else
-                    echo -e "${PSR} ${r}The system is not installed. Exec: 4->2 ${h}";sleep 3;
+                    echo -e "${outR} ${red}The system is not installed. Exec: 4->2 ${suffix}";sleep 3;
                     
                     Process_Management restart "$0"
                 fi
             ;;
-            4) # Installation Desktop. 桌面环境
-                ConfigurePassworld    # 引用：设置密码
-                # Prompt to install desktop environment
+            4)
+                ConfigurePassworld    
                 UserName=$(Read_Config "Users" INFO)
                 UserHomeDir="/home/${UserName}"
                 if [ -n "$UserName" ]; then 
-                    Set_Desktop_Env  # Install Desktop
-                    # Prompt to install driver    
-                    printf "${PSG} ${y}Whether to install Common Drivers? [y/N]:${h}%s" "${JHB}"
+                    Set_Desktop_Env 
+                    printf "${outG} ${yellow}Whether to install Common Drivers? [y/N]:${suffix}%s" "${inB}"
                     read -r CommonDrive
                     case ${CommonDrive} in
                         [Yy]*)
-                            Install_Io_Driver  # 安装驱动
+                            Install_Io_Driver  
                         ;;
                         [Nn]* )
                             Process_Management stop "$0"
                         ;;
                     esac
                 else
-                    echo -e "${PSR} ${r}The user is not settings.${h}"; sleep 3;
+                    echo -e "${outR} ${red}The user is not settings.${suffix}"; sleep 3;
                     Process_Management restart "$0"
                 fi
             ;;
-            11) # Installation Drive. 驱动, 配置驱动
-                Install_Io_Driver   # 安装驱动
-                Install_Processor_Driver # CPU GPU驱动安装
+            11) 
+                Install_Io_Driver 
+                Install_Processor_Driver 
             ;;
-            22) # Installation VM. open-vm-tools
+            22) 
                 echo;install_virtualization_service
                 sleep 3; bash "$0"
             ;;
@@ -944,6 +934,5 @@ case ${principal_variable} in
     ;;
     test)
     echo;
-    # ConfigurePassworld
     ;;
 esac
