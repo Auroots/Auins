@@ -322,14 +322,14 @@ function Ethernet(){
 # @开启SSH服务， Start ssh service 
 function Open_SSH(){    
     echo -e "\n
-${yellow}:: Setting SSH Username / password.${suffix}
+${yellow}:: Setting SSH Username / password.              ${suffix}
 ${USER}:$(Read_Config "Password_live") | chpasswd &>/dev/null 
-${green} ---------------------------------${suffix}
-${green}    $ ssh $USER@${Ethernet_ip:-IP_Addess..}      ${suffix}
-${green}    $ ssh $USER@${Wifi_ip:-IP_Addess..}          ${suffix}
-${green}    Username --=>  $USER           ${suffix}
-${green}    Password --=>  $(Read_Config "Password_live")${suffix}
-${green} =================================${suffix}"
+${green} ---------------------------------                ${suffix}
+${green}    $ ssh $USER@${Ethernet_ip:-IP_Addess..}       ${suffix}
+${green}    $ ssh $USER@${Wifi_ip:-IP_Addess..}           ${suffix}
+${green}    Username --=>  $USER                          ${suffix}
+${green}    Password --=>  $(Read_Config "Password_live") ${suffix}
+${green} =================================                ${suffix}"
     systemctl start sshd.service 
     netstat -antp | grep sshd 
 }
@@ -856,12 +856,13 @@ case ${principal_variable} in
                     echo -e "${outR} ${red}The partition is not mounted.${suffix}"; sleep 3;
                     Process_Management restart "$0"
                 fi
-                sleep 1;echo -e "\n${wg}#======================================================#${suffix}"
-                echo -e "${wg}#::  System components installation completed.         #${suffix}"            
-                echo -e "${wg}#::  Entering chroot mode.                             #${suffix}"
-                echo -e "${wg}#::  Execute in 3 seconds.                             #${suffix}"
-                echo -e "${wg}#::  Later operations are oriented to the new system.  #${suffix}"
-                echo -e "${wg}#======================================================#${suffix}"
+                sleep 1; echo -e "\n
+${wg}#======================================================#${suffix}
+${wg}#::  System components installation completed.         #${suffix}          
+${wg}#::  Entering chroot mode.                             #${suffix}
+${wg}#::  Execute in 3 seconds.                             #${suffix}
+${wg}#::  Later operations are oriented to the new system.  #${suffix}
+${wg}#======================================================#${suffix}"
                 sleep 3
                 echo    # Chroot到新系统中完成基础配置
                 cp -rf /etc/pacman.conf /mnt/etc/pacman.conf 
@@ -931,8 +932,5 @@ ${ws}#======================================================#${suffix}"
     ;;
     [Ss]* )
         bash;
-    ;;
-    test)
-    echo;
     ;;
 esac
