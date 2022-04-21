@@ -116,18 +116,10 @@ ${outB} ${green}   Openbox.        ${blue}[10] ${blue}default: sddm     ${suffix
 }
     # Printf_Info
     case ${1} in
-        "Logos")
-            Logos
-        ;;
-        "usage")
-            usage
-        ;;
-        "Version")
-            Version
-        ;;
-        "input_System_Module")
-            input_System_Module
-        ;; 
+        "Logos") Logos ;;
+        "usage") usage ;;
+        "Version") Version ;;
+        "input_System_Module") input_System_Module ;; 
     esac
 }
 # @脚本颜色变量
@@ -161,105 +153,49 @@ function Set_Color_Variable(){
 function Script_init(){
     # Detect CPU
     CPU_name=$(head -n 5 /proc/cpuinfo | grep "model name" | cut -d" " -f5)
-    if lscpu | grep GenuineIntel &>/dev/null ; then
-        CPU_Vendor="intel"
-    elif lscpu | grep AuthenticAMD &>/dev/null ; then
-        CPU_Vendor="amd"
+    if lscpu | grep GenuineIntel &>/dev/null ; then   CPU_Vendor="intel";
+    elif lscpu | grep AuthenticAMD &>/dev/null ; then CPU_Vendor="amd";
     fi
     Write_Data "CPU_Name" "${CPU_name}"
     Write_Data "CPU_Vendor" "${CPU_Vendor}"
     # Detect Virtualization
-    if lspci | grep -i virtualbox &>/dev/null ; then
-        Virtualization="virtualbox"
-    elif lspci | grep -i vmware &>/dev/null ; then
-        Virtualization="vmware"
+    if   lspci | grep -i virtualbox &>/dev/null ; then  Virtualization="virtualbox";
+    elif lspci | grep -i vmware &>/dev/null ; then      Virtualization="vmware"; 
     fi
     Write_Data "Virtualization" "${Virtualization}"
     # 判断当前模式
-    if [ -e /local/Chroot ]; then
-        ChrootPatterns="Chroot-ON"
-    else
-        ChrootPatterns="Chroot-OFF"
-    fi
+    if [ -e /local/Chroot ]; then  ChrootPatterns="Chroot-ON"; else ChrootPatterns="Chroot-OFF"; fi
     Write_Data "Patterns" "${ChrootPatterns}"
     # Detect Archiso Version
-    if [ -e "$entries_a" ]; then
-        entries="$entries_a"
-    elif [ -e "$entries_b" ]; then
-        entries="$entries_b"
+    if [ -e "$entries_a" ]; then    entries="$entries_a"; 
+    elif [ -e "$entries_b" ]; then  entries="$entries_b"; 
     fi
     Query_Archiso_Version_check=$(Read_Config "Archiso_Version_check" "INFO")
     
-    if [ "X$Query_Archiso_Version_check" = "Xno" ] || [ "X$Query_Archiso_Version_check" = "X" ]; then
-        Archiso_Version "$entries"
-    fi
+    if [ "X$Query_Archiso_Version_check" = "Xno" ] || [ "X$Query_Archiso_Version_check" = "X" ]; then Archiso_Version "$entries"; fi
     ln -sf /usr/share/zoneinfo"$(Read_Config "Area")" /etc/localtime &>/dev/null && hwclock --systohc
 }
 # @下载所需的脚本模块
 function Update_Share(){    
-    if [ ! -e "${Share_Dir}/Mirrorlist.sh" ]; then
-        curl -fsSL "$Auins_Share/Mirrorlist.sh" > "${Share_Dir}/Mirrorlist.sh" 
-        chmod +x "${Share_Dir}/Mirrorlist.sh"
-    fi
-    if [ ! -e "${Share_Dir}/Useradd.sh" ]; then
-        curl -fsSL "$Auins_Share/Useradd.sh" > "${Share_Dir}/Useradd.sh"
-        chmod +x "${Share_Dir}/Useradd.sh"
-    fi
-    if [ ! -e "${Share_Dir}/Partition.sh" ]; then
-        curl -fsSL "$Auins_Share/Partition.sh" > "${Share_Dir}/Partition.sh"
-        chmod +x "${Share_Dir}/Partition.sh"
-    fi
-    if [ ! -e "${Share_Dir}/Process_manage.sh" ]; then
-        curl -fsSL "$Auins_Share/Process_manage.sh" > "${Share_Dir}/Process_manage.sh"
-        chmod +x "${Share_Dir}/Process_manage.sh"
-    fi
-    if [ ! -e "${Share_Dir}/Edit_Database.sh" ]; then
-        curl -fsSL "$Auins_Share/Edit_Database.sh" > "${Share_Dir}/Edit_Database.sh"
-        chmod +x "${Share_Dir}/Edit_Database.sh"
-    fi
-    if [ ! -e "${Auins_Config}" ]; then
-        curl -fsSL "${Auins_Local}/install.conf" > "$Auins_Config"
-    fi
-    if [ ! -e "${Auins_record}" ]; then
-        curl -fsSL "${Auins_Local}/auins.info" > "$Auins_record"
-    fi
+    if [ ! -e "${Share_Dir}/Mirrorlist.sh" ]; then     curl -fsSL "$Auins_Share/Mirrorlist.sh" > "${Share_Dir}/Mirrorlist.sh" && chmod +x "${Share_Dir}/Mirrorlist.sh"; fi
+    if [ ! -e "${Share_Dir}/Useradd.sh" ]; then        curl -fsSL "$Auins_Share/Useradd.sh" > "${Share_Dir}/Useradd.sh" && chmod +x "${Share_Dir}/Useradd.sh"; fi
+    if [ ! -e "${Share_Dir}/Partition.sh" ]; then      curl -fsSL "$Auins_Share/Partition.sh" > "${Share_Dir}/Partition.sh" && chmod +x "${Share_Dir}/Partition.sh"; fi
+    if [ ! -e "${Share_Dir}/Process_manage.sh" ]; then curl -fsSL "$Auins_Share/Process_manage.sh" > "${Share_Dir}/Process_manage.sh" && chmod +x "${Share_Dir}/Process_manage.sh"; fi
+    if [ ! -e "${Share_Dir}/Edit_Database.sh" ]; then  curl -fsSL "$Auins_Share/Edit_Database.sh" > "${Share_Dir}/Edit_Database.sh" && chmod +x "${Share_Dir}/Edit_Database.sh"; fi
+    if [ ! -e "${Auins_Config}" ]; then   curl -fsSL "${Auins_Local}/install.conf" > "$Auins_Config"; fi
+    if [ ! -e "${Auins_record}" ]; then   curl -fsSL "${Auins_Local}/auins.info" > "$Auins_record"; fi
 }
 # @Auins的其他选项功能
 function Auin_Options(){
     local Function_Enter="${1}"
     case ${Function_Enter} in
-        -m | --mirror)
-            bash "${Share_Dir}/Mirrorlist.sh"
-            exit 0;
-        ;;
-        -w | --cwifi)
-            Ethernet INFO;
-            Ethernet Conf_wifi;
-            exit 0;
-        ;;
-        -s | --openssh)
-            Ethernet INFO;
-            Open_SSH;
-            exit 0;
-        ;;
-        -vm | --virtual)
-            install_virtualization_service
-        ;;
-        -i | --info)
-            echo "---------------------------------"
-            cat "${Auins_record}"
-            echo "================================="
-            exit 0;
-        ;;
-        -h | --help)
-            Printf_Info usage
-            exit 0;
-        ;;
-        -v | -V | --version)
-            clear;
-            Printf_Info Version
-            exit 0;
-        ;;
+        -m  | --mirror)  bash "${Share_Dir}/Mirrorlist.sh"; exit 0 ;;
+        -w  | --cwifi)   Ethernet_info; Configure_wifi; exit 0 ;;
+        -s  | --openssh) Ethernet_info; Open_SSH; exit 0 ;;
+        -vm | --virtual) install_virtualization_service ;;
+        -i  | --info)    clear; cat "${Auins_record}"; exit 0 ;;
+        -h  | --help)    Auin_help; exit 0 ;;
+        -v  | --version) clear; version; exit 0 ;;
     esac
 }
 # @网络部分集合
@@ -272,15 +208,11 @@ function Ethernet(){
             if echo "$Info_Nic" | grep "en" &>/dev/null ; then 
                 Ethernet_Name="$Info_Nic"
                 Ethernet_ip=$(ip route list | grep "${Ethernet_Name}" | cut -d" " -f9 | sed -n '2,1p')
-
-                Write_Data "Ethernet_ip" "${Ethernet_ip:-Not}"
-                break;
+                Write_Data "Ethernet_ip" "${Ethernet_ip:-Not}"; break;
             elif echo "$Info_Nic" | grep "wl" &>/dev/null ; then
                 Wifi_Name="$Info_Nic"
                 Wifi_ip=$(ip route list | grep "${Wifi_Name}" | cut -d" " -f9 | sed -n '2,1p') 
-
-                Write_Data "Wifi_ip" "${Wifi_ip:-Not}"
-                break;
+                Write_Data "Wifi_ip" "${Wifi_ip:-Not}"; break;
             fi
         done    
     }
@@ -291,8 +223,7 @@ function Ethernet(){
         printf "${outG} ${green} Wifi Password :${suffix} %s" "${inB}"
         read -r WIFI_PASSWD
         iwctl --passphrase "$WIFI_PASSWD" station "$Wifi_Name" connect "$WIFI_SSID"
-        sleep 2;
-        ip address show "${Wifi_Name}"
+        sleep 2; ip address show "${Wifi_Name}"
         if ! ping -c 3 -i 2 -W 5 -w 30 8.8.8.8; then
             echo "Network ping check failed. Cannot continue."
             Process_Management stop "$0"
@@ -308,15 +239,9 @@ function Ethernet(){
     }
     # Ethernet
     case ${1} in
-        "INFO")
-            Ethernet_info
-        ;;
-        "Conf_wifi")
-            Configure_wifi
-        ;;
-        "Conf_Eth")
-            Configure_Ethernet
-        ;;
+        "INFO") Ethernet_info ;;
+        "Conf_wifi") Configure_wifi ;;
+        "Conf_Eth")  Configure_Ethernet ;;
     esac
 }
 # @开启SSH服务， Start ssh service 
@@ -351,8 +276,7 @@ function ConfigurePassworld(){
             fi
         done
         if [ "${CheckingUsers}" = "" ]; then
-            bash "${Share_Dir}/Useradd.sh" "${Local_Dir}" "${Share_Dir}"
-            sleep 1;
+            bash "${Share_Dir}/Useradd.sh" "${Local_Dir}" "${Share_Dir}"; sleep 1;
         fi
     else
         printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}." "${CheckingUsers}" "${UserID}"
@@ -362,8 +286,7 @@ function ConfigurePassworld(){
 function Install_Archlinux(){    
     echo -e "${wg}Update the system clock.${suffix}"   # update time
     timedatectl set-ntp true
-    sleep 2;
-    echo -e "\n${outG} ${green}Install the base packages.${suffix}\n"
+    sleep 2; echo -e "\n${outG} ${green}Install the base packages.${suffix}\n"
     bash "${Share_Dir}/Mirrorlist.sh"
     if [[ $(Read_Config "Linux_kernel") = "linux" ]]; then
         pacstrap -i /mnt linux linux-headers linux-firmware base base-devel networkmanager net-tools vim 
@@ -372,8 +295,7 @@ function Install_Archlinux(){
     elif [[ $(Read_Config "Linux_kernel") = "linux-zen" ]]; then
         pacstrap -i /mnt linux-zen linux-zen-headers linux-firmware base base-devel networkmanager net-tools vim
     fi
-    sleep 2;
-    echo -e "\n${outG}  ${green}Configure Fstab File.${suffix}"  
+    sleep 2; echo -e "\n${outG}  ${green}Configure Fstab File.${suffix}"  
     genfstab -U /mnt >> /mnt/etc/fstab  
     LinuxKernel=$(arch-chroot /mnt /usr/bin/uname -a | /usr/bin/cut -d"#" -f1)
 
@@ -401,35 +323,21 @@ ${outB} ${green}default.         ${white}[*]${suffix}
     printf "${outG} ${yellow} Please select Desktop Manager: ${suffix} %s" "${inB}"
     read -r DM_ID
     case ${DM_ID} in
-        1)
-            DmS="sddm"
-        ;;
-        2)
-            DmS="gdm"  
-        ;;
-        3)
-            DmS="lightdm"
-        ;;
-        4)
-            DmS="lxdm"
-        ;;
-        *)
-            sleep 1
-        ;;
+        1) DmS="sddm" ;;
+        2) DmS="gdm"  ;;
+        3) DmS="lightdm" ;;
+        4) DmS="lxdm" ;;
+        *) sleep 1    ;;
     esac
     echo ${DmS} > "${Local_Dir}/Desktop_Manager"
         if [[ ${DmS} == "sddm" ]] ; then
-            Install_Program "sddm sddm-kcm"  # Install SDDM
-            systemctl enable sddm
+            Install_Program "sddm sddm-kcm" && systemctl enable sddm
         elif [[ ${DmS} == "gdm" ]] ; then
-            Install_Program "gdm"     
-            systemctl enable gdm  
+            Install_Program "gdm" && systemctl enable gdm  
         elif [[ ${DmS} == "lightdm" ]] ; then
-            Install_Program "lightdm lightdm-gtk-greeter" 
-            systemctl enable lightdm
+            Install_Program "lightdm lightdm-gtk-greeter" && systemctl enable lightdm
         elif [[ ${DmS} == "lxdm" ]] ; then
-            Install_Program "lxdm"
-            systemctl enable lxdm 
+            Install_Program "lxdm" && systemctl enable lxdm 
         fi
         Write_Data "Desktop_Mg" "${DmS}"
 }
@@ -440,8 +348,7 @@ function Install_DesktopEnv(){
     Desktop_Xinit=$2
     Desktop_Program=$3
     
-    echo -e "${outG} ${green}Configuring desktop environment.${suffix}"
-    sleep 1;
+    echo -e "${outG} ${green}Configuring desktop environment.${suffix}"; sleep 1;
     Install_Program "$(Read_Config P_xorgGroup)"
     Install_Program "$Desktop_Program"
     Install_Program "$(Read_Config P_gui)"
@@ -456,43 +363,24 @@ function Set_Desktop_Env(){
     printf "${outG} ${yellow} Please select desktop:${suffix} %s" "${inB}"
     read -rp DESKTOP_ID
     case ${DESKTOP_ID} in
-        1)
-            Install_DesktopEnv plasma startkde "$(Read_Config P_plasma)"
-            DmS="sddm"
-        ;;
-        2)
-            Install_DesktopEnv gnome gnome-session "$(Read_Config P_gnome)"
-            DmS="gdm"
-        ;;
-        3)
-            Install_DesktopEnv deepin startdde "$(Read_Config P_deepin )"  
-            DmS="lightdm"
-        ;;
-        4)
-            Install_DesktopEnv xfce4 startxfce4 "$(Read_Config P_xfce4)"
-            DmS="lightdm"
-        ;;
-        5)
-            Install_DesktopEnv i3wm i3 "$(Read_Config P_i3wm)"
-            # sed -i 's/i3-sensible-terminal/--no-startup-id termite/g' /home/"${CheckingUsers}"/.config/i3/config  # 更改终端
-            DmS="sddm"
-        ;;
-        6)
-            Install_DesktopEnv i3gaps i3 "$(Read_Config P_i3gaps)"
-            DmS="lightdm"
-        ;;
-        7)
-            Install_DesktopEnv lxde startlxde "$(Read_Config P_lxde)"
-            DmS="lxdm"
-        ;;
-        8)
-            Install_DesktopEnv cinnamon cinnamon-session "$(Read_Config P_cinnamon)"
-            DmS="lightdm"
-        ;;
-        9)
-            Install_DesktopEnv mate mate "$(Read_Config P_mate)"
-            DmS="lightdm"
-        ;;
+        1)  Install_DesktopEnv plasma startkde "$(Read_Config P_plasma)"
+            DmS="sddm" ;;
+        2)  Install_DesktopEnv gnome gnome-session "$(Read_Config P_gnome)"
+            DmS="gdm" ;;
+        3)  Install_DesktopEnv deepin startdde "$(Read_Config P_deepin )"  
+            DmS="lightdm" ;;
+        4)  Install_DesktopEnv xfce4 startxfce4 "$(Read_Config P_xfce4)"
+            DmS="lightdm" ;;
+        5)  Install_DesktopEnv i3wm i3 "$(Read_Config P_i3wm)"
+            DmS="sddm" ;;
+        6)  Install_DesktopEnv i3gaps i3 "$(Read_Config P_i3gaps)"
+            DmS="lightdm" ;;
+        7)  Install_DesktopEnv lxde startlxde "$(Read_Config P_lxde)"
+            DmS="lxdm" ;;
+        8)  Install_DesktopEnv cinnamon cinnamon-session "$(Read_Config P_cinnamon)"
+            DmS="lightdm" ;;
+        9)  Install_DesktopEnv mate mate "$(Read_Config P_mate)"
+            DmS="lightdm" ;;
         10)  
             function openboxManger(){
                 local openboxDir openboxTheme
@@ -542,14 +430,9 @@ function Set_Desktop_Env(){
                     numlockNum=$(sed -n '/# numlock/=' /etc/slim.conf)
                     sed -i "${numlockNum}s/# numlock/numlock/g" /etc/slim.conf
                     sed -i "${themesNum}s/default/minimal/g" /etc/slim.conf
-                    systemctl enable slim
-                ;;
-                *)
-                    Desktop_Manager;
-                    openboxManger;
-                ;;
-            esac
-        ;;
+                    systemctl enable slim ;;
+                *) Desktop_Manager; openboxManger ;;
+            esac ;;
         # 11)
         #     Install_DesktopEnv Dwm Dwm "$(Read_Config P_dwm)"
         #     DmS="lightdm"
@@ -572,7 +455,6 @@ function Desktop_Env_Config(){
         echo "exec ${2}" >> /etc/X11/xinit/xinitrc 
         cp -rf /etc/X11/xinit/xinitrc  /home/"$CheckingUsers"/.xinitrc 
         echo -e "${outG} ${white}${1} ${green}Desktop environment configuration completed.${suffix}"  
-        sleep 2;   
     fi
 }
 # @install fonts 
@@ -580,22 +462,18 @@ function Install_Font(){
     printf "${outG} ${yellow}Whether to install the Font. Install[y] No[*]${suffix} %s" "${inB}"
     read -r UserInf_Font
     case ${UserInf_Font} in
-        [Yy]*)
-            Install_Program "$(Read_Config P_fonts)" # install Fonts PKG
-        ;;
+        [Yy]*) Install_Program "$(Read_Config P_fonts)" ;;
     esac
 }
 # @install Programs 
 function Install_Program() {
     set +e
-    IFS=' ';
-    PACKAGES=("$@");
+    IFS=' '; PACKAGES=("$@");
     for VARIABLE in {1..3}
     do
         if ! pacman -Syu --noconfirm --needed ${PACKAGES[@]} ; then
             sleep 2;
-        else
-            break;
+        else break;
         fi
     done
     echo "$VARIABLE" &> /dev/null
@@ -616,20 +494,14 @@ function Install_Io_Driver(){
 # @Install CPU GPU Driver
 function Install_Processor_Driver(){
     echo -e "\n${outG} ${green}Install the cpu ucode and driver.${suffix}"
-    if [[ "$CPU_Vendor" = 'intel' ]]; then
-        Install_Program "$(Read_Config P_intel)"
-    elif [[ "$CPU_Vendor" = 'amd' ]]; then
-        Install_Program "$(Read_Config P_amd)"
+    if [[ "$CPU_Vendor" = 'intel' ]]; then  Install_Program "$(Read_Config P_intel)";
+    elif [[ "$CPU_Vendor" = 'amd' ]]; then  Install_Program "$(Read_Config P_amd)";
     else
         printf "${outG} ${yellow}Please select: Intel[1] AMD[2].${suffix} %s" "${inB}"
         read -r DRIVER_GPU_ID
         case $DRIVER_GPU_ID in
-            1)
-                Install_Program "$(Read_Config P_intel)"
-            ;;
-            2)
-                Install_Program "$(Read_Config P_amd)"
-            ;;
+            1) Install_Program "$(Read_Config P_intel)" ;;
+            2) Install_Program "$(Read_Config P_amd)" ;;
         esac
     fi
     lspci -k | grep -A 2 -E "(VGA|3D)"  
@@ -650,12 +522,8 @@ function Install_Processor_Driver(){
                 sed -i 's/DisplayStopCommand/# DisplayStopCommand/' /etc/sddm.conf
             fi
         ;;
-        [Nn]* )
-            bash "$0"
-        ;;
-        * )
-        Process_Management stop "$0"
-        ;;
+        [Nn]* ) bash "$0" ;;
+            * ) Process_Management stop "$0" ;;
         esac   
 }
 # @Install/Configure Grub
@@ -668,12 +536,11 @@ function Configure_Grub(){
         grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$(Read_Config "Grub_Hostname")" --recheck
         echo "GRUB_DISABLE_OS_PROBER=false" >> /etc/default/grub
         grub-mkconfig -o /boot/grub/grub.cfg
-        echo;
         if efibootmgr | grep "$(Read_Config "Grub_Hostname")" &>/dev/null ; then
-            echo -e "${green} Grub installed successfully -=> [Archlinux] ${suffix}"  
+            echo -e "\n${green} Grub installed successfully -=> [Archlinux] ${suffix}"  
             echo -e "${green}     $(efibootmgr | grep "$(Read_Config "Grub_Hostname")")  ${suffix}\n"  
         else
-            echo -e "${red} Grub installed failed ${suffix}"
+            echo -e "\n${red} Grub installed failed ${suffix}"
             echo -e "${green}     $(efibootmgr)  ${suffix}\n"
         fi
     else  
@@ -684,11 +551,10 @@ function Configure_Grub(){
         
         grub-install --target=i386-pc --recheck "${Boot_Partition}"
         grub-mkconfig -o /boot/grub/grub.cfg
-        echo;
         if echo $? &>/dev/null ; then
-                echo -e "${green} Grub installed successfully -=> [Archlinux] ${suffix}\n"  
+            echo -e "\n${green} Grub installed successfully -=> [Archlinux] ${suffix}\n"  
         else
-                echo -e "${red} Grub installed failed ${suffix}\n"
+            echo -e "\n${red} Grub installed failed ${suffix}\n"
         fi
     fi
 }
@@ -732,37 +598,24 @@ function Archiso_Version(){
             Archiso_Time=$((($(date +%s ) - $(date +%s -d "${ArchisoVersion}01"))/86400))
             Write_Data "Archiso_Version_check" "no"
             if [[ "$Archiso_Time" -gt 121 ]]; then
-                clear;
-                echo -e "\n${outR} ${red}You haven't updated in more than 120 days Archiso !${suffix}\n${outR} ${red}Archiso Version: ${ArchisoVersion}01.${suffix}"
+                clear; echo -e "\n${outR} ${red}You haven't updated in more than 120 days Archiso !${suffix}\n${outR} ${red}Archiso Version: ${ArchisoVersion}01.${suffix}"
                 echo -e "${outR} ${red}Please update your archiso !!!  After 10 seconds, Exit(Ctrl+c).${suffix}"
-                sleep 10;
-                exit 1;
+                sleep 10; exit 1;
                 Write_Data "Archiso_Version_check" "no"
             elif [[ "$Archiso_Time" -ge 91 ]]; then
-                clear;
-                echo -e "\n${outY} ${yellow}You haven't updated in more than 90 days Archiso !${suffix}\n${outY} ${yellow}Archiso Version: ${ArchisoVersion}01.${suffix}"
+                clear; echo -e "\n${outY} ${yellow}You haven't updated in more than 90 days Archiso !${suffix}\n${outY} ${yellow}Archiso Version: ${ArchisoVersion}01.${suffix}"
                 read -rp "Whether to start the script [Y]: " Version_check
                 case $Version_check in
-                    [Yy]*)
-                        sleep 2;
-                    ;;
-                    *)
-                        echo -e "\n${outY} ${yellow}Please update Archiso."
-                        exit 1;
-                    ;;
+                    [Yy]*) sleep 2 ;;
+                        *)  echo -e "\n${outY} ${yellow}Please update Archiso."; exit 1 ;;
                 esac
                 Write_Data "Archiso_Version_check" "no"
             elif [[ "$Archiso_Time" -ge 61 ]]; then
-                clear;
-                echo -e "\n${outY} ${yellow}You haven't updated in more than 60 days Archiso !${suffix}\n${outY} ${yellow}Archiso Version: ${ArchisoVersion}01.${suffix}"
-                Write_Data "Archiso_Version_check" "yes"
-                sleep 2;
+                clear; echo -e "\n${outY} ${yellow}You haven't updated in more than 60 days Archiso !${suffix}\n${outY} ${yellow}Archiso Version: ${ArchisoVersion}01.${suffix}"
+                Write_Data "Archiso_Version_check" "yes"; sleep 2;
             elif [[ "$Archiso_Time" -ge 31 ]]; then
-
-                clear;
-                echo -e "\n${outY} ${yellow}Please update as soon as possible Archiso !${suffix}\n${outY} ${yellow}Archiso Version: ${ArchisoVersion}01.${suffix}"
-                Write_Data "Archiso_Version_check" "yes"
-                sleep 2;
+                clear; echo -e "\n${outY} ${yellow}Please update as soon as possible Archiso !${suffix}\n${outY} ${yellow}Archiso Version: ${ArchisoVersion}01.${suffix}"
+                Write_Data "Archiso_Version_check" "yes"; sleep 2;
             fi 
     fi
     Write_Data "Archiso_Version_check" "yes"
@@ -772,16 +625,10 @@ function Process_Management(){
     PM_Enter_1=${1}
     PM_Enter_2=${2}
     case ${PM_Enter_1} in
-        start)
-            bash "${Share_Dir}/Process_manage.sh" start "${PM_Enter_2}"
-        ;;
-        restart)
-            bash "${Share_Dir}/Process_manage.sh" restart "${PM_Enter_2}"
-        ;;
-        stop)
-            bash "${Share_Dir}/Process_manage.sh" stop "${PM_Enter_2}"
-            echo -e "\n\n${wg}---------Script Exit---------${suffix}"  
-        ;;
+        start) bash "${Share_Dir}/Process_manage.sh" start "${PM_Enter_2}" ;;
+        restart) bash "${Share_Dir}/Process_manage.sh" restart "${PM_Enter_2}" ;;
+        stop) bash "${Share_Dir}/Process_manage.sh" stop "${PM_Enter_2}"
+              echo -e "\n\n${wg}---------Script Exit---------${suffix}" ;;
     esac
 }
 
@@ -789,72 +636,49 @@ function Process_Management(){
 Script_init_Variable 
 Set_Color_Variable   
 # Detect File and Directory
-if [ ! -d "${Local_Dir}" ]; then
-    mkdir -p "${Local_Dir}"
-fi
-if [ ! -d "${Share_Dir}" ]; then
-    mkdir -p "${Share_Dir}"
-fi
+if [ ! -d "${Local_Dir}" ]; then mkdir -p "${Local_Dir}"; fi
+if [ ! -d "${Share_Dir}" ]; then mkdir -p "${Share_Dir}"; fi
 
 Update_Share        
 Script_init         
 Set_System_Variable  
 Auin_Options "${1}"  
 Ethernet INFO       
-if [ "${ChrootPatterns}" = "Chroot-ON" ]; then
-    ChrootPatterns="${green}Chroot-ON${suffix}"
-else
-    ChrootPatterns="${red}Chroot-OFF${suffix}"
-fi
+if [ "${ChrootPatterns}" = "Chroot-ON" ]; then ChrootPatterns="${green}Chroot-ON${suffix}"; else ChrootPatterns="${red}Chroot-OFF${suffix}"; fi
 # 
 Printf_Info Logos;   
 printf "\n${outG} ${yellow} Please enter[1,2,3..] Exit[Q]${suffix} %s" "${inB}"
 read -r principal_variable 
 case ${principal_variable} in
-    1) 
-        bash "${Share_Dir}/Mirrorlist.sh"
-        bash "${0}"
-    ;;
+    1)  bash "${Share_Dir}/Mirrorlist.sh"; bash "${0}" ;;
     2)
         echo -e "\n${white}:: Checking the currently available network."; sleep 2;
         echo -e "${white}:: Ethernet: ${red}${Ethernet_Name}${suffix}\n${white}:: Wifi:   ${red}${Wifi_Name}${suffix}"
         printf "${outG} ${yellow}Query Network: Ethernet[1] Wifi[2] Exit[3]? ${suffix}%s" "${inB}"
         read -r wlink 
         case "$wlink" in
-            1) 
-                Ethernet Conf_Eth
-            ;;
-            2) 
-                Ethernet Conf_wifi
-            ;;
-            3) 
-                bash "${0}"
-            ;;
-        esac
+            1) Ethernet Conf_Eth ;;
+            2) Ethernet Conf_wifi ;;
+            3) bash "${0}" ;;
+        esac 
     ;;
-    3)
-        Open_SSH;
-    ;;
+    3) Open_SSH ;;
     4)
         Printf_Info input_System_Module;
         printf "${outG} ${yellow} Please enter[1,2,21..] Exit[Q] ${suffix}%s" "${inB}"
         read -r Tasks
         case ${Tasks} in
-            0) # chroot 
-                Auin_chroot; 
-            ;;
+            0) Auin_chroot ;;
             1) #磁盘分区
                 bash "${Share_Dir}/Partition.sh" "${Share_Dir}" "${Local_Dir}" 
-                sleep 1
-                bash "${0}" 
-            ;;
+                sleep 1; bash "${0}" ;;
             2) # 安装及配置系统文件
                 Root_partition=$(Read_Config "Root_partition" "INFO")  
                 if [ -n "$Root_partition" ]; then 
                     Install_Archlinux
                 else
-                    echo -e "${outR} ${red}The partition is not mounted.${suffix}"; sleep 3;
-                    Process_Management restart "$0"
+                    echo -e "${outR} ${red}The partition is not mounted.${suffix}"; 
+                    sleep 3; Process_Management restart "$0"
                 fi
                 sleep 1; echo -e "\n
 ${wg}#======================================================#${suffix}
@@ -863,12 +687,10 @@ ${wg}#::  Entering chroot mode.                             #${suffix}
 ${wg}#::  Execute in 3 seconds.                             #${suffix}
 ${wg}#::  Later operations are oriented to the new system.  #${suffix}
 ${wg}#======================================================#${suffix}"
-                sleep 3
-                echo    # Chroot到新系统中完成基础配置
+                sleep 3; echo;    # Chroot到新系统中完成基础配置
                 cp -rf /etc/pacman.conf /mnt/etc/pacman.conf 
                 cp -rf /etc/pacman.d/mirrorlist /mnt/etc/pacman.d/mirrorlist
-                Auin_chroot;
-            ;;
+                Auin_chroot ;;
             3) 
                 LinuxKernel=$(Read_Config "LinuxKernel" "INFO")
                 if [ -n "$LinuxKernel" ]; then 
@@ -885,14 +707,11 @@ ${ws}#::                 Exit in 3/s                        #${suffix}
 ${ws}#::  When finished, restart the computer.              #${suffix}
 ${ws}#::  If there is a problem during the installation     #${suffix}
 ${ws}#::  please contact me. QQ:2763833502                  #${suffix}
-${ws}#======================================================#${suffix}"
-                    sleep 3
+${ws}#======================================================#${suffix}";sleep 3
                 else
                     echo -e "${outR} ${red}The system is not installed. Exec: 4->2 ${suffix}";sleep 3;
-                    
                     Process_Management restart "$0"
-                fi
-            ;;
+                fi ;;
             4)
                 ConfigurePassworld    
                 UserName=$(Read_Config "Users" INFO)
@@ -902,35 +721,17 @@ ${ws}#======================================================#${suffix}"
                     printf "${outG} ${yellow}Whether to install Common Drivers? [y/N]:${suffix}%s" "${inB}"
                     read -r CommonDrive
                     case ${CommonDrive} in
-                        [Yy]*)
-                            Install_Io_Driver  
-                        ;;
-                        [Nn]* )
-                            Process_Management stop "$0"
-                        ;;
+                        [Yy]*) Install_Io_Driver ;;
+                        [Nn]*) Process_Management stop "$0" ;;
                     esac
                 else
                     echo -e "${outR} ${red}The user is not settings.${suffix}"; sleep 3;
                     Process_Management restart "$0"
-                fi
-            ;;
-            11) 
-                Install_Io_Driver 
-                Install_Processor_Driver 
-            ;;
-            22) 
-                echo;install_virtualization_service
-                sleep 3; bash "$0"
-            ;;
-            esac
-    ;;
-    [Rr]*)
-        bash "$0"
-    ;;
-    [Qq]*)
-        Process_Management stop "$0"
-    ;;
-    [Ss]* )
-        bash;
-    ;;
+                fi ;;
+            11) Install_Io_Driver; Install_Processor_Driver ;;
+            22) echo;install_virtualization_service; sleep 3; bash "$0" ;;
+            esac ;;
+    [Rr]*) bash "$0" ;;
+    [Qq]*) Process_Management stop "$0" ;;
+    [Ss]*) bash ;;
 esac

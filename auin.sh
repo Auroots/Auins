@@ -221,51 +221,29 @@ function Auin_help(){
 function Auin_Options(){
     local Function_Enter="${1}"
     case ${Function_Enter} in
-        -m | --mirror)
-            bash "${Share_Dir}/Mirrorlist.sh"
-            exit 0;
-        ;;
-        -w | --cwifi)
-            Ethernet_info;
-            Configure_wifi
-            exit 0;
-        ;;
-        -s | --openssh)
-            Ethernet_info;
-            Open_SSH;
-            exit 0;
-        ;;
-        -vm | --virtual)
-            install_virtualization_service
-        ;;
+        -m | --mirror) bash "${Share_Dir}/Mirrorlist.sh"; exit 0 ;;
+        -w | --cwifi) Ethernet_info; Configure_wifi; exit 0 ;;
+        -s | --openssh) Ethernet_info; Open_SSH; exit 0 ;;
+        -vm | --virtual) install_virtualization_service ;;
         -i | --info)
             echo "---------------------------------"
             cat "${Auins_record}"
             echo "================================="
-            exit 0;
-        ;;
-        -h | --help)
-            Auin_help
-            exit 0;
-        ;;
-        -v | -V | --version)
-            clear;
-            version
-            exit 0;
-        ;;
+            exit 0 ;;
+        -h | --help) Auin_help; exit 0 ;;
+        -v | -V | --version) clear; version; exit 0 ;;
     esac
 }
 
 # @Auins版本号，Stript Version
 function version(){    
-    echo -e "${wg}${Version}${h}"
-    echo -e "${wg}$(grep "archisolabel=" < "$entries" | grep -v grep | awk '{print $3}')${h}\n"
-    echo -e "${wa}Author:${h} Auroot/BaSierl"
-    echo -e "${rw}blog  :${h} www.auroot.cn"
-    echo -e "${wb}URL Gitee :${h} https://gitee.com/auroot/Auins.git"
-    
+    echo -e "
+${wg}${Version}${h}
+${wg}$(grep "archisolabel=" < "$entries" | grep -v grep | awk '{print $3}')${h}\n
+${wa}Author:${h} Auroot/BaSierl
+${rw}blog  :${h} www.auroot.cn
+${wb}URL Gitee :${h} https://gitee.com/auroot/Auins.git"
 }
-
 # @获取本机IP地址，并储存到$Auins_record， Network Variable
 function Ethernet_info(){    
     local Info_Nic
@@ -843,41 +821,28 @@ read -r principal_variable
 case ${principal_variable} in
     1) 
         bash "${Share_Dir}/Mirrorlist.sh"
-        bash "${0}"
-    ;;
+        bash "${0}" ;;
     2)
         echo -e "\n$w:: Checking the currently available network."; sleep 2;
         echo -e "$w:: Ethernet: ${r}${Ethernet_Name}${h}\n$w:: Wifi:   ${r}${Wifi_Name}${h}"
         printf "${PSG} ${y}Query Network: Ethernet[1] Wifi[2] Exit[3]? ${h}%s" "${JHB}"
         read -r wlink 
         case "$wlink" in
-            1) 
-                Configure_Ethernet
-            ;;
-            2) 
-                Configure_wifi
-            ;;
-            3) 
-                bash "${0}"
-            ;;
-        esac
-    ;;
-    3)
-        Open_SSH;
-    ;;
+            1) Configure_Ethernet ;;
+            2) Configure_wifi ;;
+            3) bash "${0}" ;;
+        esac ;;
+    3) Open_SSH ;;
     4)
         input_System_Module
         printf "${PSG} ${y} Please enter[1,2,21..] Exit[Q] ${h}%s" "${JHB}"
         read -r Tasks
         case ${Tasks} in
-            0) # chroot 
-                Auin_chroot; 
-            ;;
+            0) Auin_chroot ;;
             1) #磁盘分区
                 bash "${Share_Dir}/Partition.sh" "${Share_Dir}" "${Local_Dir}" 
                 sleep 1
-                bash "${0}" 
-            ;;
+                bash "${0}" ;;
             2) # 安装及配置系统文件
                 Root_partition=$(bash "${Share_Dir}/Edit_Database.sh" "${Local_Dir}" "_Read_" "_Info_" "Root_partition")    # 查 Root_partition
                 
