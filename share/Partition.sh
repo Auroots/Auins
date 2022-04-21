@@ -49,16 +49,10 @@ function Process_Management(){
     PM_Enter_1=${1}
     PM_Enter_2=${2}
     case ${PM_Enter_1} in
-        start)
-            bash "${Share_Dir}/Process_manage.sh" start "${PM_Enter_2}"
-        ;;
-        restart)
-            bash "${Share_Dir}/Process_manage.sh" restart "${PM_Enter_2}"
-        ;;
-        stop)
-            bash "${Share_Dir}/Process_manage.sh" stop "${PM_Enter_2}"
-            echo -e "\n\n${wg}---------Script Exit---------${h}"  
-        ;;
+        start)   bash "${Share_Dir}/Process_manage.sh" start "${PM_Enter_2}" ;;
+        restart) bash "${Share_Dir}/Process_manage.sh" restart "${PM_Enter_2}" ;;
+        stop)    bash "${Share_Dir}/Process_manage.sh" stop "${PM_Enter_2}"
+                 echo -e "\n\n${wg}---------Script Exit---------${h}"  ;;
     esac
 }
 # 磁盘分区
@@ -190,15 +184,9 @@ function Disk_Filesystem(){
     local Disk=$2
     # local Directory=$3
     case ${Options} in
-    1)
-        mkfs.ext2 "${Disk}"
-    ;;
-    2)
-        mkfs.ext3 "${Disk}"
-    ;;
-    3)
-        mkfs.ext4 "${Disk}"
-    ;;
+    1) mkfs.ext2 "${Disk}" ;;
+    2) mkfs.ext3 "${Disk}" ;;
+    3) mkfs.ext4 "${Disk}" ;;
     4)
         read_output=$(echo -e "\n$PSY ${g}Please enter the disk label. [Default: Data]${h} $JHG")
         read -rp "${read_output}" Disk_label
@@ -208,21 +196,11 @@ function Disk_Filesystem(){
             mkfs.btrfs -L "$Disk_label" -f "${Disk}"
         fi
     ;;
-    5)
-        mkfs.vfat "${Disk}"
-    ;;
-    6)
-        mkfs.f2fs "${Disk}"
-    ;;
-    7)
-        mkfs.jfs "${Disk}"
-    ;;
-    8)
-        ntfs-3g "${Disk}"
-    ;;
-    9)
-        mkfs.reiserfs "${Disk}"
-    ;;
+    5) mkfs.vfat "${Disk}" ;;
+    6) mkfs.f2fs "${Disk}" ;;
+    7) mkfs.jfs "${Disk}" ;;
+    8) ntfs-3g "${Disk}" ;;
+    9) mkfs.reiserfs "${Disk}" ;;
     esac
     # partition_facts _Open_mount_ "$Disk" "$Directory"
 }
@@ -260,28 +238,13 @@ EOF
     read_output=$(echo -e "$PSG ${g}Input directory. [home|usr|...]?${h} $JHG")
     read -rp "${read_output}" Options_mount_dir
     case ${Options_mount_dir} in
-    home | Home | HOME)
-        other_Format "/home";
-    ;;
-    usr | Usr | USR)
-        other_Format "/usr";
-    ;;
-    var | Var | VAR)
-        other_Format "/var";
-    ;;
-    opt | Opt | OPT)
-        other_Format "/opt";
-    ;;
-    etc | Etc | ETC)
-        other_Format "/etc";
-    ;;
-    Quit | quit | QUIT | exit | Exit | EXIT)
-        exit 0;
-        echo -e "${wg} ::==>> Partition complete. ${h}"  
-    ;;
-    *)  # 无退出，需修复
-        other_Format "${Options_mount_dir}";
-    ;;
+        home | Home | HOME) other_Format "/home" ;;
+        usr | Usr | USR) other_Format "/usr" ;;
+        var | Var | VAR) other_Format "/var" ;;
+        opt | Opt | OPT) other_Format "/opt" ;;
+        etc | Etc | ETC) other_Format "/etc" ;;
+        Quit | quit | QUIT | exit | Exit | EXIT) exit 0; echo -e "${wg} ::==>> Partition complete. ${h}" ;;
+        *)  other_Format "${Options_mount_dir}" ;;
     esac
     # 循环使用
     while [ "$Input_mount_dir" = "y" ] || [ "$Input_mount_dir" = "Y" ]

@@ -16,12 +16,8 @@ List_Parameter=${4}   # 头部参数
 List_Value=${5}       # 写入时使用，对 “头部参数” 设定值；
 
 case ${File_Options} in
-    _Conf_)  # Config List 
-        Specify="${Auins_Config}"
-;;
-    _Info_)  # Info List 
-        Specify="${Auins_record}"
-;;
+    _Conf_) Specify="${Auins_Config}" ;;
+    _Info_) Specify="${Auins_record}" ;;
 esac
 
 for i in {5..100}
@@ -32,13 +28,11 @@ do
         List_row=${i}
         case ${List_Operations} in
             _Read_)
-                sed -n "${List_row:-0}p" "${Specify}" | cut -d" " -f3 2>/dev/null
-                exit 0; # break;
+                sed -n "${List_row:-0}p" "${Specify}" | cut -d" " -f3 2>/dev/null; exit 0; 
         ;;
             _Write_)
                 format=" = "
-                sed -i "${List_row:-Not}c ${List_Parameter}${format}${List_Value}" "${Specify}" 2>/dev/null
-                exit 0; # break;
+                sed -i "${List_row:-Not}c ${List_Parameter}${format}${List_Value}" "${Specify}" 2>/dev/null; exit 0;
         ;;
         esac
     fi

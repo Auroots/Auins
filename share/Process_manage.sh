@@ -17,24 +17,15 @@ function Stript_Process_Management(){
     Exec_status="${1}"   # 启动 重启 停止
     Process_Path="${2}"  # 脚本 或者 进程
     case ${Exec_status} in
-    start)
-        bash "${Process_Path}"
-        echo -e "\033[1;33m${Process_Path}\033[1;32m has been Start.\033[0m"
-    ;;
-    restart)
-        Kill_Process "${Process_Path}"
-        bash "${Process_Path}"
-        echo -e "\033[1;33m${Process_Path}\033[1;32m has been Start.\033[0m"
-    ;;
-    stop)
-        Kill_Process "${Process_Path}"
-        echo -e "\033[1;33m${Process_Path}\033[1;32m has been Stopped.\033[0m"
-    ;;
-    *)
-        exit 1;
-    ;;
+        start)  bash "${Process_Path}"; echo -e "\033[1;33m${Process_Path}\033[1;32m has been Start.\033[0m" ;;
+        restart)
+            Kill_Process "${Process_Path}"
+            bash "${Process_Path}"
+            echo -e "\033[1;33m${Process_Path}\033[1;32m has been Start.\033[0m" ;;
+        stop) Kill_Process "${Process_Path}"; echo -e "\033[1;33m${Process_Path}\033[1;32m has been Stopped.\033[0m" ;;
+        *) exit 1 ;;
     esac    
 }
-# 
+
 clear;
 Stript_Process_Management "${1}" "${2}" # 1.状态 2.可执行文件

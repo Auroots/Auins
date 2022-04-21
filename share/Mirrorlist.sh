@@ -113,7 +113,7 @@ Include = /etc/pacman.d/mirrorlist
 [community]
 Include = /etc/pacman.d/mirrorlist
 
-# 如果要在x86_64系统上运行32位应用程序，
+# 如果要在x86_64系统上运行32位应用程序
 # 根据需要在此启用多库存储库。
 
 #[multilib-testing]
@@ -147,7 +147,7 @@ Server = https://mirrors.cloud.tencent.com/archlinuxcn/\$arch
 # SigLevel = Optional TrustAll            #可选信任
 # Server = https://arcolinux.github.io/arcolinux_repo_iso/\$arch
 
-# Arch4edu 是面向高校用户推出的非官方软件仓库， 支持 Arch Linux 和 Arch Linux ARM， 主要包含高校用户常用的科研、教学及开发软件。
+# Arch4edu 是面向高校用户推出的非官方软件仓库  支持 Arch Linux 和 Arch Linux ARM  主要包含高校用户常用的科研、教学及开发软件。
 # [arch4edu]  
 # SigLevel = TrustAll
 # Server = http://mirrors.tuna.tsinghua.edu.cn/arch4edu/\$arch

@@ -157,28 +157,15 @@ function main(){
     Set_Color_Variable
     # isExist
     case ${_Exec_status_} in
-        "start")
-            print_logs "$(start)";
-        ;;
-        "stop")
-            print_logs "$(stop)";
-        ;;
-        "stops")
-            print_logs "$(stop force)";
-        ;;
-        "status")
-            status
-        ;;
-        "restart")
-            print_logs "$(restart)";
-        ;;
-        *)
-            usage;
-        ;;
+        "start") print_logs "$(start)" ;;
+        "stop")  print_logs "$(stop)" ;;
+        "stops") print_logs "$(stop force)" ;;
+        "status") status ;;
+        "restart") print_logs "$(restart)" ;;
+        *) usage ;;
     esac   
 }
 
-# clear;
 main "${_Exec_status_}" # 1.状态 2.可执行文件
 
 

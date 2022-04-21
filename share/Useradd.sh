@@ -58,9 +58,7 @@ function Sudo_Config(){
         whiptail --title "Configure Sudoers." --msgbox "Has been skipped. [X]" 10 60   # 跳过设置sudo
     fi
 }
-
 # -------- START -------- #
-
 # Auins_Config={2}  # Configure file
 # 该死的颜色
     y='\033[1;33m'  #---黄
