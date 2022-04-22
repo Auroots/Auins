@@ -1,20 +1,37 @@
 #!/bin/bash
 # Author: Auroot
 # QQ： 2763833502
-# Description： Configure useradd -> auin V4.3
+# Description： Configure useradd -> auin V4.3.5
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
-# bash "${Share_Dir}/Useradd.sh" "${Local_Dir}" "${Share_Dir}"
+# bash "${Share_Dir}/Useradd.sh" "config" "info";
 # set -xe
-Local_Dir=${1}
-Share_Dir=${2}
+Auins_Config=${1}
+Auins_record=${2}
+
 function S_LINE(){
     sed -n -e '/# %wheel ALL=(ALL) NOPASSWD: ALL/=' /etc/sudoers
 }
-
+# @读取文件 install.conf（默认）  auins.info（INFO）
+function Read_Config(){ 
+    # 头部参数 $1 , 地址 $2（如果是查install.conf，可以不用写）（如果是auins.info，必须写INFO） Read_Config "Disk" "INFO"
+    if [[ $2 == "INFO" ]]; then
+        local Files="$Auins_record"
+    else
+        local Files="${Auins_Config}"
+    fi 
+    grep -w "${1}" < "${Files}" | awk -F "=" '{print $2}'; 
+}
+# @写入信息文件 local/auins.info
+function Write_Data(){
+    # 头部参数 $1 , 修改内容 $2    
+    format=" = "
+    List_row=$(grep -nw "${1}" < "${Auins_record}" | awk -F ":" '{print $1}';)
+    sed -i "${List_row:-Not}c ${1}${format}${2}" "${Auins_record}" 2>/dev/null
+}
 function Useradd_Config(){
-PASSWORD_TYPED="false"
+    PASSWORD_TYPED="false"
     while [ "$PASSWORD_TYPED" != "true" ]; do
         UserPassword=$(whiptail --title "ArchLinux - Password" --passwordbox "Enter User Password and choose Ok to continue." 10 60 3>&1 1>&2 2>&3) # 设置密码
         UserPassword_retype=$(whiptail --title "ArchLinux - Password" --passwordbox "Again Enter User Password and choose Ok to continue." 10 60 3>&1 1>&2 2>&3) # 设置密码
@@ -28,9 +45,9 @@ PASSWORD_TYPED="false"
         fi
     done
     UserID=$(id "${UserName}" | cut -d"=" -f2 | cut -d"(" -f1)
-    bash "${Share_Dir}/Edit_Database.sh" "${Local_Dir}" "_Write_" "_Info_" "Users" "${UserName}"
-    bash "${Share_Dir}/Edit_Database.sh" "${Local_Dir}" "_Write_" "_Info_" "UsersID" "${UserID}"
-    bash "${Share_Dir}/Edit_Database.sh" "${Local_Dir}" "_Write_" "_Info_" "User_Password" "${UserPassword}"
+    Write_Data "Users" "${UserName}"
+    Write_Data "UsersID" "${UserID}"
+    Write_Data "User_Password" "${UserPassword}"
 }
 function Root_password_Config(){
     ROOT_PASSWORD_TYPED="false"
@@ -45,7 +62,7 @@ function Root_password_Config(){
             whiptail --title "Configure Root Password." --msgbox "Root password don't match. Please, type again. [X]" 10 60    # 输入两次错误，返回信息
         fi
     done
-    bash "${Share_Dir}/Edit_Database.sh" "${Local_Dir}" "_Write_" "_Info_" "Root_Password" "${RootPassword_retype}"
+    Write_Data "Root_Password" "${RootPassword_retype}"
 }
 function Sudo_Config(){
     if (whiptail --title "Configure Sudoers. Yes/No" --yesno "Auto Configure Sudoers." 10 60); then
@@ -66,9 +83,8 @@ function Sudo_Config(){
     h='\033[0m'
     PSY=$(echo -e "${y} ::==>${h}") 
 
-Root_Password=$(bash "${Share_Dir}/Edit_Database.sh" "${Local_Dir}" "_Read_" "_Info_" "Root_Password")
-UserName=$(bash "${Share_Dir}/Edit_Database.sh" "${Local_Dir}" "_Read_" "_Info_" "Users") 
-
+Root_Password=$(Read_Config "Root_Password" "INFO")
+UserName=$(Read_Config "Users" "INFO") 
 if [ "$Root_Password" = "" ]; then
     UserName=$(whiptail --title "ArchLinux - UserName" --inputbox "Enter UserName:" 10 60  3>&1 1>&2 2>&3)  # 输入用户名
     Useradd_Config

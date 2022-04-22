@@ -3,13 +3,13 @@
 # 此列表仅供管理员使用。以免泄露隐私！
 # This list is for administrators only. So as not to reveal privacy !!!
 
-Archiso_Version_check =
-CPU_Name =
+Archiso_Version_check = 
+CPU_Name = 
 CPU_Vendor = 
-LinuxKernel = dwadwad dawd
-Ethernet_ip =
+LinuxKernel = 
+Ethernet_ip = 
 Wifi_ip =
-Patterns =
+Patterns = Chroot-OFF
 Disk =
 Boot_Type =
 Disk_Type =
@@ -17,7 +17,7 @@ Boot_partition =
 Root_partition =
 Swap_file =
 Swap_size =
-Virtualization =
+Virtualization = 
 Desktop_Env =
 Desktop_Mg =
 UsersID = 

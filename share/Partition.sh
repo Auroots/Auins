@@ -6,12 +6,31 @@
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
 echo &>/dev/null
+# bash "${Share_Dir}/Partition.sh" "config" "info";
+Auins_Config=${1}
+Auins_record=${2}
 
-# bash "${Share_Dir}/Partition.sh" "${Share_Dir}" "${Local_Dir}"
+Auins_Dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd )
+[ "$Auins_Dir" = "/" ] && Auins_Dir=""
+Share_Dir="${Auins_Dir}/share"
 
-# initialization
-Share_Dir=${1}
-Local_Dir=${2}
+# @读取文件 install.conf（默认）  auins.info（INFO）
+function Read_Config(){ 
+    # 头部参数 $1 , 地址 $2（如果是查install.conf，可以不用写）（如果是auins.info，必须写INFO） Read_Config "Disk" "INFO"
+    if [[ $2 == "INFO" ]]; then
+        local Files="$Auins_record"
+    else
+        local Files="${Auins_Config}"
+    fi 
+    grep -w "${1}" < "${Files}" | awk -F "=" '{print $2}'; 
+}
+# @写入信息文件 local/auins.info
+function Write_Data(){
+    # 头部参数 $1 , 修改内容 $2    
+    format=" = "
+    List_row=$(grep -nw "${1}" < "${Auins_record}" | awk -F ":" '{print $1}';)
+    sed -i "${List_row:-Not}c ${1}${format}${2}" "${Auins_record}" 2>/dev/null
+}
 
 function facts(){
 # Colour
@@ -27,8 +46,6 @@ function facts(){
     PSR=$(echo -e "${r} ::==>${h}")
     PSG=$(echo -e "${g} ::==>${h}")
     PSY=$(echo -e "${y} ::==>${h}")
-
-
 # Detect boot
     if [ -d /sys/firmware/efi ]; then
         Boot_Type="Uefi"
@@ -37,8 +54,8 @@ function facts(){
         Boot_Type="Boot"
         Disk_Type="dos"
     fi
-        bash "${Share_Dir}/Edit_Database.sh" "${Local_Dir}" "_Write_" "_Info_" "Boot_Type" "${Boot_Type}"
-        bash "${Share_Dir}/Edit_Database.sh" "${Local_Dir}" "_Write_" "_Info_" "Disk_Type" "${Disk_Type}"
+        Write_Data "Boot_Type" "${Boot_Type}"
+        Write_Data "Disk_Type" "${Disk_Type}"
     System_Root="/mnt"
 }
 
@@ -48,6 +65,7 @@ showDisk(){ echo; lsblk -o+UUID | grep -E "sd..|vd..|nvme|mmc"; }
 function Process_Management(){
     PM_Enter_1=${1}
     PM_Enter_2=${2}
+    
     case ${PM_Enter_1} in
         start)   bash "${Share_Dir}/Process_manage.sh" start "${PM_Enter_2}" ;;
         restart) bash "${Share_Dir}/Process_manage.sh" restart "${PM_Enter_2}" ;;
@@ -85,8 +103,7 @@ function partition_facts(){
                 State="true"
             else
                 State="false"
-            fi
-        ;;
+            fi ;;
         _partition_root_)  # Detection partition
             State="false"
             if echo "${diskName}" | cut -d"/" -f3 | grep -E "^[a-z]d[a-z][1-9]|^nvme*|^mmc*" &>/dev/null  ; then
@@ -94,8 +111,7 @@ function partition_facts(){
                 State="true"
             else
                 State="false"
-            fi
-        ;;
+            fi ;;
         _Disk_Type_)  # Detect disk type
             if ! fdisk -l /dev/"$userinput_disk" | grep "Disklabel type:" ; then
                 user_Disk_Type="false"
@@ -107,16 +123,14 @@ function partition_facts(){
                 user_Disk_Type="sgi"
             elif fdisk -l /dev/"$userinput_disk" | grep "sun" ; then
                 user_Disk_Type="sun"
-            fi
-        ;;
+            fi ;;
         _Open_mount_)  # Mount partition
             if ! mountpoint -q "$mountDir" ; then  # /proc/self/mountinfo
                 mount "$diskName" "$mountDir"
             else
                 umount -R "$mountDir" &>/dev/null
                 mount "$diskName" "$mountDir"
-            fi
-        ;;
+            fi ;;
     esac
 }
 
@@ -198,11 +212,10 @@ function Disk_Filesystem(){
     ;;
     5) mkfs.vfat "${Disk}" ;;
     6) mkfs.f2fs "${Disk}" ;;
-    7) mkfs.jfs "${Disk}" ;;
-    8) ntfs-3g "${Disk}" ;;
+    7) mkfs.jfs "${Disk}"  ;;
+    8) ntfs-3g "${Disk}"   ;;
     9) mkfs.reiserfs "${Disk}" ;;
     esac
-    # partition_facts _Open_mount_ "$Disk" "$Directory"
 }
 
 #其他分区
@@ -228,13 +241,12 @@ function partition_other(){
         echo -e "${wg} ::==>> Partition complete. ${h}"  
     ;;
     esac
-    echo -e "${g}\t    Mount directory${h}"
-    cat << EOF
---------------------------------------
-| home | opt | usr | var | etc | /... |
-======================================
-# User defined directory, please enter absolute address.
-EOF
+    echo -e "${g}\n\tMount directory${h} 
+-------------------------------------- 
+| home | opt | usr | var | etc | /... | 
+====================================== 
+# User defined directory, please enter absolute address."
+
     read_output=$(echo -e "$PSG ${g}Input directory. [home|usr|...]?${h} $JHG")
     read -rp "${read_output}" Options_mount_dir
     case ${Options_mount_dir} in
@@ -279,7 +291,7 @@ function Format_mount(){
 function partition_root(){
     umount -R ${System_Root}* 2>/dev/null
     Format_mount ${System_Root} "root(/)"
-    bash "${Share_Dir}/Edit_Database.sh" "${Local_Dir}" "_Write_" "_Info_" "Root_partition" "/dev/$userinput_disk"
+    Write_Data "Root_partition" "/dev/$userinput_disk"
     # "$Directory" 变量来自 (Format_mount /mnt "root(/)")函数
     partition_facts _Open_mount_ "/dev/$userinput_disk" "$Directory"
     unset Directory;
@@ -300,8 +312,7 @@ function partition_booting(){
             fi
             Format_mount "${Boot_Dir}" 
             partition_facts _Open_mount_ "/dev/$userinput_disk" ${Boot_Dir}
-
-            bash "${Share_Dir}/Edit_Database.sh" "${Local_Dir}" "_Write_" "_Info_" "Boot_partition" "/dev/$userinput_disk"
+            Write_Data "Boot_partition" "/dev/$userinput_disk"
 }
 
 # 格式化并挂载虚拟的Swap分区，可自定义大小
@@ -313,8 +324,7 @@ function partition_swap(){
     case ${input_swap_size} in
         [Nn]* )
             echo -e "${wg} ::==>> Partition complete. ${h}"  
-            sleep 1;
-        ;;
+            sleep 1 ;;
         * )
             if echo "$input_swap_size" | grep -E "^[0-9]*[A-Z]$" &>/dev/null ; then
                 echo -e "${PSG} ${g}Assigned Swap file Size: ${input_swap_size} .${h}"
@@ -323,14 +333,13 @@ function partition_swap(){
                 mkswap /mnt/swapfile 
                 swapon /mnt/swapfile 
                 
-                bash "${Share_Dir}/Edit_Database.sh" "${Local_Dir}" "_Write_" "_Info_" "Swap_file" "/mnt/swapfile"
-                bash "${Share_Dir}/Edit_Database.sh" "${Local_Dir}" "_Write_" "_Info_" "Swap_size" "${input_swap_size}"
+                Write_Data "Swap_file" "/mnt/swapfile"
+                Write_Data "Swap_size" "${input_swap_size}"
             else
                 echo -e "\n${PSY} ${y}Skip create a swap file.${h}"  
                 sleep 1;
                 echo;
-            fi
-        ;;
+            fi ;;
     esac 
 }
 clear;

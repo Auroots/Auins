@@ -7,7 +7,7 @@
 
 echo &>/dev/null
 function Script_init_Variable(){
-    Version="ArchLinux user installation scripts V4.3.5" 
+    Version="ArchLinux user install scripts V4.3.5" 
     Auins_Dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd )
     [ "$Auins_Dir" = "/" ] && Auins_Dir=""
     Share_Dir="${Auins_Dir}/share" 
@@ -24,45 +24,44 @@ function Script_init_Variable(){
     Auins_Share="${Auins_Home}/share"
     Auins_Local="${Auins_Home}/local"
 }
+# @读取文件 install.conf（默认）  auins.info（INFO）
 function Read_Config(){ 
-    # 头部参数 $1 , 地址 $2（如果是查install.conf，可以不用写）（如果是auins.info，必须写INFO）  
+    # 头部参数 $1 , 地址 $2（如果是查install.conf，可以不用写）（如果是auins.info，必须写INFO） Read_Config "Disk" "INFO"
     if [[ $2 == "INFO" ]]; then
         local Files="$Auins_record"
     else
         local Files="${Auins_Config}"
     fi 
-    grep -w "${1}" < ${Files} | awk -F "=" '{print $2}'; 
+    grep -w "${1}" < "${Files}" | awk -F "=" '{print $2}'; 
 }
 # @写入信息文件 local/auins.info
 function Write_Data(){
     # 头部参数 $1 , 修改内容 $2    
     format=" = "
-    List_row=$(grep -nw "${1}" < ${Auins_record} | awk -F ":" '{print $1}';)
+    List_row=$(grep -nw "${1}" < "${Auins_record}" | awk -F ":" '{print $1}';)
     sed -i "${List_row:-Not}c ${1}${format}${2}" "${Auins_record}" 2>/dev/null
 }
 function Printf_Info(){
     function Logos(){
-        echo -e "
-${white}          _             _       _     _                     ${suffix}
-${green}         / \   _ __ ___| |__   | |   (_)_ __  _   ___  __   ${suffix}
-${blue}        / _ \ | '__/ __| '_ \  | |   | | '_ \| | | \ \/ /    ${suffix}
-${yellow}       / ___ \| | | (__| | | | | |___| | | | | |_| |>  <   ${suffix}
-${red}      /_/   \_\_|  \___|_| |_| |_____|_|_| |_|\__,_/_/\_\     ${suffix}
+        clear; echo -e "
+${white}        _             _       _     _                     ${suffix}
+${green}       / \   _ __ ___| |__   | |   (_)_ __  _   ___  __   ${suffix}
+${blue}      / _ \ | '__/ __| '_ \  | |   | | '_ \| | | \ \/ /    ${suffix}
+${yellow}     / ___ \| | | (__| | | | | |___| | | | | |_| |>  <   ${suffix}
+${red}    /_/   \_\_|  \___|_| |_| |_____|_|_| |_|\__,_/_/\_\     ${suffix}
+${red}------------------------------------------------------------ ${suffix}
+${green} Script Name: ${Version}.                               ${suffix}
+${green} Patterns:    ${ChrootPatterns}                         ${suffix}
+${green} Ethernet:    ${blue}${Ethernet_ip:-No_network.} ${red}- ${white}[${green}${Ethernet_Name:-No}${white}]${suffix}
+${green} WIFI:        ${blue}${Wifi_ip:-No_network.} ${red}- ${white}[${green}${Wifi_Name:-No}${white}] ${suffix}
+${green} SSH:         ${white}ssh ${blue}$USER@${blue}${Ethernet_ip:-${Wifi_ip}}${suffix}
+${red}============================================================${suffix}
 
-${blue}||============================================================|| ${suffix}
-${blue}|| Script Name:    ${Version}.                                   ${suffix}
-${green}|| Patterns:        ${ChrootPatterns}                           ${suffix}
-${green}|| Ethernet:       ${Ethernet_ip:-No_network..} - [${Ethernet_Name:- }]${suffix}
-${green}|| WIFI:           ${Wifi_ip:-No_network.} - [${Wifi_Name:-No}] ${suffix}
-${green}|| SSH:            ssh $USER@${Ethernet_ip:-IP_Addess.}         ${suffix}
-${green}|| SSH:            ssh $USER@${Wifi_ip:-IP_Addess.}             ${suffix}
-${green}||============================================================||${suffix}
-
-${outB} ${green}Configure Mirrorlist   [1]${suffix}
-${outB} ${green}Configure Network      [2]${suffix}
-${outG} ${green}Configure SSH          [3]${suffix}
-${outY} ${green}Install System         [4]${suffix}
-${outG} ${green}Exit Script            [Q]${suffix}"
+${outB} \t${green}Configure Mirrorlist   ${white}[${blue}1${white}]${suffix}
+${outB} \t${green}Configure Network      ${white}[${blue}2${white}]${suffix}
+${outG} \t${green}Configure SSH          ${white}[${blue}3${white}]${suffix}
+${outY} \t${green}Install System         ${white}[${blue}4${white}]${suffix}
+${outG} \t${green}Exit Script            ${white}[${red}Q${white}]${suffix}"
 }
     # @Auins的帮助文档 Auin_help
     function usage() {
@@ -107,11 +106,10 @@ ${outB} ${green}   Gnome.          ${white}[2]  ${white}default: gdm    ${suffix
 ${outB} ${green}   Deepin.         ${blue}[3]  ${blue}default: lightdm  ${suffix}  
 ${outB} ${green}   Xfce4.          ${white}[4]  ${white}default: lightdm${suffix}
 ${outB} ${green}   i3wm.           ${blue}[5]  ${blue}default: sddm     ${suffix}
-${outB} ${green}   i3gaps.         ${white}[6]  ${white}default: lightdm${suffix}
-${outB} ${green}   lxde.           ${blue}[7]  ${blue}default: lxdm     ${suffix}
-${outB} ${green}   Cinnamon.       ${white}[8]  ${white}default: lightdm${suffix}
-${outB} ${green}   Mate.           ${blue}[9]  ${blue}default: lightdm  ${suffix}
-${outB} ${green}   Openbox.        ${blue}[10] ${blue}default: sddm     ${suffix}
+${outB} ${green}   lxde.           ${blue}[6]  ${blue}default: lxdm     ${suffix}
+${outB} ${green}   Cinnamon.       ${white}[7]  ${white}default: lightdm${suffix}
+${outB} ${green}   Mate.           ${blue}[8]  ${blue}default: lightdm  ${suffix}
+${outB} ${green}   Openbox.        ${blue}[9] ${blue}default: sddm     ${suffix}
 ------------------------------------------------\n"                       
 }
     # Printf_Info
@@ -144,10 +142,10 @@ function Set_Color_Variable(){
     # inY=$(echo -e "${yellow}-=>${suffix} ")
     #-----------------------------
     # 提示 蓝 红 绿 黄
-    outB=$(echo -e "${blue} ::==>${suffix}")
-    outR=$(echo -e "${red} ::==>${suffix}")
-    outG=$(echo -e "${green} ::==>${suffix}")
-    outY=$(echo -e "${yellow} ::==>${suffix}")
+    outB=$(echo -e "${white}::${blue} =>${suffix}")
+    outR=$(echo -e "${white}::${red} =>${suffix}")
+    outG=$(echo -e "${white}::${green} =>${suffix}")
+    outY=$(echo -e "${white}::${yellow} =>${suffix}")
 }
 # @脚本自检
 function Script_init(){
@@ -248,12 +246,12 @@ function Ethernet(){
 function Open_SSH(){    
     echo -e "\n
 ${yellow}:: Setting SSH Username / password.              ${suffix}
-${USER}:$(Read_Config "Password_live") | chpasswd &>/dev/null 
+${USER}:$(Read_Config "Password_live_ssh") | chpasswd &>/dev/null 
 ${green} ---------------------------------                ${suffix}
 ${green}    $ ssh $USER@${Ethernet_ip:-IP_Addess..}       ${suffix}
 ${green}    $ ssh $USER@${Wifi_ip:-IP_Addess..}           ${suffix}
 ${green}    Username --=>  $USER                          ${suffix}
-${green}    Password --=>  $(Read_Config "Password_live") ${suffix}
+${green}    Password --=>  $(Read_Config "Password_live_ssh") ${suffix}
 ${green} =================================                ${suffix}"
     systemctl start sshd.service 
     netstat -antp | grep sshd 
@@ -276,7 +274,7 @@ function ConfigurePassworld(){
             fi
         done
         if [ "${CheckingUsers}" = "" ]; then
-            bash "${Share_Dir}/Useradd.sh" "${Local_Dir}" "${Share_Dir}"; sleep 1;
+            bash "${Share_Dir}/Useradd.sh" "${Auins_Config}" "${Auins_record}"; sleep 1;
         fi
     else
         printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}." "${CheckingUsers}" "${UserID}"
@@ -373,15 +371,13 @@ function Set_Desktop_Env(){
             DmS="lightdm" ;;
         5)  Install_DesktopEnv i3wm i3 "$(Read_Config P_i3wm)"
             DmS="sddm" ;;
-        6)  Install_DesktopEnv i3gaps i3 "$(Read_Config P_i3gaps)"
-            DmS="lightdm" ;;
-        7)  Install_DesktopEnv lxde startlxde "$(Read_Config P_lxde)"
+        6)  Install_DesktopEnv lxde startlxde "$(Read_Config P_lxde)"
             DmS="lxdm" ;;
-        8)  Install_DesktopEnv cinnamon cinnamon-session "$(Read_Config P_cinnamon)"
+        7)  Install_DesktopEnv cinnamon cinnamon-session "$(Read_Config P_cinnamon)"
             DmS="lightdm" ;;
-        9)  Install_DesktopEnv mate mate "$(Read_Config P_mate)"
+        8)  Install_DesktopEnv mate mate "$(Read_Config P_mate)"
             DmS="lightdm" ;;
-        10)  
+        9)  
             function openboxManger(){
                 local openboxDir openboxTheme
                 Desktop_Env_Config "openbox" "openbox-session" #  $1 # Desktop name $2 xinitrc "exec desktop"
@@ -670,7 +666,7 @@ case ${principal_variable} in
         case ${Tasks} in
             0) Auin_chroot ;;
             1) #磁盘分区
-                bash "${Share_Dir}/Partition.sh" "${Share_Dir}" "${Local_Dir}" 
+                bash "${Share_Dir}/Partition.sh" "${Auins_Config}" "${Auins_record}";
                 sleep 1; bash "${0}" ;;
             2) # 安装及配置系统文件
                 Root_partition=$(Read_Config "Root_partition" "INFO")  
@@ -700,6 +696,7 @@ ${wg}#======================================================#${suffix}"
                     #---------------------------------------------------------------------------#
                     Install_Program "$(Read_Config P_common)"
                     Install_Program "$(Read_Config P_fs)" 
+                    Install_Program "$(Read_Config Package_USER)" 
                     Install_Font  
 echo -e "
 ${ws}#======================================================#${suffix}

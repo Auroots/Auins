@@ -28,12 +28,10 @@ do
         List_row=${i}
         case ${List_Operations} in
             _Read_)
-                sed -n "${List_row:-0}p" "${Specify}" | cut -d" " -f3 2>/dev/null; exit 0; 
-        ;;
+                sed -n "${List_row:-0}p" "${Specify}" | cut -d" " -f3 2>/dev/null; exit 0 ;;
             _Write_)
                 format=" = "
-                sed -i "${List_row:-Not}c ${List_Parameter}${format}${List_Value}" "${Specify}" 2>/dev/null; exit 0;
-        ;;
+                sed -i "${List_row:-Not}c ${List_Parameter}${format}${List_Value}" "${Specify}" 2>/dev/null; exit 0 ;;
         esac
     fi
 done
