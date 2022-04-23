@@ -4,8 +4,8 @@
 # This list is for administrators only. So as not to reveal privacy !!!
 
 Archiso_Version_check = 
-CPU_Name = 
-CPU_Vendor = 
+CPU_Name = i7-4790K
+CPU_Vendor = intel
 LinuxKernel = 
 Ethernet_ip = 
 Wifi_ip =

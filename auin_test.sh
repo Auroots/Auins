@@ -42,7 +42,7 @@ function Write_Data(){
     sed -i "${List_row:-Not}c ${1}${format}${2}" "${Auins_record}" 2>/dev/null
 }
 function Printf_Info(){
-    function Logos(){
+    function logos(){
         clear; echo -e "
 ${white}        _             _       _     _                     ${suffix}
 ${green}       / \   _ __ ___| |__   | |   (_)_ __  _   ___  __   ${suffix}
@@ -78,7 +78,7 @@ ${outG} \t${green}Exit Script            ${white}[${red}Q${white}]${suffix}"
     :: Auins is a script for ArchLinux installation and deployment."
 }
     # @Auins版本号，Stript Version
-    function Version(){    
+    function version(){    
         echo -e "${wg}${Version}${suffix}"
         echo -e "${wg}$(grep "archisolabel=" < "$entries" | grep -v grep | awk '{print $3}')${suffix}\n"
     }
@@ -114,10 +114,11 @@ ${outB} ${green}   Openbox.        ${blue}[9] ${blue}default: sddm     ${suffix}
 }
     # Printf_Info
     case ${1} in
-        "Logos") Logos ;;
+        "logos") logos ;;
         "usage") usage ;;
-        "Version") Version ;;
+        "version") version ;;
         "input_System_Module") input_System_Module ;; 
+        "input_Desktop_env") input_Desktop_env ;; 
     esac
 }
 # @脚本颜色变量
@@ -192,8 +193,8 @@ function Auin_Options(){
         -s  | --openssh) Ethernet_info; Open_SSH; exit 0 ;;
         -vm | --virtual) install_virtualization_service ;;
         -i  | --info)    clear; cat "${Auins_record}"; exit 0 ;;
-        -h  | --help)    Auin_help; exit 0 ;;
-        -v  | --version) clear; version; exit 0 ;;
+        -h  | --help)    Printf_Info usage; exit 0 ;;
+        -v  | --version) clear; Printf_Info version; exit 0 ;;
     esac
 }
 # @网络部分集合
@@ -356,7 +357,7 @@ function Install_DesktopEnv(){
 }
 # @选择桌面环境
 function Set_Desktop_Env(){
-    input_Desktop_env
+    Printf_Info input_Desktop_env;
     DESKTOP_ID="0"  
     printf "${outG} ${yellow} Please select desktop:${suffix} %s" "${inB}"
     read -rp DESKTOP_ID
@@ -637,12 +638,11 @@ if [ ! -d "${Share_Dir}" ]; then mkdir -p "${Share_Dir}"; fi
 
 Update_Share        
 Script_init         
-Set_System_Variable  
 Auin_Options "${1}"  
 Ethernet INFO       
 if [ "${ChrootPatterns}" = "Chroot-ON" ]; then ChrootPatterns="${green}Chroot-ON${suffix}"; else ChrootPatterns="${red}Chroot-OFF${suffix}"; fi
 # 
-Printf_Info Logos;   
+Printf_Info logos;   
 printf "\n${outG} ${yellow} Please enter[1,2,3..] Exit[Q]${suffix} %s" "${inB}"
 read -r principal_variable 
 case ${principal_variable} in
