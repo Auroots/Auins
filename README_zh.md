@@ -4,7 +4,7 @@
   <br>
 </h1>
 <p align="center">
-  <a href="https://github.com/Auroots/Auins/blob/main/README_zh.md">
+  <a href="https://jq.qq.com/?_wv=1027&k=yASMQyjM">
       <img src="https://img.shields.io/badge/Language-chinese-brightgreen?style=flat-square&logo=appveyor">
   </a><a href="https://github.com/Auroots/Auins/blob/main/README.md">
       <img src="https://img.shields.io/badge/Language-english-brightgreen?style=flat-square&logo=appveyor">
@@ -18,7 +18,7 @@
   </a>
 </p>
 <h1 align="center">
-  <a href="https://github.com/Auroots/Auins" alt="logo" ><img src="https://github.com/Auroots/Auins/raw/main/local/Auins.png" width="1000"/></a>
+  <a href="https://github.com/Auroots/Auins" alt="logo" ><img src="https://gitee.com/auroot/Auins/raw/master/local/Auins.png" width="1000"/></a>
   <br>
 </h1>
 <h3>
