@@ -83,9 +83,9 @@ usage: auin_test.sh [-h] [-V] command ...
 ###  📃 next release v4.3.5 what to update ？
 
 - [x] ⚙️ Expand `install.conf` interface.
-- [ ] 🗔 Add `Dwm`.
-- [ ] 🗔 Add `Wayland` support.
-- [ ] 🔗 Add Automatically check information such as network, network speed, disk, environment, service, etc.
+- [ ] 🗔 Add `dwm`.
+- [ ] 🗔 Add `wayland` support.
+- [ ] 🔗 Add Automatically check information such as network, Netspeed, disk, hardware, service, etc.
 - [ ] ☁️  Add Install archlinux on VPS.
 
 ## :sparkles: Features  [Desktop renderings](https://gitee.com/auroot/Auins/blob/master/doc/Picture.md)
@@ -94,10 +94,10 @@ usage: auin_test.sh [-h] [-V] command ...
 - [x] 🔗 Script homepage shows `IP address`，Tip: Connect SSH service command.
 - [x] 🔗 One-click configuration `SSH service`, `mirror` source.
 - [x] 🔗（<font color='blue'>To be optimised </font>）Network configuration: `WIFI`、`Ethernet`.
-- [x] 📦  `auin.sh -vm`  Install the corresponding virtualization toolkit according to your hardware `[virtualbox/vmware]`.
+- [x] 📦  `auin.sh -vm`  according to your hardware installation `virtualbox` or `vmware-tools`.
 - [x] 🙎 Automatically configure common users and permissions.
 - [x] 🖴  File system：`ext2/3/4`、`btrfs`、`jfs`、`vfat`、`ntfs-3g`、`f2fs`、`reiserfs`.
-- [x] 🗔  Desktop environment：`Plasma(Min)` `Gnome` `Deepin` `Xfce` `mate` `lxde` `Cinnamon` `i3wm` `Openbox(slim)` `Dwn(待续)`.
+- [x] 🗔  Desktop environment：`Plasma(Min)` `Gnome` `Deepin` `Xfce` `mate` `lxde` `Cinnamon` `i3wm` `Openbox(slim)` .
 - [x] 🗔  Desktop Manager：`sddm` `gdm` `lightdm` `lxdm`, can be chosen arbitrarily.
 - [x] 💻（<font color='blue'>To be optimised </font>）Automatic configuration of I/O, audio, bluetooth；
 - [x] 💻（<font color='blue'>To be optimised </font>）Optional install `Intel` `AMD` `Nvidia`.
