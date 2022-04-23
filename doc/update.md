@@ -1,77 +1,68 @@
-## Auins 脚本更新日志
-- [**2021.11.16**]  v4.3更新说明 新增与改进：
-    1. 脚本：对部分文件及目录重新划分；
-    2. 脚本：将“分区”分割到外置模块中；
-    3. 脚本：新增脚本Edit_Database（改/查信息表），未来可能会新增配置表;
-    4. 内核：可选择安装`Linux`或`Linux-lts`；
-    5. 磁盘：可以进行多目录自定义分区；
-    6. 磁盘：新增文件系统格式：`ext2/3/4`、`btrfs`、`jfs`、`vfat`、`ntfs-3g`、`f2fs`、`reiserfs`;
-    7. 修复各种Bug，对语法进一步优化；
+## Auins Script update log
 
-- [**2021.07.2**]  v4.2.1 更新说明 新增与改进：
-    1. 新增脚本记录信息查询，记录文件：`./Temp_Data/auin.list`;
-    2. 对脚本补充了一些注释;
-    3. 在2021.07.01镜像上测试，修复一些功能错误;
-- [**2021.03.20**]  v4.2 更新说明 新增与改进：
-    1. 关闭日志功能;
-    2. 优化bash语法;
-    3. `Temp_Data/auin.list` 中新增系统信息;
-    4. 二级菜单(4) 重新排列顺序;
-    5. 新增桌面环境: `Openbox`;
-    6. 新增美化配置: `openbox`，`rxvt-unicode`，`slim`;
-    7. 新增只对`Openbox`开放的`slim`桌面管理器;
-- [**2021.02.08**]  v4.1.1 更新说明 新增与改进;
-    1. 系统配置(4->23) 解决boot无法成功引导的问题;
-    2. 修复语法错误;
-- [**2020.12.23**]  v4.1.0 更新说明 新增与改进：
-    1. deepin 桌面配置 某.conf 配置时 无法找到文件;
-    2. 磁盘类型转换 必须输入y/n 按任意键：默认自动转换对应类型；
-    3. 系统安装(4->2)   需挂载根分区后，即可执行;
-    4. 桌面安装(4->22) 需设置普通用户后，即可执行;
-    5. 系统配置(4->23)   需系统安装后，即可执行;
-    6. 修复语法错误;
-- [**2020.12.16**]  v4.0.5 更新说明 新增与改进：
-    1. 解决无法创建用户的问题(感谢@HelloDream 提交issues);
-    2. 解决输入两次密码自动退出的问题；
-    3. 脚本选项输入“shell”或“s”进入临时终端，可输入常用命令(经测试：cd 无法跳转目录);
-    4. 新增脚本进程管理模块: “Module/Process_manage.sh”;
-    5. 去除模块: “Module/setting_xinitrc.sh” 整合至auin.sh;
-    6. 停用模块: “Wifi_Connect.sh”;
-    7. 优化部分语法;
-- [**2020.12.11**]  v4.0.4 更新说明 新增与改进：
-    1. 稍微改动了首页面板;
-    2. 重新编写抓取方式网卡与IP，更精确；
-    3. auin.sh -vm 可根据硬件信息，安装与之对应的虚拟化工具包 [virtualbox/vmware];
-    4. 磁盘分区前提示是否转换磁盘类型: gpt(Uefi) / dos(Bios);
-    5. 新增桌面环境：i3gaps、mate;
-    6. 可根据硬件信息，安装与之对应CPU微码；
-    7. 更新模块“useradd.sh” 
-- [**2020.12.3**]  v4.0.3 更新说明 新增与改进：
-    1. v4.0.3 呢？ 不好意思，内部消化;
-    2. 目前只有我自己在做，所以过小的更新就懒得上传了；
-    3. 大更新，会慢很多，一般都是一边测试，一边添加新功能，和改进；
-    4. Bug，有时越改越多...
-- [**2020.11.29**]  v4.0.2 更新说明 新增与改进：
-    1. 解决一些小bug；
-    2. 添加提示：分区前提示当前引导模式并提示选择什么分区表(gpt/boot);
-    3. 添加功能：选项4(Install System Module) -> Installation VM-tools. 配置vm-tools
-    4. 选项中添加： -vm Install Vmware Tools and exit. 
-- [**2020.11.28**]  v4.0.1 更新说明 新增与改进：
-    1. 修复安装xfce无法进入lightdm的问题；
-    2. 重新整理了语法；
-    3. 更新了驱动包；
-- [**2020-11-21**] v4.0 更新说明 新增与改进：
-    1. 脚本日志 保存日志地址: ```Temp_Data/Arch_install.log```；
-    2. 重新设计了大部分代码（如有bug可加我qq或者Issues，提醒我哟！）
-    3. 解决了Nvme固态硬盘无法匹配的问题；
-    4. 选项的方式，完成单个任务的功能；
+- [**2021.11.16**]  v4.3 Update Notes New additions and improvements：
+    1. Script：Redesign some files and directories；
+    2. Script：Split "partitions" into external modules；
+    3. Script：add add script `Edit_Database`（Change/check information sheet），Configuration tables may be added in the future;
+    4. Kernel：Optional installation `Linux` or `Linux-lts`；
+    5. Partitions：Custom partitions and directories；
+    6. Partitions：Add file system：`ext2/3/4`、`btrfs`、`jfs`、`vfat`、`ntfs-3g`、`f2fs`、`reiserfs`;
+- [**2021.07.2**]  v4.2.1 Update Notes New additions and improvements：
+    1. Added script record information query, record file：`./Temp_Data/auin.list`;
+    3. Tested on 2021.07.01 image, fixed some functional bugs;
+- [**2021.03.20**]  v4.2 Update Notes New additions and improvements：
+    1. Turn off logging;
+    2. Optimize bash syntax;
+    3. `Temp_Data/auin.list` add system information;
+    4. Secondary menu (4) rearrange the order;
+    5. Add a desktop environment: `Openbox`;
+    6. Added beautification configuration: `openbox`，`rxvt-unicode`，`slim`;
+    7. Added `slim` desktop manager, only open to `Openbox`;
+- [**2021.02.08**]  v4.1.1 Update Notes New additions and improvements;
+    1. System configuration (4->23) Solve the problem of not being able to boot successfully;
+    2. fix syntax errors;
+- [**2020.12.23**]  v4.1.0 Update Notes New additions and improvements：
+    1. Unable to find config file when configuring `deepin`;
+    2. Disk type conversion must enter `y/n` and press any key: the default type is automatically converted；
+    3. System installation (4->2) can be executed after mounting the root partition;
+    4. Desktop installation (4->22) can be executed after setting up a common user;
+    5. The system configuration (4->23) can be executed after the system is installed;
+    6. ix syntax errors;
+- [**2020.12.16**]  v4.0.5 Update Notes New additions and improvements：
+    1. Fix the issue of not being able to create users (thanks to @HelloDream for filing issues);
+    2. Solve the problem of automatic exit after entering the password twice；
+    3. Script option Enter "shell" or "s" to enter the temporary terminal, you can enter common commands (tested: cd cannot jump to the directory);
+    4. Added script process management module: “Module/Process_manage.sh”;
+    5. remove module: “Module/setting_xinitrc.sh” 整合至auin.sh;
+    6. Disable module: “Wifi_Connect.sh”;
+    7. ix syntax errors;
+- [**2020.12.11**]  v4.0.4 Update Notes New additions and improvements：
+    1. Changed the homepage panel;
+    2. Rewrite the capture method network card and IP, more accurate;
+    3. `auin.sh -vm` According to the hardware information, install the virtualization toolkit [virtualbox/vmware];
+    4. Prompt to convert disk type before disk partition: gpt(Uefi) / dos(Bios);
+    5. Add a desktop environment：i3gaps、mate;
+    6. According to the hardware information, install the corresponding CPU drive;
+    7. update module `useradd.sh`
+- [**2020.11.29**]  v4.0.2 Update Notes New additions and improvements：
+    1. New and improved partition table (gpt/boot);
+    2. Options 4:  (Install System Module) -> Installation VM-tools. 配置vm-tools
+    3. Option added： -vm Install Vmware Tools and exit. 
+- [**2020.11.28**]  v4.0.1 Update Notes New additions and improvements：
+    1. Fix the problem that installing xfce cannot enter lightdm；
+    2. Reorganized grammar structure；
+    3. Update driver package；
+- [**2020-11-21**] v4.0 Update Notes New additions and improvements：
+    1. Script log save log address: ```Temp_Data/Arch_install.log```；
+    3. Resolved an issue where `Nvme` SSDs could not be matched；
+    4. The way of options, the function of completing a single task；
 ```
-      -m   配置源
-      -w   配置wifi
-      -s   配置并开启ssh服务
-      -L   查看日志
-      -h   帮助
-      -v   版本
+      -m   configuration source
+      -w   configuration wifi
+      -s   start and configure the ssh service
+      -L   view logs
+      -h   help
+      -v   version
 ```
 
 

@@ -5,9 +5,9 @@
 </h1>
 <p align="center">
   <a href="https://github.com/Auroots/Auins/blob/main/README_zh.md">
-      <img src="https://img.shields.io/badge/Language-chinese-brightgreen?style=flat-square&logo=appveyor">
+      <img src="https://img.shields.io/badge/Language-Chinese-red?style=flat-square&logo=appveyor">
   </a><a href="https://github.com/Auroots/Auins/blob/main/README.md">
-      <img src="https://img.shields.io/badge/Language-english-brightgreen?style=flat-square&logo=appveyor">
+      <img src="https://img.shields.io/badge/Language-English-red?style=flat-square&logo=appveyor">
   </a>
 </p>
 <p align="center">
@@ -82,26 +82,29 @@ usage: auin_test.sh [-h] [-V] command ...
 
 ###  📃 next release v4.3.5 what to update ？
 
-- [x] ⚙️ Expand `install.conf` interface.
-- [ ] 🗔 Add `dwm`.
-- [ ] 🗔 Add `wayland` support.
-- [ ] 🔗 Add Automatically check information such as network, Netspeed, disk, hardware, service, etc.
-- [ ] ☁️  Add Install archlinux on VPS.
+- [x] ⚙️ Optimize：`auin.sh`;
+- [x] ⚙️ New：`install.conf` Partial interface;
+- [x] ⚙️ Kernel：New option `Linux-zen`;
+- [x] ⚙️ Script：Remove `Edit_Database.sh`;
+- [ ] ⚙️ Script：Update  `Process_manage.sh` `Useradd.sh` `Partition.sh`;
+- [ ] ☁️  Script：[v5.0]Beta `s2arch.sh` Archlinux can be installed on VPS;
+- [ ] 🗔 Script：At startup, print information first，eg：CPU，LiveCD，network，disk...
+- [ ] 🔗 Script：Rewrite the mirror source configuration script;
 
 ## :sparkles: Features  [Desktop renderings](https://gitee.com/auroot/Auins/blob/master/doc/Picture.md)
 
 - ⏳ The script homepage can check whether it is currently in `Chroot` model `[ON] / [OFF]`.
-- [x] 🔗 Script homepage shows `IP address`，Tip: Connect SSH service command.
-- [x] 🔗 One-click configuration `SSH service`, `mirror` source.
-- [x] 🔗（<font color='blue'>To be optimised </font>）Network configuration: `WIFI`、`Ethernet`.
-- [x] 📦  `auin.sh -vm`  according to your hardware installation `virtualbox` or `vmware-tools`.
-- [x] 🙎 Automatically configure common users and permissions.
-- [x] 🖴  File system：`ext2/3/4`、`btrfs`、`jfs`、`vfat`、`ntfs-3g`、`f2fs`、`reiserfs`.
-- [x] 🗔  Desktop environment：`Plasma(Min)` `Gnome` `Deepin` `Xfce` `mate` `lxde` `Cinnamon` `i3wm` `Openbox(slim)` .
-- [x] 🗔  Desktop Manager：`sddm` `gdm` `lightdm` `lxdm`, can be chosen arbitrarily.
-- [x] 💻（<font color='blue'>To be optimised </font>）Automatic configuration of I/O, audio, bluetooth；
-- [x] 💻（<font color='blue'>To be optimised </font>）Optional install `Intel` `AMD` `Nvidia`.
-- [x] 💿 Automatically install according to hardware  `UEFI` or `Boot Legacy` .
-- [x] 💿 Custom multi-partition mount.
+- 🔗 Script homepage shows `IP address`，Tip: Connect SSH service command.
+- 🔗 One-click configuration `SSH service`, `mirror` source.
+- 🔗（<font color='blue'>To be optimised </font>）Network configuration: `WIFI`、`Ethernet`.
+- 📦  `auin.sh -vm`  according to your hardware installation `virtualbox` or `vmware-tools`.
+- 🙎 Automatically configure common users and permissions.
+- 🖴  File system：`ext2/3/4`、`btrfs`、`jfs`、`vfat`、`ntfs-3g`、`f2fs`、`reiserfs`.
+- 🗔  Desktop environment：`Plasma(Min)` `Gnome` `Deepin` `Xfce` `mate` `lxde` `Cinnamon` `i3wm` `Openbox(slim)` .
+- 🗔  Desktop Manager：`sddm` `gdm` `lightdm` `lxdm`, can be chosen arbitrarily.
+- 💻（<font color='blue'>To be optimised </font>）Automatic configuration of I/O, audio, bluetooth；
+- 💻（<font color='blue'>To be optimised </font>）Optional install `Intel` `AMD` `Nvidia`.
+- 💿 Automatically install according to hardware  `UEFI` or `Boot Legacy` .
+- 💿 Custom multi-partition mount.
 
  
