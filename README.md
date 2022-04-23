@@ -24,9 +24,10 @@
 <h3>
 Version：v4.3 Please use latest livecd image.
 <a href="https://github.com/Auroots/Auins/blob/main/doc/update.md">
-    <img src="https://img.shields.io/badge/journal-%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97-brightgreen?style=for-the-badge&logo=appveyor">
+    <img src="https://img.shields.io/badge/journal-%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97-brightgreen?style=flat-square&logo=appveyor">
 </a>
 </h3>
+
 📦 It is recommended to use `curl` download script `auin.sh`
 
 - stable：`http://auroot.cn/auin.sh`
