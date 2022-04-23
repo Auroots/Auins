@@ -1,6 +1,6 @@
 ## 效果图展示
 
-### [Openbox] ArchLinux User install scripts 测试效果图
+###  [Openbox] ArchLinux User install scripts 测试效果图
 ![openbox 测试通过](https://images.gitee.com/uploads/images/2021/0319/131604_84de2b3d_5700645.png "openbox2.png")
 
 ### [Plasma] 测试效果图
