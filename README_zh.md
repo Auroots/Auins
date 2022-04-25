@@ -1,18 +1,13 @@
+**[[English](https://github.com/Auroots/Auins/blob/main/README.md) | [简体中文](https://github.com/Auroots/Auins/blob/main/README-zh.md)]** 
+
 <h1 align="center">
   <br>
   Auins (ArchLinux User install scripts)
   <br>
 </h1>
 <p align="center">
-  <a href="https://jq.qq.com/?_wv=1027&k=yASMQyjM">
-      <img src="https://img.shields.io/badge/Language-Chinese-red?style=flat-square&logo=appveyor">
-  </a><a href="https://github.com/Auroots/Auins/blob/main/README.md">
-      <img src="https://img.shields.io/badge/Language-English-red?style=flat-square&logo=appveyor">
-  </a>
-</p>
-<p align="center">
-    <img src="https://img.shields.io/badge/Type-bash-important?style=flat-square&logo=appveyor">
-<img src="https://img.shields.io/badge/environment-Linux%20%7C%20VPS-blue?style=flat-square&logo=appveyor">
+<img src="https://img.shields.io/badge/Bash-red?style=flat-square&logo=shell">
+<img src="https://img.shields.io/badge/OS-ArchLinux-blue?style=flat-square&logo=arch-linux">
      <a href="https://jq.qq.com/?_wv=1027&k=yASMQyjM">
       <img src="https://img.shields.io/badge/QQ%E7%BE%A4 @auroot -204097403-success?style=flat-square&logo=appveyor">
   </a>
@@ -21,12 +16,14 @@
   <a href="https://github.com/Auroots/Auins" alt="logo" ><img src="https://gitee.com/auroot/Auins/raw/master/local/Auins.png" width="1000"/></a>
   <br>
 </h1>
+
 <h3>
 当前版本：v4.3 请使用最新的archiso镜像
 <a href="https://github.com/Auroots/Auins/blob/main/doc/update-zh.md">
     <img src="https://img.shields.io/badge/journal-%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97-brightgreen?style=flat-square&logo=appveyor">
 </a>
 </h3>
+
 
 使用`curl` 下载`auin.sh` 其他脚本我会内置到主体Script中，可以大大缩短你的安装时间：
 

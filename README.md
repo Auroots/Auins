@@ -1,15 +1,9 @@
+**[[English](https://github.com/Auroots/Auins/blob/main/README.md) | [简体中文](https://github.com/Auroots/Auins/blob/main/README-zh.md)]** 
 <h1 align="center">
   <br>
   Auins (ArchLinux User install scripts)
   <br>
 </h1>
-<p align="center">
-  <a href="https://github.com/Auroots/Auins/blob/main/README_zh.md">
-      <img src="https://img.shields.io/badge/Language-Chinese-red?style=flat-square&logo=appveyor">
-  </a><a href="https://github.com/Auroots/Auins/blob/main/README.md">
-      <img src="https://img.shields.io/badge/Language-English-red?style=flat-square&logo=appveyor">
-  </a>
-</p>
 <p align="center">
     <img src="https://img.shields.io/badge/Type-bash-important?style=flat-square&logo=appveyor">
 <img src="https://img.shields.io/badge/environment-Linux%20%7C%20VPS-blue?style=flat-square&logo=appveyor">
