@@ -1,4 +1,4 @@
-**[[English](https://github.com/Auroots/Auins/blob/main/README.md) | [简体中文](https://github.com/Auroots/Auins/blob/main/README-zh.md)]** 
+**[[English](https://github.com/Auroots/Auins/blob/main/README.md) | [简体中文](https://github.com/Auroots/Auins/blob/main/README_zh.md)]** 
 <h1 align="center">
   <br>
   Auins (ArchLinux User install scripts)
