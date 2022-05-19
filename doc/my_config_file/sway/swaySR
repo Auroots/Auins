@@ -1,0 +1,31 @@
+#!/bin/bash
+
+Start_rotate='output "DVI-D-1" transform 270'
+Stop_rotate='#output "DVI-D-1" transform 270'
+Conf_file="$HOME/.config/sway/config"
+rotate(){
+    sed -i s/"$Stop_rotate"/"$Start_rotate"/g "$Conf_file"
+}
+normal(){
+    sed -i s/"$Start_rotate"/"$Stop_rotate"/g "$Conf_file"
+}
+status(){
+    # grep "$start_rotate" &>/dev/null
+    if grep "$Start_rotate" "$Conf_file" &>/dev/null ; then
+        echo; echo -e "\033[32m Screen status: Rotate start... \033[0m"
+    else 
+        echo; echo -e "\033[34m Screen status: Rotate stop... \033[0m"
+    fi 
+}
+
+swat_PID=$(pgrep sway)
+main(){
+    case $1 in
+        s) rotate && kill -15 $swat_PID && sway ;;
+        t) normal && kill -15 $swat_PID && sway ;;
+        u) status ;;
+        *) echo -e "\033[31m Incorrect input. \033[0m" && status && exit 1 ;;
+    esac
+}
+main "$@"
+

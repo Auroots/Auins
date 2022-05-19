@@ -1,0 +1,7 @@
+address=0.0.0.0
+enable_auth=false
+port=5901
+username=auroot
+password=orange
+private_key_file=/home/auroot/.config/wayvnc/key.pem
+certificate_file=/home/auroot/.config/wayvnc/cert.pem

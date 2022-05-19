@@ -1,0 +1,91 @@
+general {
+    output_format = "i3bar"
+    colors = true
+    color_good = "#BBBBBB"
+    color_bad = "#CC1616"
+    color_degraded = "#55858E"
+    interval = 1
+}
+
+order += "sysdata"
+order += "cpu_usage"
+order += "cpu_temperature 0"
+order += "net_rate"
+order += "imap"
+order += "time"
+order += "volume_status"
+order += "static_string screenshot"
+order += "dpms"
+
+sysdata {
+    format = "? {mem_used}G ? {mem_used_percent}%"
+    color = "#48CCCD"
+}
+
+cpu_usage {
+    format = "? %usage"
+    color = "#52D017"
+}
+
+cpu_temperature 0 {
+    format = "♨️ %degrees °C"
+    max_threshold = 65
+    path = "/sys/class/thermal/thermal_zone0/temp"
+    color = "#CCFB5D"
+}
+
+net_rate {
+    interfaces = "enp0s25"
+    format = "?{down} ?{up}"
+    color = "#FFDB58"
+}
+
+imap {
+    cache_timeout = 60
+    format = "? {unseen}"
+    imap_server = 'imap.gmail.com'
+    mailbox = 'INBOX'
+    name = 'you/name'
+    password = 'you/mail/password'
+    port = '993'
+    user = 'your/mail'
+    new_mail_color = "#F87431#F62217"
+    on_click 1 = 'exec google-chrome-stable https://mail.google.com/mail'
+    color = "#FCDFFF"
+}
+
+time {
+    format = "? %Y-%m-%d %H:%M:%S"
+    color = "#9E7BFF"
+}
+
+volume_status {
+    format = "? {percentage}%"
+    cache_timeout = 1
+    device = "default"
+    thresholds = [
+        (0, "#A0CFEC"),
+        (10, "#82CAFF"),
+        (20, "#79BAEC"),
+        (30, "#3BB9FF"),
+        (40, "#56A5EC"),
+        (50, "#5CB3FF"),
+        (60, "#1589FF"),
+        (70, "#157DEC"),
+        (80, "#306EFF"),
+        (90, "#2B65EC")
+    ]
+}
+
+static_string 'screenshot' {
+    format = "?"
+        on_click 1 = "exec gnome-screenshot"
+        color = "#C44975"
+}
+
+dpms {
+    format_on = "? DPMS"
+    format_off = "? DPMS"
+    color_on = "#F9B7FF"
+    color_off = "#6B9299"
+}

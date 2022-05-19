@@ -3,11 +3,11 @@
 # 此列表仅供管理员使用。以免泄露隐私！
 # This list is for administrators only. So as not to reveal privacy !!!
 
-Archiso_Version_check = 
+Archiso_Version_check = yes
 CPU_Name = i7-4790K
 CPU_Vendor = intel
 LinuxKernel = 
-Ethernet_ip = 
+Ethernet_ip = 192.168.101.4
 Wifi_ip =
 Patterns = Chroot-OFF
 Disk =
