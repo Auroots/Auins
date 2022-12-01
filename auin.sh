@@ -11,7 +11,7 @@ echo &>/dev/null
 # auroot  |  gitee  |  github  |  test
 SCRIPTS_SOURCE="test"
 
-# @待解决的问题
+# @待解决的问题 
 : << EOF
     - [ ] 检查reflector报错的问题(不影响正常使用);
     - [x] 解决处于BOIS引导情况下的系统, 脚本无法启动的问题;
