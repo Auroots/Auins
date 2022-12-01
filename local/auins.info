@@ -1,0 +1,31 @@
+# 请在系统安装完成后, 立即清除此文件, 以免泄露隐私！
+# This list is necessary for the installation process.
+# Please clean this file immediately after system installation.
+# So as not to reveal privacy !!!
+
+Public_IP = 
+Country =
+Country_Name =
+Timezone =
+
+CPU_Vendor =
+CPU_Name =
+Host_Environment =
+LinuxKernel =
+Livecd_version =
+Local_Ethernet_IP =
+Local_Wifi_IP =
+Patterns = Chroot-OFF
+Boot_Type =
+Disk_Type =
+Disk =
+Boot_partition =
+Root_partition =
+Swap_file =
+Swap_size =
+Users =
+UsersID =
+User_Password =
+Root_Password =
+Desktop_Environment =
+Desktop_Display_Manager =
