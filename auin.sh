@@ -9,7 +9,7 @@ echo &>/dev/null
 
 # @ 脚本的依赖下载源 
 # auroot  |  gitee  |  github  |  test
-SCRIPTS_SOURCE="auroot"
+SCRIPTS_SOURCE="test"
 
 # @待解决的问题 
 : << EOF
@@ -21,7 +21,7 @@ EOF
 
 # sed -i.bak 's/^aaa=yes/aaa=no/' [file] # 替换并备份
 # @脚本初始化
-function Script_init_Variable(){
+function Script_Variable_init(){
     Version="ArchLinux User Install Scripts v4.5.3" 
     Auins_Dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd )
     [ "$Auins_Dir" = "/" ] && Auins_Dir=""
@@ -60,7 +60,7 @@ ${green} SSH:         ${white}ssh ${blue}$USER@${blue}${Local_Ethernet_IP:-${Loc
 ${green} CPU Info:    ${blue}${CPU_Name}${suffix}  
 ${red}==========================================================${suffix}"   
     }
-    function Normal_Home_List(){
+    function NormalHomeList(){
         echo -e "
 ${outB} \t${green}Configure Mirrorlist     ${white}[${blue}1${white}]${suffix}
 ${outB} \t${green}Configure Network        ${white}[${blue}2${white}]${suffix}
@@ -71,7 +71,7 @@ ${outY} \t${green}Install virtual tools.   ${white}[${blue}6${white}]${suffix}
 ${outY} \t${green}Delete scripts & caches. ${white}[${red}D${white}] ${suffix}
 ${outG} \t${green}Exit Script              ${white}[${red}Q${white}] ${suffix}"   
     }
-    function Livecd_Home_List(){ 
+    function LivecdHomeList(){ 
         echo -e "
 ${outB} \t${green}Configure Mirrorlist   ${white}[${blue}1${white}]${suffix}
 ${outB} \t${green}Configure Network      ${white}[${blue}2${white}]${suffix}
@@ -90,7 +90,7 @@ ${outG} ${green}   Installation Desktop.  ${blue}*   ${white}[4]  ${suffix}
 ${outG} ${green}   Installation Drive.    ${blue}*   ${white}[11] ${suffix}
 ${outY} ${green}   Install virtual tools. ${blue}*   ${white}[22] ${suffix}" 
     }
-    function Desktop_env_List(){
+    function DesktopEnvList(){
         echo -e "
 \n\t   ${white}***${suffix} ${blue}Install Desktop${suffix} ${white}***${suffix}    
 ------------------------------------------------
@@ -106,7 +106,7 @@ ${outB} ${green}   Plasma_Wayland.  ${blue}[9]   ${blue}  default: sddm     ${su
 ${outB} ${green}   Openbox.         ${blue}[10]  ${blue}  default: sddm     ${suffix}
 ------------------------------------------------\n"  
     }
-    function Desktop_Manager_List(){
+    function DesktopManagerList(){
         echo -e "
 ----------------------------
 ${outB} ${green}sddm.            ${white}[1]${suffix}
@@ -116,7 +116,7 @@ ${outB} ${green}lxdm.            ${white}[4]${suffix}
 ${outB} ${green}default.         ${white}[*]${suffix}
 ============================"
     }
-    function Installation_System_Info(){
+    function InstallSystemInfo(){
         sleep 1; echo -e "\n
 ${wg}#======================================================#${suffix}
 ${wg}#::  System components installation completed.         #${suffix}
@@ -125,7 +125,7 @@ ${wg}#::  Execute in 3 seconds.                             #${suffix}
 ${wg}#::  Later operations are oriented to the new system.  #${suffix}
 ${wg}#======================================================#${suffix}"
     }
-    function Configure_System_Info(){
+    function ConfigSystemInfo(){
         echo -e "
 ${ws}#======================================================#${suffix}
 ${ws}#::                 Exit in 3/s                        #${suffix}
@@ -161,13 +161,13 @@ URL Gitee : https://gitee.com/auroot/Auins\n"
         "version") version ;; # Script版本信息
         "usage"  ) usage   ;; # Auins的帮助文档 Auin_help
         "logos"  ) logos   ;; # Script首页信息
-        "Livecd_Home_List" ) Livecd_Home_List ;; # LiveCD环境下，首页会显示的列表
-        "Normal_Home_List" ) Normal_Home_List ;; # 正常(Normal)环境下，首页会显示的列表
-        "Desktop_env_List" ) Desktop_env_List ;; # 桌面环境的选择列表
-        "Desktop_Manager_List") Desktop_Manager_List ;; # 桌面管理器的选择列表
+        "LivecdHomeList" ) LivecdHomeList ;; # LiveCD环境下，首页会显示的列表
+        "NormalHomeList" ) NormalHomeList ;; # 正常(Normal)环境下，首页会显示的列表
+        "DesktopEnvList" ) DesktopEnvList ;; # 桌面环境的选择列表
+        "DesktopManagerList") DesktopManagerList ;; # 桌面管理器的选择列表
         "Livecd_System_Module_List" ) Livecd_System_Module_List;; # 首选项 [4] 的列表
-        "Installation_System_Info"  ) Installation_System_Info ;; # 系统安装成功, 直奔加入chroot的提示信息
-        "Configure_System_Info"     ) Configure_System_Info    ;; # 完成系统配置成功, 可重启的提示信息
+        "InstallSystemInfo"  ) InstallSystemInfo ;; # 系统安装成功, 直奔加入chroot的提示信息
+        "ConfigSystemInfo"     ) ConfigSystemInfo    ;; # 完成系统配置成功, 可重启的提示信息
     esac
 }
 
@@ -444,52 +444,9 @@ function Auin_chroot(){
     echo "No" > $System_Root/local/LiveCD_OFF 2> /dev/null
     arch-chroot $System_Root /bin/bash -c "/auin.sh"
 }
-# @桌面管理器选择列表，选择后，自动安装及配置服务；
-function Desktop_Manager(){
-    Printf_Info Desktop_Manager_List
-    printf "${outG} ${yellow} Please select Desktop Manager: ${suffix} %s" "$inB"
-    read -r DM_ID
-    case ${DM_ID} in
-        1) DmS="sddm" ;;
-        2) DmS="gdm"  ;;
-        3) DmS="lightdm" ;;
-        4) DmS="lxdm" ;;
-        *) DmS="$Default_DM" ;;
-    esac
-    echo "$DmS" > "${Local_Dir}/Desktop_Manager"
-    case ${DmS} in
-        sddm)
-            Install_Program "sddm sddm-kcm" && systemctl enable sddm ;;
-        gdm)
-            Install_Program "gdm" && systemctl enable gdm ;;
-        lightdm)
-            Install_Program "lightdm lightdm-gtk-greeter" && systemctl enable lightdm ;;
-        lxdm)
-            Install_Program "lxdm" && systemctl enable lxdm ;;
-    esac
-    echo -e "\n${out_WELL} ${green} Desktop manager installed successfully -=> ${white}[ $DmS ] ${suffix}\n"
-    Config_File_Manage INFO Write Desktop_Display_Manager "$DmS"
-    sleep 5;
-}
-# @桌面环境安装 $1(桌面名称) $2(xinitrc配置 "exec desktop") $3(包列表)
-function Install_DesktopEnv(){
-    local Desktop_Name Desktop_Xinit Desktop_Program;
-    Desktop_Name=$1
-    Desktop_Xinit=$2
-    Desktop_Program=$3
-    Config_File_Manage INFO Write Desktop_Environment "$Desktop_Name"
-    
-    echo -e "${out_EXEC} ${green}Configuring desktop environment.${suffix}"; sleep 1;
-    Install_Program "$(Config_File_Manage INFO Read "PGK_Xorg")"
-    Install_Program "$Desktop_Program"
-    Install_Program "$(Config_File_Manage INFO Read "PGK_Gui_Package")"
-    Desktop_Manager
-    Desktop_Xorg_Config "$Desktop_Name" "$Desktop_Xinit"
-    
-}
 # @选择桌面环境
 function Set_Desktop_Env(){
-    Printf_Info Desktop_env_List;
+    Printf_Info DesktopEnvList;
     DESKTOP_ID="0"  
     printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}.\n" "${CheckingUsers:-$UserName_INFO}" "${CheckingID:-$UsersID_INFO}"
     printf "${outG} ${yellow} Please select desktop:${suffix} %s" "$inB"
@@ -510,16 +467,60 @@ function Set_Desktop_Env(){
             Process_Management stop "$0" ;;
         esac 
 }
+# @桌面环境安装 $1(桌面名称) $2(xinitrc配置 "exec desktop") $3(包列表)
+function Install_DesktopEnv(){
+    local Desktop_Name Desktop_Xinit Desktop_Program;
+    Desktop_Name=$1
+    Desktop_Xinit=$2
+    Desktop_Program=$3
+    Config_File_Manage INFO Write Desktop_Environment "$Desktop_Name"
+    
+    echo -e "\n${out_EXEC} ${green}Configuring desktop environment ${white}[$Desktop_Name].${suffix}"; sleep 1;
+    Install_Program "$(Config_File_Manage CONF Read "PGK_Xorg")"
+    Install_Program "$Desktop_Program"
+    Install_Program "$(Config_File_Manage CONF Read "PGK_Gui_Package")"
+    Desktop_Manager
+    Desktop_Xorg_Config "$Desktop_Name" "$Desktop_Xinit"
+    
+}
+# @桌面管理器选择列表，选择后，自动安装及配置服务；
+function Desktop_Manager(){
+    Printf_Info DesktopManagerList
+    printf "${outG} ${yellow} Please select Desktop Manager: ${suffix} %s" "$inB"
+    read -r DM_ID
+    case ${DM_ID} in
+        1) DmS="sddm" ;;
+        2) DmS="gdm"  ;;
+        3) DmS="lightdm" ;;
+        4) DmS="lxdm" ;;
+        *) DmS="$Default_DM" ;;
+    esac
+    echo -e "\n${out_EXEC} ${green}Configuring desktop display manager ${white}[$DmS].${suffix}"; sleep 1;
+    echo "$DmS" > "${Local_Dir}/Desktop_Manager"
+    case ${DmS} in
+        sddm)
+            Install_Program "sddm sddm-kcm" && systemctl enable sddm ;;
+        gdm)
+            Install_Program "gdm" && systemctl enable gdm ;;
+        lightdm)
+            Install_Program "lightdm lightdm-gtk-greeter" && systemctl enable lightdm ;;
+        lxdm)
+            Install_Program "lxdm" && systemctl enable lxdm ;;
+    esac
+    echo -e "\n${out_WELL} ${green} Desktop manager installed successfully -=> ${white}[ $DmS ] ${suffix}\n"
+    Config_File_Manage INFO Write Desktop_Display_Manager "$DmS"
+    sleep 5;
+}
 # @configure desktop environment
 function Desktop_Xorg_Config(){
     if [ -e /home/"$CheckingUsers"/.xinitrc ];then
         echo -e "${out_WARNING} ${yellow}Repeated execution !${suffix}";sleep 2; 
     else
-        xinitrc_file="/etc/X11/xinit/xinitrc"
-        startLine=$(sed -n '/twm &/=' $xinitrc_file) 
-        lineAfter=4
-        endLine=$(("$startLine" + "$lineAfter"))
-        sed -i "$startLine"','"$endLine"'d' "$xinitrc_file"
+        # xinitrc_file="/etc/X11/xinit/xinitrc"
+        # startLine=$(sed -n '/twm &/=' $xinitrc_file) 
+        # lineAfter=4
+        # endLine=$(("$startLine" + "$lineAfter"))
+        # sed -i "$startLine"','"$endLine"'d' "$xinitrc_file"
         echo "exec ${2}" >> /etc/X11/xinit/xinitrc 
         cp -rf /etc/X11/xinit/xinitrc  /home/"$CheckingUsers"/.xinitrc 
         echo -e "${out_WELL} ${white}${1} ${green}Desktop environment configuration completed.${suffix}"  
@@ -530,28 +531,49 @@ function Desktop_Xorg_Config(){
 function Install_Font(){
     PGK_FONTS=$(Config_File_Manage CONF Read "PGK_Fonts")
     PGK_FONTS_ADOBE=$(Config_File_Manage CONF Read "PGK_Fonts_Adobe")
-    printf "${outG} ${yellow}Whether to install [Common fonts]. Install[y] No[*]${suffix} %s" "$inB"
-    read -r UserInf_Font
-    case ${UserInf_Font} in
-        [Yy]*) Install_Program "$PGK_FONTS" ;;
-            *) echo -e "${out_SKIP} ${white}[Common fonts].${suffix}\n"
+    
+    CONF_Install_Font_Common=$(Config_File_Manage CONF Read "Install_Font_Common")
+    CONF_Install_Font_Adobe=$(Config_File_Manage CONF Read "Install_Font_Adobe")
+    CONF_Install_Font_JetBrains_Fira=$(Config_File_Manage CONF Read "Install_Font_JetBrains_Fira")
+    
+    function InstallJetBrainsFira(){
+        wget -P ${Local_Dir} http://auins.auroot.cn/local/JetBrains_Fira_Fonts.zip
+        mkdir -p /usr/share/fonts
+        unzip -d /usr/share/fonts "${Local_Dir}/JetBrains_Fira_Fonts.zip"
+        fc-cache
+    }
+    
+    case $CONF_Install_Font_Common in
+        [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [Common fonts].${suffix}" 
+                Install_Program "$PGK_FONTS" ;; 
+            *)  printf "${outG} ${yellow}Whether to install [Common fonts]. Install[y] No[*]${suffix} %s" "$inB"
+                read -r UserInf_Font
+                case ${UserInf_Font} in
+                    [Yy]*) Install_Program "$PGK_FONTS" ;;
+                        *) echo -e "${out_SKIP} ${white}[Common fonts].${suffix}\n"
+                esac
+    esac   
+    case $CONF_Install_Font_Adobe in
+        [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [Adobe fonts].${suffix}" 
+                Install_Program "$PGK_FONTS_ADOBE" ;;
+            *)  printf "${outG} ${yellow}Whether to install [Adobe fonts]. Install[y] No[*]${suffix} %s" "$inB"
+                read -r UserInf_Adobe_Font
+                case ${UserInf_Adobe_Font} in
+                    [Yy]*) Install_Program "$PGK_FONTS_ADOBE" ;;
+                        *) echo -e "${out_SKIP} ${white}[Adobe fonts].${suffix}\n"
+                esac
+    
     esac
-    printf "${outG} ${yellow}Whether to install [Adobe fonts]. Install[y] No[*]${suffix} %s" "$inB"
-    read -r UserInf_Adobe_Font
-    case ${UserInf_Adobe_Font} in
-        [Yy]*) Install_Program "$PGK_FONTS_ADOBE" ;;
-            *) echo -e "${out_SKIP} ${white}[Adobe fonts].${suffix}\n"
-    esac
-    printf "${outG} ${yellow}Whether to install [JetBrains / Fira fonts]. Install[y] No[*]${suffix} %s" "$inB"
-    read -r UserInf_JF_Font
-    case ${UserInf_JF_Font} in
-        [Yy]*) 
-            wget -P ${Local_Dir} http://auins.auroot.cn/local/JetBrains_Fira_Fonts.zip
-            mkdir -p /usr/share/fonts
-            unzip -d /usr/share/fonts "${Local_Dir}/JetBrains_Fira_Fonts.zip"
-            fc-cache;;
-        *) echo -e "${out_SKIP} ${white}[JetBrains / Fira fonts].${suffix}\n"
-    esac
+    case $CONF_Install_Font_JetBrains_Fira in
+        [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [JetBrains / Fira fonts].${suffix}" 
+                InstallJetBrainsFira ;;
+            *)  printf "${outG} ${yellow}Whether to install [JetBrains / Fira fonts]. Install[y] No[*]${suffix} %s" "$inB"
+                read -r UserInf_JF_Font
+                case ${UserInf_JF_Font} in
+                    [Yy]*) InstallJetBrainsFira ;;
+                    *) echo -e "${out_SKIP} ${white}[JetBrains / Fira fonts].${suffix}\n"
+                esac
+    esac 
 }
 
 # @install Programs 安装包
@@ -776,7 +798,7 @@ function Installation_System(){
         echo -e "${out_WARNING} ${white}The partition is not mounted.${suffix}"; 
         sleep 3; Process_Management restart "$0"
     fi
-    Printf_Info Installation_System_Info
+    Printf_Info InstallSystemInfo
     sleep 3; echo;    # Chroot到新系统中完成基础配置
     cp -rf /etc/pacman.conf $System_Root/etc/pacman.conf 
     cp -rf /etc/pacman.d/mirrorlist $System_Root/etc/pacman.d/mirrorlist
@@ -809,11 +831,11 @@ function Configure_System(){
         UserName_INFO=$(Config_File_Manage INFO Read "Users")
         UsersID_INFO=$(id -u "$UserName_INFO" 2> /dev/null)
         printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}.\n" "${CheckingUsers:-$UserName_INFO}" "${CheckingID:-$UsersID_INFO}"
-        rm -rf ${Local_Dir}/Config_System; # 删除这个文件，才能进 Normal_Model
+        rm -rf ${Local_Dir}/Config_System; # 删除这个文件，才能进 Normal_Model  
         Install_Font
         if [ "$(Config_File_Manage CONF Read "Archlinucn")" = "yes" ]; then Install_Program archlinuxcn-keyring;fi
         if [ "$(Config_File_Manage CONF Read "Blackarch")" = "yes" ]; then Install_Program blackarch-keyring; fi
-        Printf_Info Configure_System_Info; sleep 3
+        Printf_Info ConfigSystemInfo; sleep 3
     else
         echo -e "${out_ERROR} ${red}The system is not installed. Exec: 4->2 ${suffix}";sleep 3;
         Process_Management restart "$0"
@@ -855,7 +877,7 @@ function Delete_Script(){
 # @ Archiso LiveCD 下自动启用
 function LiveCD_Model(){
     Printf_Info logos;
-    Printf_Info Livecd_Home_List;   
+    Printf_Info LivecdHomeList;   
     echo -e "\n${Chroot_status:- }"
     printf "${outG} ${yellow} Please enter[1,2,3..] Exit[Q]${suffix} %s" "$inB"
     read -r principal_variable 
@@ -885,8 +907,9 @@ function LiveCD_Model(){
 # @ 安装完Archlinux后 正常可用情况下自动启用
 function Normal_Model(){
     Printf_Info logos;
-    Printf_Info Normal_Home_List;   
-    printf "\n${outG} ${yellow} Please enter[1,2,3..] Exit[Q]${suffix} %s" "$inB"
+    Printf_Info NormalHomeList;   
+    echo -e "\n${Chroot_status:- }"
+    printf "${outG} ${yellow} Please enter[1,2,3..] Exit[Q]${suffix} %s" "$inB"
     read -r principal_variable 
     case ${principal_variable} in
         1)  bash "$Mirrorlist_Script" "${Auins_Config}" "${Auins_record}" ; bash "${0}" ;; # 配置源
@@ -924,7 +947,7 @@ function Auin_Options(){
 
 # Start Script | 从这里开始
 # >> >> >> >> >> >> >> >> >> >> >> >> 
-Script_init_Variable 
+Script_Variable_init 
 Set_Color_Variable  
 Update_Share
 Script_init
