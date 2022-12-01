@@ -476,9 +476,9 @@ function Install_DesktopEnv(){
     Config_File_Manage INFO Write Desktop_Environment "$Desktop_Name"
     
     echo -e "\n${out_EXEC} ${green}Configuring desktop environment ${white}[$Desktop_Name].${suffix}"; sleep 1;
-    Install_Program "$(Config_File_Manage INFO Read "PGK_Xorg")"
+    Install_Program "$(Config_File_Manage CONF Read "PGK_Xorg")"
     Install_Program "$Desktop_Program"
-    Install_Program "$(Config_File_Manage INFO Read "PGK_Gui_Package")"
+    Install_Program "$(Config_File_Manage CONF Read "PGK_Gui_Package")"
     Desktop_Manager
     Desktop_Xorg_Config "$Desktop_Name" "$Desktop_Xinit"
     
@@ -516,11 +516,11 @@ function Desktop_Xorg_Config(){
     if [ -e /home/"$CheckingUsers"/.xinitrc ];then
         echo -e "${out_WARNING} ${yellow}Repeated execution !${suffix}";sleep 2; 
     else
-        xinitrc_file="/etc/X11/xinit/xinitrc"
-        startLine=$(sed -n '/twm &/=' $xinitrc_file) 
-        lineAfter=4
-        endLine=$(("$startLine" + "$lineAfter"))
-        sed -i "$startLine"','"$endLine"'d' "$xinitrc_file"
+        # xinitrc_file="/etc/X11/xinit/xinitrc"
+        # startLine=$(sed -n '/twm &/=' $xinitrc_file) 
+        # lineAfter=4
+        # endLine=$(("$startLine" + "$lineAfter"))
+        # sed -i "$startLine"','"$endLine"'d' "$xinitrc_file"
         echo "exec ${2}" >> /etc/X11/xinit/xinitrc 
         cp -rf /etc/X11/xinit/xinitrc  /home/"$CheckingUsers"/.xinitrc 
         echo -e "${out_WELL} ${white}${1} ${green}Desktop environment configuration completed.${suffix}"  
