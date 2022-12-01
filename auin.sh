@@ -9,7 +9,7 @@ echo &>/dev/null
 
 # @ 脚本的依赖下载源
 # auroot  |  gitee  |  github  |  test
-SCRIPTS_SOURCE="test"
+SCRIPTS_SOURCE="auroot"
 
 # @待解决的问题
 : << EOF
