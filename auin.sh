@@ -9,7 +9,7 @@ echo &>/dev/null
 
 # @ 脚本的依赖下载源 
 # auroot  |  gitee  |  github  |  test
-SCRIPTS_SOURCE="auroot"
+SCRIPTS_SOURCE="test"
 
 # @待解决的问题 
 : << EOF
@@ -444,49 +444,6 @@ function Auin_chroot(){
     echo "No" > $System_Root/local/LiveCD_OFF 2> /dev/null
     arch-chroot $System_Root /bin/bash -c "/auin.sh"
 }
-# @桌面管理器选择列表，选择后，自动安装及配置服务；
-function Desktop_Manager(){
-    Printf_Info Desktop_Manager_List
-    printf "${outG} ${yellow} Please select Desktop Manager: ${suffix} %s" "$inB"
-    read -r DM_ID
-    case ${DM_ID} in
-        1) DmS="sddm" ;;
-        2) DmS="gdm"  ;;
-        3) DmS="lightdm" ;;
-        4) DmS="lxdm" ;;
-        *) DmS="$Default_DM" ;;
-    esac
-    echo "$DmS" > "${Local_Dir}/Desktop_Manager"
-    case ${DmS} in
-        sddm)
-            Install_Program "sddm sddm-kcm" && systemctl enable sddm ;;
-        gdm)
-            Install_Program "gdm" && systemctl enable gdm ;;
-        lightdm)
-            Install_Program "lightdm lightdm-gtk-greeter" && systemctl enable lightdm ;;
-        lxdm)
-            Install_Program "lxdm" && systemctl enable lxdm ;;
-    esac
-    echo -e "\n${out_WELL} ${green} Desktop manager installed successfully -=> ${white}[ $DmS ] ${suffix}\n"
-    Config_File_Manage INFO Write Desktop_Display_Manager "$DmS"
-    sleep 5;
-}
-# @桌面环境安装 $1(桌面名称) $2(xinitrc配置 "exec desktop") $3(包列表)
-function Install_DesktopEnv(){
-    local Desktop_Name Desktop_Xinit Desktop_Program;
-    Desktop_Name=$1
-    Desktop_Xinit=$2
-    Desktop_Program=$3
-    Config_File_Manage INFO Write Desktop_Environment "$Desktop_Name"
-    
-    echo -e "${out_EXEC} ${green}Configuring desktop environment.${suffix}"; sleep 1;
-    Install_Program "$(Config_File_Manage INFO Read "PGK_Xorg")"
-    Install_Program "$Desktop_Program"
-    Install_Program "$(Config_File_Manage INFO Read "PGK_Gui_Package")"
-    Desktop_Manager
-    Desktop_Xorg_Config "$Desktop_Name" "$Desktop_Xinit"
-    
-}
 # @选择桌面环境
 function Set_Desktop_Env(){
     Printf_Info Desktop_env_List;
@@ -509,6 +466,50 @@ function Set_Desktop_Env(){
             echo -e "${out_ERROR} ${red} Selection error.${suffix}"    
             Process_Management stop "$0" ;;
         esac 
+}
+# @桌面环境安装 $1(桌面名称) $2(xinitrc配置 "exec desktop") $3(包列表)
+function Install_DesktopEnv(){
+    local Desktop_Name Desktop_Xinit Desktop_Program;
+    Desktop_Name=$1
+    Desktop_Xinit=$2
+    Desktop_Program=$3
+    Config_File_Manage INFO Write Desktop_Environment "$Desktop_Name"
+    
+    echo -e "\n${out_EXEC} ${green}Configuring desktop environment ${white}[$Desktop_Name].${suffix}"; sleep 1;
+    Install_Program "$(Config_File_Manage INFO Read "PGK_Xorg")"
+    Install_Program "$Desktop_Program"
+    Install_Program "$(Config_File_Manage INFO Read "PGK_Gui_Package")"
+    Desktop_Manager
+    Desktop_Xorg_Config "$Desktop_Name" "$Desktop_Xinit"
+    
+}
+# @桌面管理器选择列表，选择后，自动安装及配置服务；
+function Desktop_Manager(){
+    Printf_Info Desktop_Manager_List
+    printf "${outG} ${yellow} Please select Desktop Manager: ${suffix} %s" "$inB"
+    read -r DM_ID
+    case ${DM_ID} in
+        1) DmS="sddm" ;;
+        2) DmS="gdm"  ;;
+        3) DmS="lightdm" ;;
+        4) DmS="lxdm" ;;
+        *) DmS="$Default_DM" ;;
+    esac
+    echo -e "\n${out_EXEC} ${green}Configuring desktop display manager ${white}[$DmS].${suffix}"; sleep 1;
+    echo "$DmS" > "${Local_Dir}/Desktop_Manager"
+    case ${DmS} in
+        sddm)
+            Install_Program "sddm sddm-kcm" && systemctl enable sddm ;;
+        gdm)
+            Install_Program "gdm" && systemctl enable gdm ;;
+        lightdm)
+            Install_Program "lightdm lightdm-gtk-greeter" && systemctl enable lightdm ;;
+        lxdm)
+            Install_Program "lxdm" && systemctl enable lxdm ;;
+    esac
+    echo -e "\n${out_WELL} ${green} Desktop manager installed successfully -=> ${white}[ $DmS ] ${suffix}\n"
+    Config_File_Manage INFO Write Desktop_Display_Manager "$DmS"
+    sleep 5;
 }
 # @configure desktop environment
 function Desktop_Xorg_Config(){
@@ -886,7 +887,8 @@ function LiveCD_Model(){
 function Normal_Model(){
     Printf_Info logos;
     Printf_Info Normal_Home_List;   
-    printf "\n${outG} ${yellow} Please enter[1,2,3..] Exit[Q]${suffix} %s" "$inB"
+    echo -e "\n${Chroot_status:- }"
+    printf "${outG} ${yellow} Please enter[1,2,3..] Exit[Q]${suffix} %s" "$inB"
     read -r principal_variable 
     case ${principal_variable} in
         1)  bash "$Mirrorlist_Script" "${Auins_Config}" "${Auins_record}" ; bash "${0}" ;; # 配置源
