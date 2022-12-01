@@ -584,12 +584,7 @@ function Install_Program() {
     for VARIABLE in {1..3}
     do
         local COMMAND="pacman -Syu --noconfirm --needed ${PACKAGES[@]}"
-        if ! bash -c "$COMMAND" ; then
-            break
-        else
-            sleep 3
-            break
-        fi
+        if ! bash -c "$COMMAND" ; then break; else sleep 3; break; fi
     done
     echo "$VARIABLE" &> /dev/null
     set -e
@@ -604,49 +599,37 @@ function Install_Io_Driver(){
     PGK_Bluetooth_Driver="$(Config_File_Manage CONF Read "PGK_Bluetooth_Driver")"
     # CPU
     case $CPU_Vendor in
-    intel) 
-        echo -e "\n${out_EXEC} ${green}Install the Intel driver.${suffix}"
-        Install_Program "$PKG_INTEL";;
-    amd)   
-        echo -e "\n${out_EXEC} ${green}Install the Amd driver.${suffix}"
-        Install_Program "$PKG_AMD";;
-    *)
-        printf "${outG} ${yellow}Please select: Intel[1] AMD[2].${suffix} %s" "$inB"
-        read -r DRIVER_GPU_ID
-        case $DRIVER_GPU_ID in
-            1) Install_Program "$PKG_INTEL" ;;
-            2) Install_Program "$PKG_AMD" ;;
-        esac
+    intel)  echo -e "\n${out_EXEC} ${green}Install the Intel driver.${suffix}"
+            Install_Program "$PKG_INTEL";;
+      amd)  echo -e "\n${out_EXEC} ${green}Install the Amd driver.${suffix}"
+            Install_Program "$PKG_AMD";;
+        *)  printf "${outG} ${yellow}Please select: Intel[1] AMD[2].${suffix} %s" "$inB"
+            read -r DRIVER_GPU_ID
+            case $DRIVER_GPU_ID in
+                1) Install_Program "$PKG_INTEL" ;;
+                2) Install_Program "$PKG_AMD" ;;
+            esac
     esac
     # 安装音频驱动 
     case $Driver_Audio_Conf in 
-        yes)
-            echo -e "${out_EXEC} ${green}Installing Audio driver.${suffix}"  
-            Install_Program "$PGK_Audio_Driver"
-            systemctl enable alsa-state.service
-        ;;
-        *)
-            echo -e "${out_SKIP} ${green}Installing audio driver.${suffix}"
+        yes) echo -e "${out_EXEC} ${green}Installing Audio driver.${suffix}"  
+             Install_Program "$PGK_Audio_Driver"
+             systemctl enable alsa-state.service ;;
+        *)   echo -e "${out_SKIP} ${green}Installing audio driver.${suffix}"
     esac
     # 安装 I/O 驱动 
     case $Driver_input_Conf in 
-        yes)
-            echo -e "${out_EXEC} ${green}Installing input driver.${suffix}" 
-            Install_Program "$PGK_Input_Driver"
-        ;;
-        *)
-            echo -e "${out_SKIP} ${green}Installing audio driver..${suffix}"
+        yes) echo -e "${out_EXEC} ${green}Installing input driver.${suffix}" 
+             Install_Program "$PGK_Input_Driver" ;;
+        *)   echo -e "${out_SKIP} ${green}Installing audio driver..${suffix}"
     esac 
     # 安装蓝牙驱动
     case $Driver_Bluetooth_Conf in 
-        yes)
-            echo -e "${out_EXEC} ${green}Installing Bluetooth driver.${suffix}"  
-            Install_Program "$PGK_Bluetooth_Driver"
-            echo "load-module module-bluetooth-policy" >> /etc/pulse/system.pa
-            echo "load-module module-bluetooth-discover" >> /etc/pulse/system.pa
-        ;;
-        *)
-            echo -e "${out_SKIP} ${green}Installing bluetooth driver.${suffix}"
+        yes) echo -e "${out_EXEC} ${green}Installing Bluetooth driver.${suffix}"  
+             Install_Program "$PGK_Bluetooth_Driver"
+             echo "load-module module-bluetooth-policy" >> /etc/pulse/system.pa
+             echo "load-module module-bluetooth-discover" >> /etc/pulse/system.pa ;;
+        *)   echo -e "${out_SKIP} ${green}Installing bluetooth driver.${suffix}"
     esac 
 }
 
