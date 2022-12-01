@@ -9,12 +9,11 @@ echo &>/dev/null
 
 # @ 脚本的依赖下载源 
 # auroot  |  gitee  |  github  |  test
-SCRIPTS_SOURCE="test"
+SCRIPTS_SOURCE="auroot"
 
 # @待解决的问题 
 : << EOF
     - [ ] 检查reflector报错的问题(不影响正常使用);
-    - [ ] 新增: 文件上传功能;
 EOF
 
 # @可能有用的文件
