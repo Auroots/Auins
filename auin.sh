@@ -7,25 +7,14 @@
 # set -eu
 echo &>/dev/null
 
-# @ 脚本的依赖下载源
+# @ 脚本的依赖下载源 
 # auroot  |  gitee  |  github  |  test
 SCRIPTS_SOURCE="test"
 
 # @待解决的问题 
 : << EOF
     - [ ] 检查reflector报错的问题(不影响正常使用);
-    - [x] 解决处于BOIS引导情况下的系统, 脚本无法启动的问题;
-    - [x] 解决sudoer配置问题;
-    - [x] 解决设置用户后, 未记录信息的问题;
-    - [x] 在Normal关闭版本检查等一些Livecd功能;
-    
     - [ ] 新增: 文件上传功能;
-    - [X] 新增: JetBrains/Fira字体;
-    - [x] 新增: 功能 auin.sh -c 编辑配置文件profile.conf;
-    - [x] 新增: 自动用户配置的接口, 编辑profile.conf中的用户设置[Auto_Config_Users], 即可自动配置用户;
-    - [x] 新增: 首页引导模式信息;
-    - [x] 新增: 首页CPU信息;
-    - [x] 新增: 清理一键脚本及脚本生成过的文件;
 EOF
 
 # @可能有用的文件
