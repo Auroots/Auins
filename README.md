@@ -60,17 +60,24 @@ chmod +x auin.sh && bash auin.sh
 ### 💻 Other options
 
 ```bash
-Auins is a script for ArchLinux installation and deployment.
-usage: auin_test.sh [-h] [-V] command ...
-   Options:
-      -m --mirror   Automatically configure mirrorlist file and exit.
-      -w --cwifi    Connect to a WIFI and exit.
-      -s --openssh  Open SSH service (default password: 123456) and exit.
-      -vm --virtual Install Vmware/Virtualbox Tools and exit.
-      -i --info     View the computer information of script record, file: auins.info
-      -h --help     Show this help message and exit. 
-      -V --version  Show the conda version number and exit.
 :: Auins is a script for ArchLinux installation and deployment.
+usage: auins [-h] [-V] command ...
+    Optional arguments:
+        -m | --mirror  Automatically configure mirrorlist file and exit.
+        -w | --cwifi   Connect to a WIFI and exit.
+        -s | --openssh Open SSH service (default password: 123456) and exit.
+        -ec|--conf     Edit (./local/profile.conf), Command(vim).
+             -vc       View (profile.conf).
+            --info     View (auins.info).
+             -ds       Delete scripts and other caches.       
+        -h --help      Show this help message and exit. 
+        -v --version   Show the conda version number and exit. 
+        
+    Optional Installation:
+            -vm        Install Vmware/Virtualbox Tools and exit.
+            -fo        Install Fonts.
+            -fc        Install Fcitx.
+            -vcd       Install Video card driver (Nvidia\Amdgpu).
 ```
 
 

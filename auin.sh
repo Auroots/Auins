@@ -9,7 +9,7 @@ echo &>/dev/null
 
 # @ script source
 # auroot  |  gitee  |  github  |  test
-SCRIPTS_SOURCE="test"
+SCRIPTS_SOURCE="auroot"
 
 # @待解决的问题 
 : << EOF
@@ -137,16 +137,22 @@ ${ws}#======================================================#${suffix}"
 :: Auins is a script for ArchLinux installation and deployment.
 usage: ${0##*/} [-h] [-V] command ...
     Optional arguments:
-        -m --mirror   Automatically configure mirrorlist file and exit.
-        -w --cwifi    Connect to a WIFI and exit.
-        -s --openssh  Open SSH service (default password: 123456) and exit.
-        -vm --virtual Install Vmware/Virtualbox Tools and exit.
-        -ec --conf    Edit (./local/profile.conf), Command(vim).
-             -vc      View (profile.conf).
-            --info    View (auins.info).
-             -ds      Delete scripts and other caches.       
-        -h --help     Show this help message and exit. 
-        -v --version  Show the conda version number and exit. \n"
+        -m | --mirror  Automatically configure mirrorlist file and exit.
+        -w | --cwifi   Connect to a WIFI and exit.
+        -s | --openssh Open SSH service (default password: 123456) and exit.
+        -ec|--conf     Edit (./local/profile.conf), Command(vim).
+             -vc       View (profile.conf).
+            --info     View (auins.info).
+             -ds       Delete scripts and other caches.       
+        -h --help      Show this help message and exit. 
+        -v --version   Show the conda version number and exit. 
+        
+    Optional Installation:
+            -vm        Install Vmware/Virtualbox Tools and exit.
+            -fo        Install Fonts.
+            -fc        Install Fcitx.
+            -vcd       Install Video card driver (Nvidia\Amdgpu).
+        "
     }
     function version(){    
         echo -e "
@@ -400,8 +406,8 @@ function ConfigurePassworld(){
             if [ "$Query" -gt 999 ] && [ "$Query" -lt 1050 ]; then
                 CheckingID=$(grep "$Query" < ${PasswdFile} | cut -d":" -f3)
                 CheckingUsers=$(id -un "$CheckingID" 2> /dev/null)
-                Config_File_Manage INFO Write Users "$CheckingUsers"
-                Config_File_Manage INFO Write UsersID "$CheckingID"
+                # Config_File_Manage INFO Write Users "$CheckingUsers"
+                # Config_File_Manage INFO Write UsersID "$CheckingID"
                 break;
             fi
         done
@@ -413,19 +419,17 @@ function ConfigurePassworld(){
 # @安装系统、内核、基础包等，Install system kernel / base...
 function Install_Archlinux(){    
     CONF_Linux_kernel=$(Config_File_Manage CONF Read "Linux_kernel")
-    echo -e "\n${out_EXEC} ${green}Update the system clock.${suffix}"   # update time
+    echo -e "\n${out_EXEC} ${green}Update the system clock.${suffix}"; sleep 2s   # update time
     timedatectl set-ntp true
-    echo -e "${out_EXEC} ${green}Install the Kernel base packages.${suffix}\n" 
-    sleep 2;
+    echo -e "${out_EXEC} ${green}Install the Kernel base packages.${suffix}\n"; sleep 2s 
     # bash "$Mirrorlist_Script" "${Auins_Config}" "${Auins_record}"
     case "$CONF_Linux_kernel" in 
         linux    ) pacstrap "$System_Root" base base-devel linux-firmware vim unzip linux linux-headers ;;
         linux-lts) pacstrap "$System_Root" base base-devel linux-firmware vim unzip linux-lts ;; 
         linux-zen) pacstrap "$System_Root" base base-devel linux-firmware vim unzip linux-zen linux-zen-headers ;;
     esac
-    sleep 2; echo -e "\n${out_EXEC} ${green}Configure Fstab File.${suffix}"  
-    genfstab -U $System_Root >> $System_Root/etc/fstab  
-
+    echo -e "\n${out_EXEC} ${green}Configure Fstab File.${suffix}"; sleep 2s
+    genfstab -U $System_Root >> $System_Root/etc/fstab; sleep 2s
     LinuxKernel=$(arch-chroot $System_Root /usr/bin/uname -a | /usr/bin/cut -d"#" -f1  | awk -F " " '{print $3}')
     Config_File_Manage INFO Write LinuxKernel "$LinuxKernel";
     cp -rf "${Local_Dir}" "$System_Root" 
@@ -449,6 +453,7 @@ function Set_Desktop_Env(){
     printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}.\n" "${CheckingUsers:-$INFO_UserName}" "${CheckingID:-$INFO_UsersID}"
     printf "${outG} ${yellow} Please select desktop:${suffix} %s" "$inB"
     read -r DESKTOP_ID
+    Config_File_Manage INFO Write Desktop_Environment "$DESKTOP_ID"
     case ${DESKTOP_ID} in
         1)  Default_DM="sddm";    Install_DesktopEnv plasma startkde      "$(Config_File_Manage CONF Read "PGK_Plasma")";;
         2)  Default_DM="gdm";     Install_DesktopEnv gnome  gnome-session "$(Config_File_Manage CONF Read "PGK_Gnome")";;
@@ -474,7 +479,6 @@ function Install_DesktopEnv(){
     CONF_PGK_Xorg=$(Config_File_Manage CONF Read "PGK_Xorg")
     CONF_PGK_Gui_Package=$(Config_File_Manage CONF Read "PGK_Gui_Package")
     
-    Config_File_Manage INFO Write Desktop_Environment "$Desktop_Name"
     echo -e "\n${out_EXEC} ${green}Configuring desktop environment ${white}[$Desktop_Name].${suffix}"; sleep 1;
     Install_Program "$CONF_PGK_Xorg"
     Install_Program "$Desktop_Program"
@@ -495,6 +499,7 @@ function Desktop_Manager(){
         4) DmS="lxdm" ;;
         *) DmS="$Default_DM" ;;
     esac
+    Config_File_Manage INFO Write Desktop_Display_Manager "$DmS"
     echo -e "\n${out_EXEC} ${green}Configuring desktop display manager ${white}[$DmS].${suffix}"; sleep 1;
     echo "$DmS" > "${Local_Dir}/Desktop_Manager"
     case ${DmS} in
@@ -508,8 +513,7 @@ function Desktop_Manager(){
             Install_Program "lxdm" && systemctl enable lxdm ;;
     esac
     echo -e "\n${out_WELL} ${green} Desktop manager installed successfully -=> ${white}[ $DmS ] ${suffix}\n"
-    Config_File_Manage INFO Write Desktop_Display_Manager "$DmS"
-    sleep 5;
+    sleep 3;
 }
 # @configure desktop environment
 function Desktop_Xorg_Config(){
@@ -542,34 +546,19 @@ function Install_Font(){
         fc-cache
     }
     case $CONF_Install_Font_Common in
-        [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [Common fonts].${suffix}" 
+        [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [Common fonts].${suffix}"; sleep 2s 
                 Install_Program "$CONF_PGK_FONTS" ;; 
-            *)  printf "${outG} ${yellow}Whether to install [Common fonts]. Install[y] No[*]${suffix} %s" "$inB"
-                read -r UserInf_Font
-                case ${UserInf_Font} in
-                    [Yy]*) Install_Program "$CONF_PGK_FONTS" ;;
-                        *) echo -e "${out_SKIP} ${white}[Common fonts].${suffix}\n"
-                esac
+            *)  echo -e "${out_SKIP} ${white}[Common fonts].${suffix}\n"
     esac   
     case $CONF_Install_Font_Adobe in
-        [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [Adobe fonts].${suffix}" 
+        [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [Adobe fonts].${suffix}"; sleep 2s
                 Install_Program "$CONF_PGK_FONTS_ADOBE" ;;
-            *)  printf "${outG} ${yellow}Whether to install [Adobe fonts]. Install[y] No[*]${suffix} %s" "$inB"
-                read -r UserInf_Adobe_Font
-                case ${UserInf_Adobe_Font} in
-                    [Yy]*) Install_Program "$CONF_PGK_FONTS_ADOBE" ;;
-                        *) echo -e "${out_SKIP} ${white}[Adobe fonts].${suffix}\n"
-                esac
+            *)  echo -e "${out_SKIP} ${white}[Adobe fonts].${suffix}\n"
     esac
     case $CONF_Install_Font_JetBrains_Fira in
-        [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [JetBrains / Fira fonts].${suffix}" 
+        [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [JetBrains / Fira fonts].${suffix}"; sleep 2s 
                 InstallJetBrainsFira ;;
-            *)  printf "${outG} ${yellow}Whether to install [JetBrains / Fira fonts]. Install[y] No[*]${suffix} %s" "$inB"
-                read -r UserInf_JF_Font
-                case ${UserInf_JF_Font} in
-                    [Yy]*) InstallJetBrainsFira ;;
-                    *) echo -e "${out_SKIP} ${white}[JetBrains / Fira fonts].${suffix}\n"
-                esac
+            *)  echo -e "${out_SKIP} ${white}[JetBrains / Fira fonts].${suffix}\n"
     esac 
 }
 # @install fcitx 
@@ -577,18 +566,19 @@ function Install_Fcitx(){
     Fcitx_Config="
 GTK_IM_MODULE=fcitx
 QT_IM_MODULE=fcitx
-XMODIFIERS=@im=fcitx
-"
+XMODIFIERS=@im=fcitx"
     CONF_Install_Fcitx=$(Config_File_Manage CONF Read "Install_Fcitx")
     CONF_PKG_Fcitx=$(Config_File_Manage CONF Read "PKG_Fcitx")
     case $CONF_Install_Fcitx in
-    [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [Fcitx].${suffix}" 
+    [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [Fcitx].${suffix}"; sleep 2s
+            pacman -Rsc --noconfirm fcitx
             Install_Program "$CONF_PKG_Fcitx" 
             echo "$Fcitx_Config" >> /etc/environment;; 
         *)  printf "${outG} ${yellow}Whether to install [Fcitx]. Install[y] No[*]${suffix} %s" "$inB"
             read -r UserInf_Fcitx
             case ${UserInf_Fcitx} in
-                [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [Fcitx].${suffix}" 
+                [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [Fcitx].${suffix}"; sleep 2s
+                        pacman -Rsc --noconfirm fcitx
                         Install_Program "$CONF_PKG_Fcitx" 
                         echo "$Fcitx_Config" >> /etc/environment;;
                     *) echo -e "${out_SKIP} ${white}[Fcitx].${suffix}\n"
@@ -609,36 +599,38 @@ function Install_Io_Driver(){
     CONF_PGK_Bluez_Driver="$(Config_File_Manage CONF Read "PGK_Bluetooth_Driver")"
     # CPU
     case $CPU_Vendor in
-    intel)  echo -e "\n${out_EXEC} ${green}Install the Intel driver.${suffix}"
+    intel)  echo -e "\n${out_EXEC} ${green}Install the Intel driver.${suffix}"; sleep 2s
             Install_Program "$CONF_PKG_INTEL";;
-      amd)  echo -e "\n${out_EXEC} ${green}Install the Amd driver.${suffix}"
+      amd)  echo -e "\n${out_EXEC} ${green}Install the Amd driver.${suffix}"; sleep 2s
             Install_Program "$CONF_PKG_AMD";;
         *)  printf "${outG} ${yellow}Please select: Intel[1] AMD[2].${suffix} %s" "$inB"
             read -r DRIVER_GPU_ID
             case $DRIVER_GPU_ID in
-                1) Install_Program "$CONF_PKG_INTEL" ;;
-                2) Install_Program "$CONF_PKG_AMD" ;;
+                1)  echo -e "\n${out_EXEC} ${green}Install the Intel driver.${suffix}"; sleep 2s
+                    Install_Program "$CONF_PKG_INTEL";;
+                2)  echo -e "\n${out_EXEC} ${green}Install the Amd driver.${suffix}"; sleep 2s
+                    Install_Program "$CONF_PKG_AMD";;
             esac
     esac
     # 安装音频驱动 
     case $CONF_Driver_Audio in 
-        yes) echo -e "${out_EXEC} ${green}Installing Audio driver.${suffix}"  
+        yes) echo -e "${out_EXEC} ${green}Installing Audio driver.${suffix}"; sleep 2s
              Install_Program "$CONF_PGK_Audio_Driver"
-             systemctl enable alsa-state.service ;;
+             systemctl enable alsa-state.service;;
         *)   echo -e "${out_SKIP} ${green}Installing audio driver.${suffix}"
     esac
     # 安装 I/O 驱动 
     case $CONF_Driver_input in 
-        yes) echo -e "${out_EXEC} ${green}Installing input driver.${suffix}" 
-             Install_Program "$CONF_PGK_Input_Driver" ;;
+        yes) echo -e "${out_EXEC} ${green}Installing input driver.${suffix}"; sleep 2s
+             Install_Program "$CONF_PGK_Input_Driver";;
         *)   echo -e "${out_SKIP} ${green}Installing audio driver..${suffix}"
     esac 
     # 安装蓝牙驱动
     case $CONF_Driver_Bluez in 
-        yes) echo -e "${out_EXEC} ${green}Installing Bluetooth driver.${suffix}"  
+        yes) echo -e "${out_EXEC} ${green}Installing Bluetooth driver.${suffix}"; sleep 2s
              Install_Program "$CONF_PGK_Bluez_Driver"
              echo "load-module module-bluetooth-policy" >> /etc/pulse/system.pa
-             echo "load-module module-bluetooth-discover" >> /etc/pulse/system.pa ;;
+             echo "load-module module-bluetooth-discover" >> /etc/pulse/system.pa;;
         *)   echo -e "${out_SKIP} ${green}Installing bluetooth driver.${suffix}"
     esac 
 }
@@ -680,7 +672,7 @@ function Install_Processor_Driver(){
 
 # @Install/Configure Grub, 安装并配置Grub
 function Configure_Grub(){
-    echo -e "\n${out_EXEC} ${green}Install grub tools.${suffix}\n"  
+    echo -e "\n${out_EXEC} ${green}Install grub tools.${suffix}\n"
     echo -e "${out_WELL} ${white}Your startup mode has been detected as ${green}$INFO_Boot_way${suffix}.\n"   
     CONF_PKG_GRUB_UEFI="$(Config_File_Manage CONF Read "PGK_GRUB_UEFI")"
     CONF_PKG_GRUB_BOOT="$(Config_File_Manage CONF Read "PGK_GRUB_BOOT")"
@@ -694,6 +686,7 @@ function Configure_Grub(){
             if efibootmgr | grep "$CONF_Hostname" &>/dev/null ; then
                 echo -e "\n${out_WELL} ${green} Grub installed successfully -=> [$CONF_Hostname] ${suffix}"  
                 echo -e "${green}     $(efibootmgr | grep "$CONF_Hostname")  ${suffix}\n"  
+                sleep 2s
             else
                 echo -e "\n${out_ERROR} ${red}Grub installed failed ${suffix}"
                 echo -e "${green}     $(efibootmgr)  ${suffix}\n"
@@ -707,6 +700,7 @@ function Configure_Grub(){
             grub-mkconfig -o /boot/grub/grub.cfg
             if echo $? &>/dev/null ; then
                 echo -e "\n${out_WELL} ${green} Grub installed successfully -=> [Archlinux] ${suffix}\n"  
+                sleep 2s
             else
                 echo -e "\n${out_ERROR} ${red} Grub installed failed ${suffix}\n"
             fi
@@ -714,19 +708,19 @@ function Configure_Grub(){
 }
 # @配置本地化 时区 主机名 语音等  
 function Configure_Language(){
-        echo -e "${out_EXEC} ${white}Configure enable Network.${suffix}"    
-    systemctl enable NetworkManager  
-        echo -e "${out_EXEC} ${white}Time zone changed to 'Shanghai'. ${suffix}"  
+        echo -e "${out_EXEC} ${white}Configure enable Network.${suffix}"; sleep 1s
+    systemctl enable NetworkManager
+        echo -e "${out_EXEC} ${white}Time zone changed to 'Shanghai'. ${suffix}"; sleep 1s
     ln -sf /usr/share/zoneinfo"$Timezone" /etc/localtime && hwclock --systohc # 将时区更改为"上海" / 生成 /etc/adjtime
-        echo -e "${out_EXEC} ${white}Set the hostname \"$CONF_Hostname\". ${suffix}"
+        echo -e "${out_EXEC} ${white}Set the hostname \"$CONF_Hostname\". ${suffix}"; sleep 1s
     echo "$CONF_Hostname" > /etc/hostname
-        echo -e "${out_EXEC} ${white}Localization language settings. ${suffix}"
+        echo -e "${out_EXEC} ${white}Localization language settings. ${suffix}"; sleep 1s
     sed -i 's/#.*en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
-        echo -e "${out_EXEC} ${white}Write 'en_US.UTF-8 UTF-8' To /etc/locale.gen. ${suffix}"  
-    sed -i 's/#.*zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/' /etc/locale.gen 
-        echo -e "${out_EXEC} ${white}Write 'zh_CN.UTF-8 UTF-8' To /etc/locale.gen. ${suffix}" 
+        echo -e "${out_EXEC} ${white}Write 'en_US.UTF-8 UTF-8' To /etc/locale.gen. ${suffix}"; sleep 1s  
+    sed -i 's/#.*zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/' /etc/locale.gen
+        echo -e "${out_EXEC} ${white}Write 'zh_CN.UTF-8 UTF-8' To /etc/locale.gen. ${suffix}"; sleep 1s 
     locale-gen
-        echo -e "${out_EXEC} ${white}Configure local language defaults 'en_US.UTF-8'. ${suffix}"  
+        echo -e "${out_EXEC} ${white}Configure local language defaults 'en_US.UTF-8'. ${suffix}"; sleep 1s  
     echo "LANG=en_US.UTF-8" > /etc/locale.conf       # 系统语言 "英文" 默认为英文   
     sleep 3;
 }
@@ -809,12 +803,12 @@ function Configure_System(){
     if [ -n "$INFO_Install_Kernel" ] || [ -n "$Disk_Kernel" ] ; then 
         Configure_Grub
         #---------------------------------------------------------------------------#
-        echo -e "${out_EXEC} ${green}Install the Terminal tools packages.${suffix}" && sleep 1;
+        echo -e "${out_EXEC} ${green}Install the Terminal tools packages.${suffix}"; sleep 1s
         Install_Program "$CONF_PGK_Terminal_Tools"
-        echo -e "${out_EXEC} ${green}Install the System file package.${suffix}" && sleep 1;
-        Install_Program "$CONF_PKG_SystemctlFile" 
-        echo -e "${out_EXEC} ${green}Install the Other common package.${suffix}" && sleep 1;
-        Install_Program "$CONF_PGK_Common_Package" 
+        echo -e "${out_EXEC} ${green}Install the System file package.${suffix}"; sleep 1s
+        Install_Program "$CONF_PKG_SystemctlFile"
+        echo -e "${out_EXEC} ${green}Install the Other common package.${suffix}"; sleep 1s
+        Install_Program "$CONF_PGK_Common_Package"
         Configure_Language
         ConfigurePassworld
         INFO_UserName=$(Config_File_Manage INFO Read "Users")
@@ -917,20 +911,24 @@ function Normal_Model(){
 # @Auins的其他选项功能
 function Auin_Options(){
     case "${1}" in
-        -m  | --mirror )  bash "$Mirrorlist_Script" "$Auins_Config" "$Auins_record"; exit 0 ;;
-        -w  | --cwifi  )   Network Conf_wifi; exit 0 ;;
-        -s  | --openssh) 
+        -m|--mirror ) bash "$Mirrorlist_Script" "$Auins_Config" "$Auins_record"; exit 0 ;;
+        -w|--cwifi  ) Network Conf_wifi; exit 0 ;;
+        -s|--openssh) 
             case "$CONF_Service_SSH" in
                 yes) echo -e "${outG} ${green} activated. ${suffix}"; exit 0 ;;
                 *  )  Open_SSH; exit 0 ;;
             esac ;;
-        -vm | --virtual) install_virtualization_service "$Host_Environment" ;;
-        -ec | --conf   ) vim "${Auins_Config}" ;;
-               -vc     ) clear; less "${Auins_Config}"; exit 0 ;;
-              --info   ) clear; less "${Auins_record}"; exit 0 ;;
-               -ds     ) Delete_Script; exit 0 ;;
-        -h  | --help   ) Printf_Info usage; exit 0   ;;
-        -v  | --version) clear; Printf_Info version; exit 0 ;;
+
+        -ec|--conf  ) vim "${Auins_Config}" ;;
+            -vc     ) clear; less "${Auins_Config}"; exit 0 ;;
+           --info   ) clear; less "${Auins_record}"; exit 0 ;;
+            -ds     ) Delete_Script; exit 0 ;;
+        -h|--help   ) Printf_Info usage; exit 0   ;;
+        -v|--version) clear; Printf_Info version; exit 0 ;;
+            -fo     ) Install_Font; exit 0 ;;
+            -vm     ) install_virtualization_service "$Host_Environment" ;;
+            -fc     ) Install_Fcitx; exit 0 ;;
+            -vcd    ) Install_Processor_Driver; exit 0 ;;
     esac
 }
 

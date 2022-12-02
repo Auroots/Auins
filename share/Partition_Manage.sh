@@ -105,7 +105,7 @@ function partition_facts(){
         _partition_root_)  # Detection partition
             State="false"
             if testPartition "${diskName}"; then
-                userinput_disk=$(testPartition "${diskName}")
+                userinput_disk=$(testPartition "$diskName")
                 State="true"
             else
                 State="false"
@@ -329,21 +329,30 @@ function partition_swap(){
     local read_text_output
     showDisk
     read_text_output=$(echo -e "\n${PSY} ${y}lease select the size of swapfile: ${g}[example:256M-10000G ~] ${y}Skip: ${g}[No]${h} ${JHB}")
-    read -rp "${read_text_output}"  input_swap_size
-    if echo "$input_swap_size" | grep -E "^[0-9]*[kK|mM|gG]$" &>/dev/null ; then
-        echo -e "${PSG} ${g}Assigned Swap file Size: ${input_swap_size} .${h}"
-        fallocate -l "${input_swap_size}" /mnt/swapfile  # 创建指定大小的swap虚拟化文件
+    read -rp "${read_text_output}"  input_swap
+    if echo "$input_swap" | grep -E "^[0-9]*[kK|mM|gG]$" &>/dev/null ; then
+        echo -e "${PSG} ${g}Assigned Swap file Size: ${input_swap} .${h}"
+        fallocate -l "${input_swap}" /mnt/swapfile  # 创建指定大小的swap虚拟化文件
         chmod 600 /mnt/swapfile # 设置权限
         mkswap /mnt/swapfile    # 格式化swap文件
         swapon /mnt/swapfile    # 挂载swap文件
-        # 记录
         Config_File_Manage INFO Write Swap_file "/mnt/swapfile"
+        Config_File_Manage INFO Write Swap_size "${input_swap}"
+    elif testPartition "$input_swap" &>/dev/null ; then
+        input_swap_device="$input_swap"
+        mkswap "/dev/$input_swap_device"
+        swapon "/dev/$input_swap_device"
+        # SWAP_UUID=$(blkid -s PARTUUID -o value "/dev/$input_swap_device")
+        # echo "UUID=$SWAP_UUID none swap defaults 0 0" >> /etc/fstab
+        input_swap_size=$(df -ha | grep "$input_swap_device" | awk -F " " '{print $2}')
+        echo -e "${PSG} ${g}Assigned Swap file Size: $input_swap_size .${h}"
+        Config_File_Manage INFO Write Swap_file "/dev/$input_swap_device"
         Config_File_Manage INFO Write Swap_size "${input_swap_size}"
     else
         echo -e "\n${PSY} ${y}Skip create a swap file.${h}"  
         sleep 1;
         echo;
-    fi 
+    fi
     echo -e "${wg} ::==>> Partition complete. ${h}" 
 }
 

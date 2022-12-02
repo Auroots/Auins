@@ -68,18 +68,23 @@ chmod +x auin.sh && bash auin.sh
 
 ```bash
 Auins is a script for ArchLinux installation and deployment.
-usage: auin [-h] [-V] command ...
+usage: auins [-h] [-V] command ...
     Optional arguments:
        -m | --mirror    配置源;
        -w | --cwifi     配置wifi;
-       -s | --openssh   配置并开启ssh服务;
-      -vm | --virtual   安装并配置vm-tools;
+       -s | --openssh   配置并开启ssh服务; 
       -ec --conf    	编辑配置文件 (./local/profile.conf);
            -vc      	查看脚本配置文件 (profile.conf);
           --info    	查看脚本生成的信息(auins.info);
            -ds      	删除脚本和其他缓存;
        -h | --help      帮助;
        -v | --version   版本;
+       
+    Optional Installation:
+            -vm        安装并配置vm-tools;
+            -fo        安装 Fonts;
+            -fc        安装 Fcitx;
+            -vcd       安装显卡驱动 (Nvidia\Amdgpu);
 ```
 
 **由于ArchLinux经常更新，安装方式也随之改变，导致脚本无法与之匹配，发生在某阶段出现错误，如果您发现问题，或以加以改进，可以创建Pull Request 提交脚本.**
