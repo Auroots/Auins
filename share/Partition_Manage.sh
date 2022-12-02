@@ -330,7 +330,7 @@ function partition_booting_BOIS(){
 # 格式化并挂载虚拟的Swap分区，可自定义大小
 function partition_swap(){
     function Swap_File(){
-        echo -e "${PSG} ${g}Assigned Swap file Size: ${input_swap} .${h}"
+        echo -e "${PSG} ${g}Assigned Swap file Size: ${w}[$input_swap]${g}.${h}"
         fallocate -l "${input_swap}" /mnt/swapfile  # 创建指定大小的swap虚拟化文件
         chmod 600 /mnt/swapfile # 设置权限
         mkswap /mnt/swapfile    # 格式化swap文件
@@ -347,14 +347,14 @@ function partition_swap(){
         mount -a
         # input_swap_size=$(df -ha | grep "$input_swap_device" | awk -F " " '{print $2}')
         input_swap_size=$(lsblk | grep "$input_swap_device" | awk -F " " '{print $4}')
-        echo -e "${PSG} ${g}Assigned Swap file Size: $input_swap_size .${h}"
+        echo -e "${PSG} ${g}Assigned Swap Partition Size: ${w}[$input_swap_size]${g}.${h}"
         Config_File_Manage INFO Write Swap "/dev/$input_swap_device"
         Config_File_Manage INFO Write Swap_size "${input_swap_size}"
     }
     local read_text_output
     showDisk
     CONF_Root_SystemFile=$(Config_File_Manage INFO Read Root_SystemFile)
-    read_text_output=$(echo -e "\n${PSY} ${y}lease select the Swapfile: ${g}[size:256M-100G ~] and Swap partition: ${g}sdX[0-9]${y}Skip: ${g}[No]${h} ${JHB}")
+    read_text_output=$(echo -e "\n${PSY} ${y}lease select the Swapfile: ${g}[size:256M-100G ~] ${y}or Swap partition: ${g}sdX[0-9]${y} Skip: ${g}[No]${h} ${JHB}")
     read -rp "${read_text_output}"  input_swap
     if echo "$input_swap" | grep -E "^[0-9]*[kK|mM|gG]$" &>/dev/null ; then
         case $CONF_Root_SystemFile in
@@ -365,9 +365,8 @@ function partition_swap(){
     elif testPartition "$input_swap" &>/dev/null ; then
          Swap_Partition
     else
-        echo -e "\n${PSY} ${y}Skip create a swap file.${h}"; sleep 1
+        echo -e "\n${PSY} ${y}Skip create a swap file.${h}"; sleep 3
     fi
-    echo -e "${wg} ::==>> Partition complete. ${h}" 
 }
 
 # 具体的实现

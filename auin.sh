@@ -244,15 +244,15 @@ function Script_init(){
     INFO_Boot_way=$(Config_File_Manage INFO Read "Boot_Type")
     
     # 本地化地区
-    Timezone=$(Config_File_Manage INFO Read "Timezone")
-    if [ -z  "$Timezone" ] ; then
+    Country_Name=$(Config_File_Manage INFO Read "Country_Name")
+    if [ -z  "$Country_Name" ] ; then
         API=$(curl -fsSL --fail https://ipapi.co/json)
-        Timezone=$(echo "$API" | grep -w "timezone" | awk '{print $2}' | sed 's#",##' | sed 's#"##') && Config_File_Manage INFO Write Timezone "$Timezone";
+        CONF_Timezone=$(Config_File_Manage CONF Read Timezone) && Config_File_Manage INFO Write Timezone "$CONF_Timezone";
         Public_IP=$(echo "$API" | grep -w "ip" | awk '{print $2}' | sed 's#",##' | sed 's#"##')      && Config_File_Manage INFO Write Public_IP "$Public_IP";
         Country=$(echo "$API" | grep -w "country" | awk '{print $2}' | sed 's#",##' | sed 's#"##')   && Config_File_Manage INFO Write Country "$Country";
         Country_Name=$(echo "$API" | grep -w "country_name" | awk '{print $2}' | sed 's#",##' | sed 's#"##')  && Config_File_Manage INFO Write Country_Name "$Country_Name";
     fi
-    ln -sf /usr/share/zoneinfo/"$Timezone" /etc/localtime &>/dev/null && hwclock --systohc
+    ln -sf /usr/share/zoneinfo/"$CONF_Timezone" /etc/localtime &>/dev/null && hwclock --systohc
     CONF_Archiso_Version_check=$(Config_File_Manage CONF Read "Archiso_Version_check");
     case "$ChrootPatterns" in  
         Chroot-OFF) 
@@ -711,7 +711,7 @@ function Configure_Language(){
         echo -e "${out_EXEC} ${white}Configure enable Network.${suffix}"; sleep 1s
     systemctl enable NetworkManager
         echo -e "${out_EXEC} ${white}Time zone changed to 'Shanghai'. ${suffix}"; sleep 1s
-    ln -sf /usr/share/zoneinfo"$Timezone" /etc/localtime && hwclock --systohc # 将时区更改为"上海" / 生成 /etc/adjtime
+    ln -sf /usr/share/zoneinfo"$CONF_Timezone" /etc/localtime && hwclock --systohc # 将时区更改为"上海" / 生成 /etc/adjtime
         echo -e "${out_EXEC} ${white}Set the hostname \"$CONF_Hostname\". ${suffix}"; sleep 1s
     echo "$CONF_Hostname" > /etc/hostname
         echo -e "${out_EXEC} ${white}Localization language settings. ${suffix}"; sleep 1s
@@ -920,7 +920,7 @@ function Auin_Options(){
             esac ;;
         -ec|--conf  ) vim "${Auins_Config}"; exit 0 ;;
             -vc     ) less "${Auins_Config}"; exit 0 ;;
-           --info   ) less "${Auins_record}"; exit 0 ;;
+           --info   ) clear; less "${Auins_record}"; exit 0 ;;
             -ds     ) Delete_Script; exit 0 ;;
         -h|--help   ) Printf_Info usage; exit 0 ;;
         -v|--version) Printf_Info version; exit 0 ;;
