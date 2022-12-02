@@ -7,15 +7,15 @@
 # set -eu
 echo &>/dev/null
 
-# @ 脚本的依赖下载源 
+# @ script source
 # auroot  |  gitee  |  github  |  test
 SCRIPTS_SOURCE="test"
 
 # @待解决的问题 
 : << EOF
     - [ ] 检查reflector报错的问题(不影响正常使用);
+    - [ ] 新增: 快照备份软件(timeshift);
 EOF
-
 # @可能有用的文件
 # /proc/cmdline
 
@@ -39,8 +39,6 @@ function Script_Variable_init(){
     if [ ! -d "${Local_Dir}" ]; then mkdir -p "${Local_Dir}"; fi
     if [ ! -d "${Share_Dir}" ]; then mkdir -p "${Share_Dir}"; fi
 }
-
-# >> ---------------------------------- <<
 # @输出所需信息 
 function Printf_Info(){
     function logos(){
@@ -170,8 +168,6 @@ URL Gitee : https://gitee.com/auroot/Auins\n"
         "ConfigSystemInfo"     ) ConfigSystemInfo    ;; # 完成系统配置成功, 可重启的提示信息
     esac
 }
-
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # 地址: auins.info(INFO)| script.conf(CONF)
 # 读取: Config_File_Manage [INFO/CONF] [Read] [头部参数]
 # 写入: Config_File_Manage [INFO/CONF] [Write] [头部参数] [修改内容]
@@ -195,28 +191,35 @@ function Config_File_Manage(){
                 fi
     esac 
 }
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
+# @install Programs 安装包
+function Install_Program() {
+    # arch-chroot ${MNT_DIR} bash -c "$COMMAND"
+    set +e
+    IFS=' '; PACKAGES=("$@");
+    for VARIABLE in {1..3}
+    do
+        local COMMAND="pacman -Syu --noconfirm --needed ${PACKAGES[@]}"
+        if ! bash -c "$COMMAND" ; then break; else sleep 3; break; fi
+    done
+    echo "$VARIABLE" &> /dev/null
+    set -e
+}
 # @脚本自检
 function Script_init(){
-    # 读取配置 
-    Driver_Audio_Conf=$(Config_File_Manage CONF Read "Install_Driver_Audio")
-    Driver_input_Conf=$(Config_File_Manage CONF Read "Install_Driver_Input")
-    Driver_Bluetooth_Conf=$(Config_File_Manage CONF Read "Install_Driver_Bluetooth")
-    Hostname_Conf=$(Config_File_Manage CONF Read Hostname)
-    Password_SSH_Conf=$(Config_File_Manage CONF Read "Password_SSH")
-    Service_SSH_Conf=$(Config_File_Manage CONF Read "Service_SSH")
-    
+    # Read Profile.conf
+    CONF_Hostname=$(Config_File_Manage CONF Read Hostname)
+    CONF_Password_SSH=$(Config_File_Manage CONF Read "Password_SSH")
+    CONF_Service_SSH=$(Config_File_Manage CONF Read "Service_SSH")
     # Detect CPU
     CPU_Name=$(head -n 5 /proc/cpuinfo | grep "model name" | awk -F ": " '{print $2}')
-    if lscpu | grep GenuineIntel &>/dev/null ; then   CPU_Vendor="intel";
-    elif lscpu | grep AuthenticAMD &>/dev/null ; then CPU_Vendor="amd";
+    if lscpu | grep GenuineIntel &>/dev/null  ; then CPU_Vendor="intel";
+    elif lscpu | grep AuthenticAMD &>/dev/null; then CPU_Vendor="amd";
     fi
     Config_File_Manage INFO Write CPU_Name "$CPU_Name"
     Config_File_Manage INFO Write CPU_Vendor "$CPU_Vendor"
     # Detect Host_Environment
-    if   lspci | grep -i virtualbox &>/dev/null ; then  Host_Environment="virtualbox";
-    elif lspci | grep -i vmware &>/dev/null ; then      Host_Environment="vmware"; 
+    if   lspci | grep -i virtualbox &>/dev/null; then Host_Environment="virtualbox";
+    elif lspci | grep -i vmware &>/dev/null    ; then Host_Environment="vmware"; 
     else Host_Environment="Computer";
     fi
     Config_File_Manage INFO Write Host_Environment "$Host_Environment";
@@ -232,7 +235,7 @@ function Script_init(){
     fi
     Config_File_Manage INFO Write Boot_Type ${Boot_Type}
     Config_File_Manage INFO Write Disk_Type ${Disk_Type}
-    Boot_way=$(Config_File_Manage INFO Read "Boot_Type")
+    INFO_Boot_way=$(Config_File_Manage INFO Read "Boot_Type")
     
     # 本地化地区
     Timezone=$(Config_File_Manage INFO Read "Timezone")
@@ -244,24 +247,23 @@ function Script_init(){
         Country_Name=$(echo "$API" | grep -w "country_name" | awk '{print $2}' | sed 's#",##' | sed 's#"##')  && Config_File_Manage INFO Write Country_Name "$Country_Name";
     fi
     ln -sf /usr/share/zoneinfo/"$Timezone" /etc/localtime &>/dev/null && hwclock --systohc
-    Archiso_Version_check=$(Config_File_Manage CONF Read "Archiso_Version_check");
+    CONF_Archiso_Version_check=$(Config_File_Manage CONF Read "Archiso_Version_check");
     case "$ChrootPatterns" in  
         Chroot-OFF) 
             # 根据配置文件, 判断是否开启SSH远程服务, Chroot下不执行
-            case $Service_SSH_Conf in [Yy]*) Open_SSH; sleep 5; esac
+            case $CONF_Service_SSH in [Yy]*) Open_SSH; sleep 5; esac
             # Detect Archiso Version 检查 LiveCD 版本 并提醒更新
             # entries_livecd="/run/archiso/airootfs"  # discern: liveCD
             if [ -d /run/archiso/airootfs ]; then 
                 # Home list (LiveCD_Model \ Normal_Model)
                 echo "Yes" > ${Local_Dir}/LiveCD 2> /dev/null
-                case $Archiso_Version_check in [Yy]*) Archiso_Version_Testing "$Livecd_Version_Route"; esac
+                case $CONF_Archiso_Version_check in [Yy]*) Archiso_Version_Testing "$Livecd_Version_Route"; esac
             else 
                 Normals="yes"; 
-                Archiso_Version_check="no"
+                CONF_Archiso_Version_check="no"
             fi
     esac
 }
-
 # @下载所需的脚本模块
 function Update_Share(){     
     # 根据配置文件选择源, 将其作为脚本的下载源 Module URL: Default settings
@@ -286,7 +288,6 @@ function Update_Share(){
     if [ ! -e "${Auins_Config}" ]; then curl -fsSL "${Source_Local}/profile.conf" > "$Auins_Config"; fi
     if [ ! -e "${Auins_record}" ]; then curl -fsSL "${Source_Local}/auins.info" > "$Auins_record"; fi
 }
-
 # @该死的颜色
 function Set_Color_Variable(){
     # 红 绿 黄 蓝 白 后缀
@@ -313,11 +314,10 @@ function Set_Color_Variable(){
     out_WELL="${white}::${green} [Well] =>${suffix}"
     out_ERROR="${white}::${red} [Error] =>${suffix}"
 }
-
 # @网络部分集合
 function Network(){
     # @获取本机IP地址，并储存到$Auins_record， Network Variable
-    function Ethernet_info(){    
+    function ethernet_info(){    
         local Info_Nic
         for  ((Cycle_number=3;Cycle_number<=10;Cycle_number++)); do
             Info_Nic=$(cut -d":" -f1 /proc/net/dev | sed -n "$Cycle_number",1p | sed 's/^[ ]*//g')
@@ -333,7 +333,7 @@ function Network(){
         done    
     }
     # @配置WIFI，Configure WIFI
-    function Configure_wifi() {
+    function configure_wifi() {
         printf "${outG} ${green} Wifi SSID 'TP-Link...' :${suffix} %s" "$inB"
         read -r WIFI_SSID
         printf "${outG} ${green} Wifi Password :${suffix} %s" "$inB"
@@ -346,7 +346,7 @@ function Network(){
         fi
     }
     # @配置有线网络，Configure Ethernet.
-    function Configure_Ethernet(){
+    function configure_ethernet(){
         echo ":: One moment please............"
         ip link set "${Ethernet_Name}" up
         ip address show "${Ethernet_Name}"
@@ -354,47 +354,46 @@ function Network(){
         sleep 1;
     }
     # @配置网络
-    function Configure_all(){
+    function configure_all(){
         echo -e "\n${white}:: Checking the currently available network."; sleep 2;
         echo -e "${white}:: Ethernet: ${red}${Ethernet_Name}${suffix}\n${white}:: Wifi:   ${red}${Wifi_Name}${suffix}"
         printf "${outG} ${yellow}Query Network: Ethernet[1] Wifi[2] Exit[3]? ${suffix}%s" "$inB"
         read -r wlink 
         case "$wlink" in
-            1 ) Configure_Ethernet ;;
-            2 ) Configure_wifi ;;
+            1 ) configure_ethernet ;;
+            2 ) configure_wifi ;;
             3 ) bash "${0}" ;;
         esac
     }
     # Ethernet
     case ${1} in
-        INFO)      Ethernet_info ;;
-        Conf_wifi) Configure_wifi ;;
-        Conf_Eth ) Configure_Ethernet ;;
-        Conf_all ) Configure_all
+        INFO     ) ethernet_info ;;
+        Conf_wifi) configure_wifi ;;
+        Conf_Eth ) configure_ethernet ;;
+        Conf_all ) configure_all
     esac
 }
 # @开启SSH服务， Start ssh service 
 function Open_SSH(){   
     Network INFO; 
-    echo "${USER}:${Password_SSH_Conf}" | chpasswd &>/dev/null 
+    echo "${USER}:${CONF_Password_SSH}" | chpasswd &>/dev/null 
     echo -e "\n
 ${yellow}:: Setting SSH Username / password.        ${suffix}
 ${green} ---------------------------------          ${suffix}
 ${green}    $ ssh $USER@${Local_Ethernet_IP:-${Local_Wifi_IP}}  ${suffix}
 ${green}    Username --=>  $USER                    ${suffix}
-${green}    Password --=>  $Password_SSH_Conf       ${suffix}
+${green}    Password --=>  $CONF_Password_SSH       ${suffix}
 ${green} =================================          ${suffix}"
     systemctl start sshd.service 
     netcap | grep sshd 
 }
-
 # @设置root密码 用户 
 function ConfigurePassworld(){
     local PasswdFile Number
-    export UserName_INFO UsersID CheckingID CheckingUsers
-    UserName_INFO=$(Config_File_Manage INFO Read "Users")
+    export INFO_UserName UsersID CheckingID CheckingUsers
+    INFO_UserName=$(Config_File_Manage INFO Read "Users")
     CheckingUsers=""
-    if [ -z "${UserName_INFO}" ]; then
+    if [ -z "$INFO_UserName" ]; then
         PasswdFile="/etc/passwd"
         for Number in {1..30}; do  
             Query=$(tail -n "${Number}" "${PasswdFile}" | head -n 1 | cut -d":" -f3)
@@ -411,16 +410,15 @@ function ConfigurePassworld(){
         fi
     fi
 }
-
 # @安装系统、内核、基础包等，Install system kernel / base...
 function Install_Archlinux(){    
-    Linux_kernel_Conf=$(Config_File_Manage CONF Read "Linux_kernel")
+    CONF_Linux_kernel=$(Config_File_Manage CONF Read "Linux_kernel")
     echo -e "\n${out_EXEC} ${green}Update the system clock.${suffix}"   # update time
     timedatectl set-ntp true
     echo -e "${out_EXEC} ${green}Install the Kernel base packages.${suffix}\n" 
     sleep 2;
     # bash "$Mirrorlist_Script" "${Auins_Config}" "${Auins_record}"
-    case "$Linux_kernel_Conf" in 
+    case "$CONF_Linux_kernel" in 
         linux    ) pacstrap "$System_Root" base base-devel linux-firmware vim unzip linux linux-headers ;;
         linux-lts) pacstrap "$System_Root" base base-devel linux-firmware vim unzip linux-lts ;; 
         linux-zen) pacstrap "$System_Root" base base-devel linux-firmware vim unzip linux-zen linux-zen-headers ;;
@@ -448,7 +446,7 @@ function Auin_chroot(){
 function Set_Desktop_Env(){
     Printf_Info DesktopEnvList;
     DESKTOP_ID="0"  
-    printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}.\n" "${CheckingUsers:-$UserName_INFO}" "${CheckingID:-$UsersID_INFO}"
+    printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}.\n" "${CheckingUsers:-$INFO_UserName}" "${CheckingID:-$INFO_UsersID}"
     printf "${outG} ${yellow} Please select desktop:${suffix} %s" "$inB"
     read -r DESKTOP_ID
     case ${DESKTOP_ID} in
@@ -473,15 +471,17 @@ function Install_DesktopEnv(){
     Desktop_Name=$1
     Desktop_Xinit=$2
     Desktop_Program=$3
+    CONF_PGK_Xorg=$(Config_File_Manage CONF Read "PGK_Xorg")
+    CONF_PGK_Gui_Package=$(Config_File_Manage CONF Read "PGK_Gui_Package")
+    
     Config_File_Manage INFO Write Desktop_Environment "$Desktop_Name"
-    
     echo -e "\n${out_EXEC} ${green}Configuring desktop environment ${white}[$Desktop_Name].${suffix}"; sleep 1;
-    Install_Program "$(Config_File_Manage CONF Read "PGK_Xorg")"
+    Install_Program "$CONF_PGK_Xorg"
     Install_Program "$Desktop_Program"
-    Install_Program "$(Config_File_Manage CONF Read "PGK_Gui_Package")"
+    Install_Program "$CONF_PGK_Gui_Package"
     Desktop_Manager
-    Desktop_Xorg_Config "$Desktop_Name" "$Desktop_Xinit"
-    
+    Desktop_Xorg_Config "$Desktop_Name" "$Desktop_Xinit" 
+    Install_Fcitx
 }
 # @桌面管理器选择列表，选择后，自动安装及配置服务；
 function Desktop_Manager(){
@@ -526,11 +526,10 @@ function Desktop_Xorg_Config(){
         echo -e "${out_WELL} ${white}${1} ${green}Desktop environment configuration completed.${suffix}"  
     fi
 }
-
 # @install fonts 安装所有字体
 function Install_Font(){
-    PGK_FONTS=$(Config_File_Manage CONF Read "PGK_Fonts")
-    PGK_FONTS_ADOBE=$(Config_File_Manage CONF Read "PGK_Fonts_Adobe")
+    CONF_PGK_FONTS=$(Config_File_Manage CONF Read "PGK_Fonts")
+    CONF_PGK_FONTS_ADOBE=$(Config_File_Manage CONF Read "PGK_Fonts_Adobe")
     
     CONF_Install_Font_Common=$(Config_File_Manage CONF Read "Install_Font_Common")
     CONF_Install_Font_Adobe=$(Config_File_Manage CONF Read "Install_Font_Adobe")
@@ -542,27 +541,25 @@ function Install_Font(){
         unzip -d /usr/share/fonts "${Local_Dir}/JetBrains_Fira_Fonts.zip"
         fc-cache
     }
-    
     case $CONF_Install_Font_Common in
         [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [Common fonts].${suffix}" 
-                Install_Program "$PGK_FONTS" ;; 
+                Install_Program "$CONF_PGK_FONTS" ;; 
             *)  printf "${outG} ${yellow}Whether to install [Common fonts]. Install[y] No[*]${suffix} %s" "$inB"
                 read -r UserInf_Font
                 case ${UserInf_Font} in
-                    [Yy]*) Install_Program "$PGK_FONTS" ;;
+                    [Yy]*) Install_Program "$CONF_PGK_FONTS" ;;
                         *) echo -e "${out_SKIP} ${white}[Common fonts].${suffix}\n"
                 esac
     esac   
     case $CONF_Install_Font_Adobe in
         [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [Adobe fonts].${suffix}" 
-                Install_Program "$PGK_FONTS_ADOBE" ;;
+                Install_Program "$CONF_PGK_FONTS_ADOBE" ;;
             *)  printf "${outG} ${yellow}Whether to install [Adobe fonts]. Install[y] No[*]${suffix} %s" "$inB"
                 read -r UserInf_Adobe_Font
                 case ${UserInf_Adobe_Font} in
-                    [Yy]*) Install_Program "$PGK_FONTS_ADOBE" ;;
+                    [Yy]*) Install_Program "$CONF_PGK_FONTS_ADOBE" ;;
                         *) echo -e "${out_SKIP} ${white}[Adobe fonts].${suffix}\n"
                 esac
-    
     esac
     case $CONF_Install_Font_JetBrains_Fira in
         [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [JetBrains / Fira fonts].${suffix}" 
@@ -575,58 +572,71 @@ function Install_Font(){
                 esac
     esac 
 }
-
-# @install Programs 安装包
-function Install_Program() {
-    # arch-chroot ${MNT_DIR} bash -c "$COMMAND"
-    set +e
-    IFS=' '; PACKAGES=("$@");
-    for VARIABLE in {1..3}
-    do
-        local COMMAND="pacman -Syu --noconfirm --needed ${PACKAGES[@]}"
-        if ! bash -c "$COMMAND" ; then break; else sleep 3; break; fi
-    done
-    echo "$VARIABLE" &> /dev/null
-    set -e
+# @install fcitx 
+function Install_Fcitx(){
+    Fcitx_Config="
+GTK_IM_MODULE=fcitx
+QT_IM_MODULE=fcitx
+XMODIFIERS=@im=fcitx
+"
+    CONF_Install_Fcitx=$(Config_File_Manage CONF Read "Install_Fcitx")
+    CONF_PKG_Fcitx=$(Config_File_Manage CONF Read "PKG_Fcitx")
+    case $CONF_Install_Fcitx in
+    [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [Fcitx].${suffix}" 
+            Install_Program "$CONF_PKG_Fcitx" 
+            echo "$Fcitx_Config" >> /etc/environment;; 
+        *)  printf "${outG} ${yellow}Whether to install [Fcitx]. Install[y] No[*]${suffix} %s" "$inB"
+            read -r UserInf_Fcitx
+            case ${UserInf_Fcitx} in
+                [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [Fcitx].${suffix}" 
+                        Install_Program "$CONF_PKG_Fcitx" 
+                        echo "$Fcitx_Config" >> /etc/environment;;
+                    *) echo -e "${out_SKIP} ${white}[Fcitx].${suffix}\n"
+            esac
+    esac 
 }
-
 # @Install I/O Driver 安装驱动
 function Install_Io_Driver(){
-    PKG_INTEL=$(Config_File_Manage CONF Read "PGK_Intel")
-    PKG_AMD=$(Config_File_Manage CONF Read "PGK_Amd")
-    PGK_Audio_Driver="$(Config_File_Manage CONF Read "PGK_Audio_Driver")"
-    PGK_Input_Driver="$(Config_File_Manage CONF Read "PGK_Input_Driver")"
-    PGK_Bluetooth_Driver="$(Config_File_Manage CONF Read "PGK_Bluetooth_Driver")"
+    # 读取配置 
+    CONF_Driver_Audio=$(Config_File_Manage CONF Read "Install_Driver_Audio")
+    CONF_Driver_input=$(Config_File_Manage CONF Read "Install_Driver_Input")
+    CONF_Driver_Bluez=$(Config_File_Manage CONF Read "Install_Driver_Bluetooth")
+    # 读取包名
+    CONF_PKG_INTEL=$(Config_File_Manage CONF Read "PGK_Intel")
+    CONF_PKG_AMD=$(Config_File_Manage CONF Read "PGK_Amd")
+    CONF_PGK_Audio_Driver="$(Config_File_Manage CONF Read "PGK_Audio_Driver")"
+    CONF_PGK_Input_Driver="$(Config_File_Manage CONF Read "PGK_Input_Driver")"
+    CONF_PGK_Bluez_Driver="$(Config_File_Manage CONF Read "PGK_Bluetooth_Driver")"
     # CPU
     case $CPU_Vendor in
     intel)  echo -e "\n${out_EXEC} ${green}Install the Intel driver.${suffix}"
-            Install_Program "$PKG_INTEL";;
+            Install_Program "$CONF_PKG_INTEL";;
       amd)  echo -e "\n${out_EXEC} ${green}Install the Amd driver.${suffix}"
-            Install_Program "$PKG_AMD";;
+            Install_Program "$CONF_PKG_AMD";;
         *)  printf "${outG} ${yellow}Please select: Intel[1] AMD[2].${suffix} %s" "$inB"
             read -r DRIVER_GPU_ID
             case $DRIVER_GPU_ID in
-                1) Install_Program "$PKG_INTEL" ;;
-                2) Install_Program "$PKG_AMD" ;;
+                1) Install_Program "$CONF_PKG_INTEL" ;;
+                2) Install_Program "$CONF_PKG_AMD" ;;
             esac
     esac
     # 安装音频驱动 
-    case $Driver_Audio_Conf in 
+    case $CONF_Driver_Audio in 
         yes) echo -e "${out_EXEC} ${green}Installing Audio driver.${suffix}"  
-             Install_Program "$PGK_Audio_Driver"
+             Install_Program "$CONF_PGK_Audio_Driver"
              systemctl enable alsa-state.service ;;
         *)   echo -e "${out_SKIP} ${green}Installing audio driver.${suffix}"
     esac
     # 安装 I/O 驱动 
-    case $Driver_input_Conf in 
+    case $CONF_Driver_input in 
         yes) echo -e "${out_EXEC} ${green}Installing input driver.${suffix}" 
-             Install_Program "$PGK_Input_Driver" ;;
+             Install_Program "$CONF_PGK_Input_Driver" ;;
         *)   echo -e "${out_SKIP} ${green}Installing audio driver..${suffix}"
     esac 
     # 安装蓝牙驱动
-    case $Driver_Bluetooth_Conf in 
+    case $CONF_Driver_Bluez in 
         yes) echo -e "${out_EXEC} ${green}Installing Bluetooth driver.${suffix}"  
-             Install_Program "$PGK_Bluetooth_Driver"
+             Install_Program "$CONF_PGK_Bluez_Driver"
              echo "load-module module-bluetooth-policy" >> /etc/pulse/system.pa
              echo "load-module module-bluetooth-discover" >> /etc/pulse/system.pa ;;
         *)   echo -e "${out_SKIP} ${green}Installing bluetooth driver.${suffix}"
@@ -636,11 +646,12 @@ function Install_Io_Driver(){
 # @Install GPU Driver 安装显卡驱动
 function Install_Processor_Driver(){
     lspci -k | grep -A 2 -E "(VGA|3D)"  
+    CONF_PGK_Nvidia_Driver=$(Config_File_Manage CONF Read "PGK_Nvidia_Driver")
     printf "\n${outG} ${yellow}Whether to install the Nvidia driver? [y/N]:${suffix} %s" "$inB"
     read -r DRIVER_NVIDIA_ID
     case $DRIVER_NVIDIA_ID in
         [Yy]*)
-            Install_Program "$(Config_File_Manage CONF Read "PGK_Nvidia_Driver")"
+            Install_Program "$CONF_PGK_Nvidia_Driver"
             # yay -Sy --needed "$(Config_File_Manage CONF Read "PGK_Nvidia_Manager")"
             systemctl enable optimus-manager.service 
             rm -f /etc/X11/xorg.conf 2&>/dev/null
@@ -670,30 +681,29 @@ function Install_Processor_Driver(){
 # @Install/Configure Grub, 安装并配置Grub
 function Configure_Grub(){
     echo -e "\n${out_EXEC} ${green}Install grub tools.${suffix}\n"  
-    echo -e "${out_WELL} ${white}Your startup mode has been detected as ${green}${Boot_way}${suffix}.\n"   
-    PKG_GRUB_UEFI="$(Config_File_Manage CONF Read "PGK_GRUB_UEFI")"
-    PKG_GRUB_BOOT="$(Config_File_Manage CONF Read "PGK_GRUB_BOOT")"
+    echo -e "${out_WELL} ${white}Your startup mode has been detected as ${green}$INFO_Boot_way${suffix}.\n"   
+    CONF_PKG_GRUB_UEFI="$(Config_File_Manage CONF Read "PGK_GRUB_UEFI")"
+    CONF_PKG_GRUB_BOOT="$(Config_File_Manage CONF Read "PGK_GRUB_BOOT")"
     sleep 2;
-    case "$Boot_way" in 
+    case "$INFO_Boot_way" in 
         UEFI)
-        #-------------------------------------------------------------------------------#   
-            Install_Program "$PKG_GRUB_UEFI"
-            grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$Hostname_Conf" --recheck
+            Install_Program "$CONF_PKG_GRUB_UEFI"
+            grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$CONF_Hostname" --recheck
             echo "GRUB_DISABLE_OS_PROBER=false" >> /etc/default/grub
             grub-mkconfig -o /boot/grub/grub.cfg
-            if efibootmgr | grep "$Hostname_Conf" &>/dev/null ; then
-                echo -e "\n${out_WELL} ${green} Grub installed successfully -=> [$Hostname_Conf] ${suffix}"  
-                echo -e "${green}     $(efibootmgr | grep "$Hostname_Conf")  ${suffix}\n"  
+            if efibootmgr | grep "$CONF_Hostname" &>/dev/null ; then
+                echo -e "\n${out_WELL} ${green} Grub installed successfully -=> [$CONF_Hostname] ${suffix}"  
+                echo -e "${green}     $(efibootmgr | grep "$CONF_Hostname")  ${suffix}\n"  
             else
                 echo -e "\n${out_ERROR} ${red}Grub installed failed ${suffix}"
                 echo -e "${green}     $(efibootmgr)  ${suffix}\n"
             fi
         ;;
         BIOS)
-            Install_Program "$PKG_GRUB_BOOT"
-            local Boot_partition
-            Boot_partition=$(Config_File_Manage INFO Read "Boot_partition") 
-            grub-install --target=i386-pc --recheck --force "$Boot_partition"
+            Install_Program "$CONF_PKG_GRUB_BOOT"
+            local INFO_Boot_partition
+            INFO_Boot_partition=$(Config_File_Manage INFO Read "Boot_partition") 
+            grub-install --target=i386-pc --recheck --force "$INFO_Boot_partition"
             grub-mkconfig -o /boot/grub/grub.cfg
             if echo $? &>/dev/null ; then
                 echo -e "\n${out_WELL} ${green} Grub installed successfully -=> [Archlinux] ${suffix}\n"  
@@ -704,35 +714,36 @@ function Configure_Grub(){
 }
 # @配置本地化 时区 主机名 语音等  
 function Configure_Language(){
-    echo -e "${out_EXEC} ${white}Configure enable Network.${suffix}"    
-        systemctl enable NetworkManager  
-    echo -e "${out_EXEC} ${white}Time zone changed to 'Shanghai'. ${suffix}"  
-        ln -sf /usr/share/zoneinfo"$Timezone" /etc/localtime && hwclock --systohc # 将时区更改为"上海" / 生成 /etc/adjtime
-    echo -e "${out_EXEC} ${white}Set the hostname \"$Hostname_Conf\". ${suffix}"
-        echo "$Hostname_Conf" > /etc/hostname
-    echo -e "${out_EXEC} ${white}Localization language settings. ${suffix}"
-        sed -i 's/#.*en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
-    echo -e "${out_EXEC} ${white}Write 'en_US.UTF-8 UTF-8' To /etc/locale.gen. ${suffix}"  
-        sed -i 's/#.*zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/' /etc/locale.gen 
-    echo -e "${out_EXEC} ${white}Write 'zh_CN.UTF-8 UTF-8' To /etc/locale.gen. ${suffix}" 
-        locale-gen
-    echo -e "${out_EXEC} ${white}Configure local language defaults 'en_US.UTF-8'. ${suffix}"  
-        echo "LANG=en_US.UTF-8" > /etc/locale.conf       # 系统语言 "英文" 默认为英文   
+        echo -e "${out_EXEC} ${white}Configure enable Network.${suffix}"    
+    systemctl enable NetworkManager  
+        echo -e "${out_EXEC} ${white}Time zone changed to 'Shanghai'. ${suffix}"  
+    ln -sf /usr/share/zoneinfo"$Timezone" /etc/localtime && hwclock --systohc # 将时区更改为"上海" / 生成 /etc/adjtime
+        echo -e "${out_EXEC} ${white}Set the hostname \"$CONF_Hostname\". ${suffix}"
+    echo "$CONF_Hostname" > /etc/hostname
+        echo -e "${out_EXEC} ${white}Localization language settings. ${suffix}"
+    sed -i 's/#.*en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+        echo -e "${out_EXEC} ${white}Write 'en_US.UTF-8 UTF-8' To /etc/locale.gen. ${suffix}"  
+    sed -i 's/#.*zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/' /etc/locale.gen 
+        echo -e "${out_EXEC} ${white}Write 'zh_CN.UTF-8 UTF-8' To /etc/locale.gen. ${suffix}" 
+    locale-gen
+        echo -e "${out_EXEC} ${white}Configure local language defaults 'en_US.UTF-8'. ${suffix}"  
+    echo "LANG=en_US.UTF-8" > /etc/locale.conf       # 系统语言 "英文" 默认为英文   
+    sleep 3;
 }
 # @Install/Configure virtualbox-guest-utils / open-vm-tools, 安装虚拟化插件
 function install_virtualization_service(){
-    PKG_VMWARE="$(Config_File_Manage CONF Read "PGK_Vmware")"
-    PKG_VIRTUALBOX="$(Config_File_Manage CONF Read "PGK_VirtualBox")"
+    CONF_PKG_VMWARE="$(Config_File_Manage CONF Read "PGK_Vmware")"
+    CONF_PKG_VIRTUALBOX="$(Config_File_Manage CONF Read "PGK_VirtualBox")"
     case "$1" in
         vmware)
-            Install_Program "$PKG_VMWARE"
+            Install_Program "$CONF_PKG_VMWARE"
             systemctl enable vmtoolsd.service
             systemctl enable vmware-vmblock-fuse.service
             systemctl start vmtoolsd.service
             systemctl start vmware-vmblock-fuse.service
         ;;
         virtualbox)
-            Install_Program "$PKG_VIRTUALBOX"
+            Install_Program "$CONF_PKG_VIRTUALBOX"
             systemctl enable vboxservice.service
             systemctl start vboxservice.service
         ;;
@@ -769,13 +780,13 @@ function Process_Management(){
     case ${PM_Enter_1} in
         start  ) bash "$Process_Script" start   "${PM_Enter_2}" ;;
         restart) bash "$Process_Script" restart "${PM_Enter_2}" ;;
-        stop   ) bash "$Process_Script" stop    "${PM_Enter_2}"
+        stop   ) bash "$Process_Script" stop    "${PM_Enter_2}" ;;
     esac
 }
 # @安装系统
 function Installation_System(){
-    Root_partition=$(Config_File_Manage INFO Read "Root_partition")  
-    if [ -n "$Root_partition" ]; then  # 后续待修改部分
+    INFO_Root_partition=$(Config_File_Manage INFO Read "Root_partition")  
+    if [ -n "$INFO_Root_partition" ]; then  # 后续待修改部分
         Install_Archlinux
     else
         echo -e "${out_WARNING} ${white}The partition is not mounted.${suffix}"; 
@@ -791,32 +802,27 @@ function Installation_System(){
 # @配置系统
 function Configure_System(){
     Disk_Kernel=$(cat /usr/src/linux/version)
-    Install_Kernel=$(Config_File_Manage INFO Read "LinuxKernel")
-    # Boot_Mode=$(Config_File_Manage CONF Read "Boot_Mode")
-    PKG_Terminal_Tools=$(Config_File_Manage CONF Read "PGK_Terminal_Tools")
-    PKG_SystemctlFile=$(Config_File_Manage CONF Read "PKG_SystemctlFile")
-    PKG_Common_Package=$(Config_File_Manage CONF Read "PGK_Common_Package")
-    if [ -n "$Install_Kernel" ] || [ -n "$Disk_Kernel" ] ; then 
-        # case "$Boot_Mode" in
-        #     [Gg]*) Configure_Grub ;;
-        #     [Ss]*) Configure_Systemd_boot
-        # esac
+    INFO_Install_Kernel=$(Config_File_Manage INFO Read "LinuxKernel")
+    CONF_PGK_Terminal_Tools=$(Config_File_Manage CONF Read "PGK_Terminal_Tools")
+    CONF_PKG_SystemctlFile=$(Config_File_Manage CONF Read "PKG_SystemctlFile")
+    CONF_PGK_Common_Package=$(Config_File_Manage CONF Read "PGK_Common_Package")
+    if [ -n "$INFO_Install_Kernel" ] || [ -n "$Disk_Kernel" ] ; then 
         Configure_Grub
         #---------------------------------------------------------------------------#
         echo -e "${out_EXEC} ${green}Install the Terminal tools packages.${suffix}" && sleep 1;
-        Install_Program "$PKG_Terminal_Tools"
+        Install_Program "$CONF_PGK_Terminal_Tools"
         echo -e "${out_EXEC} ${green}Install the System file package.${suffix}" && sleep 1;
-        Install_Program "$PKG_SystemctlFile" 
+        Install_Program "$CONF_PKG_SystemctlFile" 
         echo -e "${out_EXEC} ${green}Install the Other common package.${suffix}" && sleep 1;
-        Install_Program "$PKG_Common_Package" 
+        Install_Program "$CONF_PGK_Common_Package" 
         Configure_Language
         ConfigurePassworld
-        UserName_INFO=$(Config_File_Manage INFO Read "Users")
-        UsersID_INFO=$(id -u "$UserName_INFO" 2> /dev/null)
-        printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}.\n" "${CheckingUsers:-$UserName_INFO}" "${CheckingID:-$UsersID_INFO}"
+        INFO_UserName=$(Config_File_Manage INFO Read "Users")
+        INFO_UsersID=$(id -u "$INFO_UserName" 2> /dev/null)
+        printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}.\n" "${CheckingUsers:-$INFO_UserName}" "${CheckingID:-$INFO_UsersID}"
         rm -rf ${Local_Dir}/Config_System; # 删除这个文件，才能进 Normal_Model  
         Install_Font
-        if [ "$(Config_File_Manage CONF Read "Archlinucn")" = "yes" ]; then Install_Program archlinuxcn-keyring;fi
+        if [ "$(Config_File_Manage CONF Read "Archlinucn")" = "yes" ]; then Install_Program archlinuxcn-keyring; fi
         if [ "$(Config_File_Manage CONF Read "Blackarch")" = "yes" ]; then Install_Program blackarch-keyring; fi
         Printf_Info ConfigSystemInfo; sleep 3
     else
@@ -833,9 +839,9 @@ function Disk_Partition(){
 # @安装桌面
 function Installation_Desktop(){
     ConfigurePassworld    
-    UserName_INFO=$(Config_File_Manage INFO Read "Users")
-    UsersID_INFO=$(id -u "$UserName_INFO" 2> /dev/null)
-    if [ -n "$UserName_INFO" ]; then 
+    INFO_UserName=$(Config_File_Manage INFO Read "Users")
+    INFO_UsersID=$(id -u "$INFO_UserName" 2> /dev/null)
+    if [ -n "$INFO_UserName" ]; then 
         Set_Desktop_Env 
         printf "${outG} ${yellow}Whether to install Common Drivers? [y/N]:${suffix}%s" "$inB"
         read -r CommonDrive
@@ -914,7 +920,7 @@ function Auin_Options(){
         -m  | --mirror )  bash "$Mirrorlist_Script" "$Auins_Config" "$Auins_record"; exit 0 ;;
         -w  | --cwifi  )   Network Conf_wifi; exit 0 ;;
         -s  | --openssh) 
-            case "$Service_SSH_Conf" in
+            case "$CONF_Service_SSH" in
                 yes) echo -e "${outG} ${green} activated. ${suffix}"; exit 0 ;;
                 *  )  Open_SSH; exit 0 ;;
             esac ;;
@@ -935,7 +941,6 @@ Set_Color_Variable
 Update_Share
 Script_init
 Network INFO
-         
 # 具体的实现
 if ! groups "$(whoami)" | grep -i "root" &>/dev/null ; then 
     echo -e "\n${out_ERROR} ${red}There is currently no execute permission.${suffix}" 
@@ -946,17 +951,29 @@ case "${ChrootPatterns}" in
     Chroot-OFF)
         ChrootPatterns_Print="${white}[${red}Chroot-OFF${white}]${suffix}";     
         input_System_Module_Chroot="${outY} ${yellow}   arch-chroot ${System_Root}.      ${red}**  ${white}[0]  ${suffix}\n"
-        if [ -e "$System_Root/local/LiveCD_OFF" ]; then Auin_chroot 2> /dev/null; fi # 如果LiveCD_OFF存在于新系统，将自动chroot
-        if [ -e ${Local_Dir}/LiveCD ]; then StartPatterns="${white}[${green}LiveCD${white}]${suffix}"; LiveCD_Model; fi 
-        case $Normals in [Yy]*) StartPatterns="${white}[Normal]${suffix}"; Normal_Model; esac;;
+        if [ -e "$System_Root/local/LiveCD_OFF" ]; then # 如果LiveCD_OFF存在于新系统，将自动chroot
+            Auin_chroot 2> /dev/null; 
+        fi 
+        if [ -e ${Local_Dir}/LiveCD ]; then 
+            StartPatterns="${white}[${green}LiveCD${white}]${suffix}"
+            LiveCD_Model; 
+        fi 
+        case $Normals in 
+            [Yy]*)  StartPatterns="${white}[Normal]${suffix}"
+                    Normal_Model; 
+        esac
+    ;;
     Chroot-ON) 
-        ChrootPatterns_Print="${white}[${green}Chroot-ON${white}]${suffix}"; 
-        Chroot_status="${outG}  ${wg}Successfully start: Chroot.${suffix}";
+        ChrootPatterns_Print="${white}[${green}Chroot-ON${white}]${suffix}"
+        Chroot_status="${outG}  ${wg}Successfully start: Chroot.${suffix}"
         # Tasks_Auin_chroot="0"
         if [ -e ${Local_Dir}/Config_System ]; then 
-            StartPatterns="${white}[${green}LiveCD${white}]${suffix}"; LiveCD_Model; 
+            StartPatterns="${white}[${green}LiveCD${white}]${suffix}"
+            LiveCD_Model; 
         else 
-            StartPatterns="${white}[Normal]${suffix}"; Normal_Model; Normals="yes"; 
+            StartPatterns="${white}[Normal]${suffix}"
+            Normals="yes"
+            Normal_Model
         fi
 esac
 # >> >> >> >> >> >> >> >> >> >> >> >>
