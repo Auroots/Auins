@@ -13,7 +13,7 @@
   </a>
 </p>
 <h1 align="center">
-  <a href="https://github.com/Auroots/Auins" alt="logo" ><img src="http://auins.auroot.cn/local/Auins.png" width="1000"/></a>
+  <a href="https://github.com/Auroots/Auins" alt="logo" ><img src="https://gitee.com/auroot/Auins/raw/master/local/Auins.png" width="1000"/></a>
   <br>
 </h1>
 <h3>
