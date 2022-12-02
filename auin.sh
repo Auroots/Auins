@@ -134,19 +134,19 @@ ${ws}#======================================================#${suffix}"
     }
     function usage() {
         echo -e "
+:: Auins is a script for ArchLinux installation and deployment.
 usage: ${0##*/} [-h] [-V] command ...
-    Options:
-    -m --mirror   Automatically configure mirrorlist file and exit.
-    -w --cwifi    Connect to a WIFI and exit.
-    -s --openssh  Open SSH service (default password: 123456) and exit.
-    -vm --virtual Install Vmware/Virtualbox Tools and exit.
-    -ec --conf    Edit (./local/profile.conf), Command(vim).
-         -vc      View (profile.conf).
-        --info    View (auins.info).
-         -ds      Delete scripts and other caches.       
-    -h --help     Show this help message and exit. 
-    -v --version  Show the conda version number and exit.
-:: Auins is a script for ArchLinux installation and deployment. \n"
+    Optional arguments:
+        -m --mirror   Automatically configure mirrorlist file and exit.
+        -w --cwifi    Connect to a WIFI and exit.
+        -s --openssh  Open SSH service (default password: 123456) and exit.
+        -vm --virtual Install Vmware/Virtualbox Tools and exit.
+        -ec --conf    Edit (./local/profile.conf), Command(vim).
+             -vc      View (profile.conf).
+            --info    View (auins.info).
+             -ds      Delete scripts and other caches.       
+        -h --help     Show this help message and exit. 
+        -v --version  Show the conda version number and exit. \n"
     }
     function version(){    
         echo -e "

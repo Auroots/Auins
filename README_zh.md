@@ -61,7 +61,7 @@ chmod +x auin.sh && bash auin.sh
 (4->4)  桌面安装      需设置普通用户后，即可执行;
 (4->11) 驱动安装      需系统安装后，即可执行;
 (4->22) 虚拟化工具安装 需系统安装后，即可执行;
-(4->0)  Chroot       需系统安装后，即可执行;
+(4->0)  Chroot      需系统安装后，即可执行;
 ```
 
 #### 💻 其他功能
@@ -74,7 +74,10 @@ usage: auin [-h] [-V] command ...
        -w | --cwifi     配置wifi;
        -s | --openssh   配置并开启ssh服务;
       -vm | --virtual   安装并配置vm-tools;
-       -i | --info      查看脚本记录的计算机信息;
+      -ec --conf    	编辑配置文件 (./local/profile.conf);
+           -vc      	查看脚本配置文件 (profile.conf);
+          --info    	查看脚本生成的信息(auins.info);
+           -ds      	删除脚本和其他缓存;
        -h | --help      帮助;
        -v | --version   版本;
 ```
@@ -88,8 +91,7 @@ usage: auin [-h] [-V] command ...
 - [ ] ⏳  会继续尝试DWM桌面环境；
 - [ ] ⏳  会尝试维护Openbox桌面环境；
 - [ ] ☁️  脚本：[v5.0]Beta `s2arch.sh` Archlinux can be installed on VPS;
-- [ ] 🗔 Script：At startup, print information first，eg：CPU，LiveCD，network，disk...
-- [ ] 🔗 Script：Rewrite the mirror source configuration script;
+- [x] 🗔 Script：At startup, print information first，eg：CPU，LiveCD，network，disk...
 - [ ] ⚙️ 检查reflector报错的问题(不影响正常使用)
 
 
