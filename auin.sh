@@ -911,26 +911,24 @@ function Normal_Model(){
 # @Auins的其他选项功能
 function Auin_Options(){
     case "${1}" in
-        -m|--mirror ) bash "$Mirrorlist_Script" "$Auins_Config" "$Auins_record" ;;
-        -w|--cwifi  ) Network Conf_wifi ;;
+        -m|--mirror ) bash "$Mirrorlist_Script" "$Auins_Config" "$Auins_record"; exit 0 ;;
+        -w|--cwifi  ) Network Conf_wifi; exit 0 ;;
         -s|--openssh) 
             case "$CONF_Service_SSH" in
-                yes) echo -e "${outG} ${green} activated. ${suffix}";;
-                *  )  Open_SSH;;
+                yes) echo -e "${outG} ${green} activated. ${suffix}"; exit 0;;
+                *  )  Open_SSH; exit 0;;
             esac ;;
-
-        -ec|--conf  ) vim "${Auins_Config}" ;;
-            -vc     ) less "${Auins_Config}" ;;
-           --info   ) less "${Auins_record}" ;;
-            -ds     ) Delete_Script ;;
-        -h|--help   ) Printf_Info usage ;;
-        -v|--version) Printf_Info version ;;
-            -fo     ) Install_Font ;;
-            -vm     ) install_virtualization_service "$Host_Environment" ;;
-            -fc     ) Install_Fcitx ;;
-            -vcd    ) Install_Processor_Driver ;;
+        -ec|--conf  ) vim "${Auins_Config}"; exit 0 ;;
+            -vc     ) less "${Auins_Config}"; exit 0 ;;
+           --info   ) less "${Auins_record}"; exit 0 ;;
+            -ds     ) Delete_Script; exit 0 ;;
+        -h|--help   ) Printf_Info usage; exit 0 ;;
+        -v|--version) Printf_Info version; exit 0 ;;
+            -fo     ) Install_Font; exit 0 ;;
+            -vm     ) install_virtualization_service "$Host_Environment"; exit 0 ;;
+            -fc     ) Install_Fcitx; exit 0 ;;
+            -vcd    ) Install_Processor_Driver; exit 0 ;;
     esac
-    exit 0
 }
 
 # Start Script | 从这里开始

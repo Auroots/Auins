@@ -363,7 +363,7 @@ function partition_swap(){
                       sleep 3s; exit 4 ;;
         esac 
     elif testPartition "$input_swap" &>/dev/null ; then
-        Swap_Partition
+         Swap_Partition
     else
         echo -e "\n${PSY} ${y}Skip create a swap file.${h}"; sleep 1
     fi
