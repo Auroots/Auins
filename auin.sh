@@ -752,8 +752,8 @@ function Archiso_Version_Testing(){
     Config_File_Manage INFO Write Livecd_version "${Time_Archiso:- }";
     case $Time_interval in
         [0])    ;;
-        [1])    printf "\n${out_WARNING} ${white}Please update as soon as possible Livecd ! \n${out_WARNING} ${white}Livecd Version: %s.\n${suffix}" "$Time_Archiso"; sleep 3 ;;
-        [2])    printf "\n${out_WARNING} ${white}You haven't updated in more than 2 month Livecd ! \n${out_WARNING} ${white}Livecd Version: %s.\n${suffix}" "$Time_Archiso"; sleep 3 ;;
+        [1])    printf "\n${out_WARNING} ${white}Please update as soon as possible Livecd ! \n${out_WARNING} ${white}Livecd Version: %s.\n${suffix}" "$Time_Archiso"; sleep 1 ;;
+        [2])    printf "\n${out_WARNING} ${white}You haven't updated in more than 2 month Livecd ! \n${out_WARNING} ${white}Livecd Version: %s.\n${suffix}" "$Time_Archiso"; sleep 2 ;;
         [3])    printf "\n${out_WARNING} ${white}You haven't updated in more than 3 month Livecd ! \n${out_WARNING} ${white}Livecd Version: %s.\n${suffix}" "$Time_Archiso";
                 printf "\n${outY} ${yellow} Whether to start the script [Y/n]:${suffix} %s" "$inB"
                 read -r Version_check
@@ -911,25 +911,26 @@ function Normal_Model(){
 # @Auins的其他选项功能
 function Auin_Options(){
     case "${1}" in
-        -m|--mirror ) bash "$Mirrorlist_Script" "$Auins_Config" "$Auins_record"; exit 0 ;;
-        -w|--cwifi  ) Network Conf_wifi; exit 0 ;;
+        -m|--mirror ) bash "$Mirrorlist_Script" "$Auins_Config" "$Auins_record" ;;
+        -w|--cwifi  ) Network Conf_wifi ;;
         -s|--openssh) 
             case "$CONF_Service_SSH" in
-                yes) echo -e "${outG} ${green} activated. ${suffix}"; exit 0 ;;
-                *  )  Open_SSH; exit 0 ;;
+                yes) echo -e "${outG} ${green} activated. ${suffix}";;
+                *  )  Open_SSH;;
             esac ;;
 
         -ec|--conf  ) vim "${Auins_Config}" ;;
-            -vc     ) clear; less "${Auins_Config}"; exit 0 ;;
-           --info   ) clear; less "${Auins_record}"; exit 0 ;;
-            -ds     ) Delete_Script; exit 0 ;;
-        -h|--help   ) Printf_Info usage; exit 0   ;;
-        -v|--version) clear; Printf_Info version; exit 0 ;;
-            -fo     ) Install_Font; exit 0 ;;
+            -vc     ) less "${Auins_Config}" ;;
+           --info   ) less "${Auins_record}" ;;
+            -ds     ) Delete_Script ;;
+        -h|--help   ) Printf_Info usage ;;
+        -v|--version) Printf_Info version ;;
+            -fo     ) Install_Font ;;
             -vm     ) install_virtualization_service "$Host_Environment" ;;
-            -fc     ) Install_Fcitx; exit 0 ;;
-            -vcd    ) Install_Processor_Driver; exit 0 ;;
+            -fc     ) Install_Fcitx ;;
+            -vcd    ) Install_Processor_Driver ;;
     esac
+    exit 0
 }
 
 # Start Script | 从这里开始

@@ -264,9 +264,9 @@ function Disk_Filesystem(){
     local Options=$1
     local Disk=$2
     case ${Options} in
-        1) mkfs.ext2 "${Disk}" ;;
-        2) mkfs.ext3 "${Disk}" ;;
-        3) mkfs.ext4 "${Disk}" ;;
+        1) mkfs.ext2 "${Disk}"; Root_SystemFiles="ext2" ;;
+        2) mkfs.ext3 "${Disk}"; Root_SystemFiles="ext3" ;;
+        3) mkfs.ext4 "${Disk}"; Root_SystemFiles="ext4" ;;
         4)
             read_output=$(echo -e "\n$PSY ${g}Please enter the disk label. [Default: Data]${h} $JHG")
             read -rp "${read_output}" Disk_label
@@ -275,12 +275,13 @@ function Disk_Filesystem(){
             else
                 mkfs.btrfs -L "$Disk_label" -f "${Disk}"
             fi
+            Root_SystemFiles="btrfs"
         ;;
-        5) mkfs.vfat "${Disk}" ;;
-        6) mkfs.f2fs "${Disk}" ;;
-        7) mkfs.jfs "${Disk}"  ;;
-        8) ntfs-3g "${Disk}"   ;;
-        9) mkfs.reiserfs "${Disk}" ;;
+        5) mkfs.vfat "${Disk}"; Root_SystemFiles="vfat" ;;
+        6) mkfs.f2fs "${Disk}"; Root_SystemFiles="f2fs" ;;
+        7) mkfs.jfs "${Disk}";  Root_SystemFiles="jfs"  ;;
+        8) ntfs-3g "${Disk}";   Root_SystemFiles="ntfs-3g" ;;
+        9) mkfs.reiserfs "${Disk}"; Root_SystemFiles="reiserfs" ;;
     esac
 }
 
@@ -293,6 +294,7 @@ function partition_root(){
     partition_facts _Open_mount_ "/dev/$userinput_disk" "$System_Root" # 挂载
     
     Config_File_Manage INFO Write Root_partition "/dev/$userinput_disk"
+    Config_File_Manage INFO Write Root_SystemFile "$Root_SystemFiles"
     Boot_partition=$(echo "/dev/$userinput_disk" | awk '{sub(/[1-9]*$/,"");print}')
     if [ $Boot_Type = "BIOS" ]; then Config_File_Manage INFO Write Boot_partition "$Boot_partition"; fi
 }
@@ -313,6 +315,7 @@ function partition_booting_UEFI(){
     Disk_Filesystem 5 "/dev/$userinput_disk"
     partition_facts _Open_mount_ "/dev/$userinput_disk" ${Boot_Dir}
     Config_File_Manage INFO Write Boot_partition "/dev/$userinput_disk"
+    Config_File_Manage INFO Write Boot_SystemFile "vfat"
 }
 
 # 格式化并挂载 BIOS引导分区，输入: /dev/sdX[0-9] | sdX[0-9]
@@ -326,32 +329,43 @@ function partition_booting_BOIS(){
 
 # 格式化并挂载虚拟的Swap分区，可自定义大小
 function partition_swap(){
-    local read_text_output
-    showDisk
-    read_text_output=$(echo -e "\n${PSY} ${y}lease select the size of swapfile: ${g}[example:256M-10000G ~] ${y}Skip: ${g}[No]${h} ${JHB}")
-    read -rp "${read_text_output}"  input_swap
-    if echo "$input_swap" | grep -E "^[0-9]*[kK|mM|gG]$" &>/dev/null ; then
+    function Swap_File(){
         echo -e "${PSG} ${g}Assigned Swap file Size: ${input_swap} .${h}"
         fallocate -l "${input_swap}" /mnt/swapfile  # 创建指定大小的swap虚拟化文件
         chmod 600 /mnt/swapfile # 设置权限
         mkswap /mnt/swapfile    # 格式化swap文件
         swapon /mnt/swapfile    # 挂载swap文件
-        Config_File_Manage INFO Write Swap_file "/mnt/swapfile"
+        Config_File_Manage INFO Write Swap "/mnt/swapfile"
         Config_File_Manage INFO Write Swap_size "${input_swap}"
-    elif testPartition "$input_swap" &>/dev/null ; then
+    }
+    function Swap_Partition(){
         input_swap_device="$input_swap"
         mkswap "/dev/$input_swap_device"
-        swapon "/dev/$input_swap_device"
-        # SWAP_UUID=$(blkid -s PARTUUID -o value "/dev/$input_swap_device")
-        # echo "UUID=$SWAP_UUID none swap defaults 0 0" >> /etc/fstab
-        input_swap_size=$(df -ha | grep "$input_swap_device" | awk -F " " '{print $2}')
+        # swapon "/dev/$input_swap_device"
+        SWAP_UUID=$(blkid -s PARTUUID -o value "/dev/$input_swap_device")
+        echo "UUID=$SWAP_UUID none swap defaults 0  0" >> /etc/fstab
+        mount -a
+        # input_swap_size=$(df -ha | grep "$input_swap_device" | awk -F " " '{print $2}')
+        input_swap_size=$(lsblk | grep "$input_swap_device" | awk -F " " '{print $4}')
         echo -e "${PSG} ${g}Assigned Swap file Size: $input_swap_size .${h}"
-        Config_File_Manage INFO Write Swap_file "/dev/$input_swap_device"
+        Config_File_Manage INFO Write Swap "/dev/$input_swap_device"
         Config_File_Manage INFO Write Swap_size "${input_swap_size}"
+    }
+    local read_text_output
+    showDisk
+    CONF_Root_SystemFile=$(Config_File_Manage INFO Read Root_SystemFile)
+    read_text_output=$(echo -e "\n${PSY} ${y}lease select the Swapfile: ${g}[size:256M-100G ~] and Swap partition: ${g}sdX[0-9]${y}Skip: ${g}[No]${h} ${JHB}")
+    read -rp "${read_text_output}"  input_swap
+    if echo "$input_swap" | grep -E "^[0-9]*[kK|mM|gG]$" &>/dev/null ; then
+        case $CONF_Root_SystemFile in
+            ext[2-4]) Swap_File;;
+                   *) echo -e "\n${PSR} ${r}Error: Swapfile cannot be created.${h}"
+                      sleep 3s; exit 4 ;;
+        esac 
+    elif testPartition "$input_swap" &>/dev/null ; then
+        Swap_Partition
     else
-        echo -e "\n${PSY} ${y}Skip create a swap file.${h}"  
-        sleep 1;
-        echo;
+        echo -e "\n${PSY} ${y}Skip create a swap file.${h}"; sleep 1
     fi
     echo -e "${wg} ::==>> Partition complete. ${h}" 
 }
