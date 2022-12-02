@@ -47,7 +47,7 @@ function Configure_Users(){
         UserPassword=$(whiptail --title "ArchLinux - Password" --passwordbox "Enter User Password and choose Ok to continue." 10 60 3>&1 1>&2 2>&3) # 设置密码
         UserPassword_retype=$(whiptail --title "ArchLinux - Password" --passwordbox "Again Enter User Password and choose Ok to continue." 10 60 3>&1 1>&2 2>&3) # 设置密码
         if [ "$UserPassword" == "$UserPassword_retype" ]; then
-            Config_File_Manage INFO Write User_Password "${UserPassword_retype}"
+            # Config_File_Manage INFO Write User_Password "${UserPassword_retype}"
             useradd -m -g users -G wheel -s /bin/bash "${UserName}"  # 新建用户
             echo "${UserName}:${UserPassword_retype}" | chpasswd &> /dev/null # 设置密码 
             whiptail --title "Configure User Password." --msgbox "The ${UserName} password configuration is complete. [OK]" 10 60   # 提示配置root密码成功
@@ -69,7 +69,7 @@ function Configure_Root_Password(){
         RootPassword=$(whiptail --title "ArchLinux - Root Password" --passwordbox "Enter Root Password and choose Ok to continue." 10 60 3>&1 1>&2 2>&3)  # 输入第一次root密码
         RootPassword_retype=$(whiptail --title "ArchLinux - Root Password" --passwordbox "Again Enter Root Password and choose Ok to continue." 10 60 3>&1 1>&2 2>&3)  # 输入第二次root密码
         if [ "$RootPassword" == "$RootPassword_retype" ]; then
-            Config_File_Manage INFO Write "Root_Password" "${RootPassword_retype}"
+            # Config_File_Manage INFO Write "Root_Password" "${RootPassword_retype}"
             echo "root:${RootPassword_retype}" | chpasswd &> /dev/null   # 输入两次正确，将在这里设置Root密码
             whiptail --title "Configure Root Password." --msgbox "Root Password setting complete. [OK]" 10 60   # 提示配置root密码成功
             ROOT_PASSWORD_TYPED="true"
@@ -127,11 +127,11 @@ case "$Auto_Config_Users" in
         UsersID=$(id -u "$UserName_INFO" 2> /dev/null)
         Config_File_Manage INFO Write Users "${User_Name_Conf}"
         Config_File_Manage INFO Write UsersID "$UsersID"
-        Config_File_Manage INFO Write User_Password "${User_Password_Conf}"
+        # Config_File_Manage INFO Write User_Password "${User_Password_Conf}"
         # 配置Root用户 >> >> >> >> >> >> >> >> >> 
         echo -e "${out_EXEC} ${green}Configuring user [${white}root${suffix}${green}] password.${suffix}" && sleep 1;
         echo "root:${Root_Password_Conf}" | chpasswd &> /dev/null   # 输入两次正确，将在这里设置Root密码
-        Config_File_Manage INFO Write "Root_Password" "${Root_Password_Conf}"
+        # Config_File_Manage INFO Write "Root_Password" "${Root_Password_Conf}"
         # 配置Nopasswd用户 >> >> >> >> >> >> >> >> >> 
         case $Sudo_Nopasswd in
             [Yy]*)
