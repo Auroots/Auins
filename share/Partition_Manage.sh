@@ -60,7 +60,6 @@ function Process_Management(){
         start)   bash "${Share_Dir}/Process_manage.sh" start "${PM_Enter_2}" ;;
         restart) bash "${Share_Dir}/Process_manage.sh" restart "${PM_Enter_2}" ;;
         stop)    bash "${Share_Dir}/Process_manage.sh" stop "${PM_Enter_2}"
-                 echo -e "\n\n${wg}---------Script Exit---------${h}"  ;;
     esac
 }
 # 磁盘分区

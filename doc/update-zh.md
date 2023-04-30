@@ -23,38 +23,23 @@
   - 优化
   
     - [x] 增加scrips的源，以免单一站点无法访问，导致无法使用；
-  
     - [x] 增加(arch、aur、blackarch、arch4edu)的源,并利用profile.conf自定义增减；
-  
     - [x] 利用profile.conf，自定义安装驱动；
-  
     - [x] 检查archlinux-iso版本，并提醒更新,可通过profile.conf关闭；
-  
     - [x] ssh服务在配置文件里设置成yes，chroot后还会执行一遍；
-  
     - [x] 4 - 0 (chroot) 如果处于chroot模式时， 将不显示；
-  
     - [x] 自定义配置脚本的依赖源；
-  
     - [x] 修复boot引导无法开机的问题；
-  
     - [x] bios安装的情况下，关闭选择挂载boot目录；
-  
     - [x] 自动识别配置中的源，并在配置系统最后一步时， 安装keyring；
-  
     - [x] 自动识别系统环境，做Livecd和Normal两种使用场景；
-  
     - [x] 新建多分区，设置为开关，放到配置文件中；
-  
     - [x] 在正常环境下，识别脚本执行是否带有root权限；
-  
     - [x] 自定义配置文件，按需安装驱动 （音频 蓝牙 I/O 等；
-  
     - [x] 根据Conf，配置livecd中ssh的密码；
     - [x] 以处于livecd环境为前提，将部分livecd功能，做到如果没在chroot环境时自动arch-chroot,并执行；
     
     
-
 
 - [**2022.08.22**]  v4.3.5更新说明 新增与改进：
 
