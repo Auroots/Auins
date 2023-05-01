@@ -321,7 +321,7 @@ function Set_Color_Variable(){
     outG="${white}::${green} =>${suffix}"; outY="${white}::${yellow} =>${suffix}"
 
     out_SKIP="${white}::${yellow} [Skip] =>${suffix}"
-    out_WARNING="${white}::${yellow} [Warn] =>${suffix}"
+    out_WARNING="${white}::${yellow} [Warning] =>${suffix}"
     out_EXEC="${white}::${blue} [Exec] =>${suffix}"
     out_WELL="${white}::${green} [Well] =>${suffix}"
     out_ERROR="${white}::${red} [Error] =>${suffix}"
