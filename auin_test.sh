@@ -16,13 +16,15 @@ SCRIPTS_SOURCE="auroot"
     - [ ] 检查reflector报错的问题(不影响正常使用);
     - [ ] 新增: 快照备份软件(timeshift)，开启方式：配置文件，默认开启;
     - [ ] 新增: pacman多线程下载(axel)，开启方式：配置文件中或脚本选项;
-    - [ ] 新增: 输入法(ibus)，开启方式：配置文件中或脚本选项;
+    - [ ] 新增: 输入法(ibus-rime)，开启方式：配置文件中或脚本选项;
     - [ ] 新增: 脚本选项逻辑,加入set选项,将设置选项归类;
     - [x] 修改: 配置系统不再自动安装字体,只有安装桌面环境后,才会提示;
     - [ ] 修复: 解决不输入Root密码,自动跳过;
     - [ ] 修复: 解决设置Swap大小不成功或自动跳过的问题（虚拟机下正常;
-    - [ ] 修复: 选择磁盘时,无法识别nvme名称;
+    - [?] 修复: 选择磁盘时,无法识别nvme名称; ?检查代码未发现问题
     - [ ] 修复: 非root权限运行脚本时,不会终止;
+    - [x] 修复: 无法正确配置时区;
+    - [x] 优化: 部分语法;
 EOF
 # @可能有用的文件
 # /proc/cmdline
@@ -37,6 +39,7 @@ function Script_Variable_init(){
     Local_Dir="${Auins_Dir}/local" 
     Auins_Config="${Local_Dir}/profile.conf"  
     Auins_record="${Local_Dir}/auins.info"  
+    Auins_api_file="${Local_Dir}/api.json"  
     Mirrorlist_Script="${Share_Dir}/Mirrorlist_Manage.sh"
     Users_Script="${Share_Dir}/Users_Manage.sh"
     Partition_Script="${Share_Dir}/Partition_Manage.sh"
@@ -238,13 +241,22 @@ function Script_init(){
     # 本地化地区
     Country_Name=$(Config_File_Manage INFO Read "Country_Name")
     if [ -z  "$Country_Name" ] ; then
-        API=$(curl -fsSL --fail https://ipapi.co/json)
-        CONF_Timezone=$(Config_File_Manage CONF Read Timezone) && Config_File_Manage INFO Write Timezone "$CONF_Timezone";
-        Public_IP=$(echo "$API" | grep -w "ip" | awk '{print $2}' | sed 's#",##' | sed 's#"##')      && Config_File_Manage INFO Write Public_IP "$Public_IP";
-        Country=$(echo "$API" | grep -w "country" | awk '{print $2}' | sed 's#",##' | sed 's#"##')   && Config_File_Manage INFO Write Country "$Country";
-        Country_Name=$(echo "$API" | grep -w "country_name" | awk '{print $2}' | sed 's#",##' | sed 's#"##')  && Config_File_Manage INFO Write Country_Name "$Country_Name";
+        curl -fsSL --fail https://ipapi.co/json > "$Auins_api_file"
+        CONF_Timezone=$(Config_File_Manage CONF Read Timezone)
+        if [[ "$CONF_Timezone" == "" ]]; then
+            API_Timezone=$(grep -w "timezone" "$Auins_api_file" | awk '{print $2}' | sed 's#",##' | sed 's#"##')
+            Config_File_Manage INFO Write Timezone "$API_Timezone"
+        else
+            Config_File_Manage INFO Write Timezone "$CONF_Timezone";
+        fi
+        # 从api中获取ip，国家，时区信息，写入到info文件，暂时无其他作用
+        API_Public_IP=$(grep -w "ip" "$Auins_api_file" | awk '{print $2}' | sed 's#",##' | sed 's#"##')      && Config_File_Manage INFO Write Public_IP "$API_Public_IP";
+        API_Country=$(grep -w "country" "$Auins_api_file" | awk '{print $2}' | sed 's#",##' | sed 's#"##')   && Config_File_Manage INFO Write Country "$API_Country";
+        API_Country_Name=$(grep -w "country_name" "$Auins_api_file" | awk '{print $2}' | sed 's#",##' | sed 's#"##')  && Config_File_Manage INFO Write Country_Name "$API_Country_Name";
     fi
-    ln -sf /usr/share/zoneinfo/"$CONF_Timezone" /etc/localtime &>/dev/null && hwclock --systohc
+    # 校准live环境的时间
+    ln -sf /usr/share/zoneinfo/"$(Config_File_Manage INFO Read "Timezone")" /etc/localtime &>/dev/null && hwclock --systohc --utc
+    # 检查archiso版本，如果过低，叫提醒更新
     CONF_Archiso_Version_check=$(Config_File_Manage CONF Read "Archiso_Version_check");
     case "$ChrootPatterns" in  
         Chroot-OFF) 
@@ -262,6 +274,7 @@ function Script_init(){
             fi
     esac
 }
+
 # @下载所需的脚本模块
 function Update_Share(){     
     # 根据配置文件选择源, 将其作为脚本的下载源 Module URL: Default settings
@@ -454,14 +467,14 @@ function Install_Font(){
     CONF_Install_Font_JetBrains_Fira=$(Config_File_Manage CONF Read "Install_Font_JetBrains_Fira")
     # 安装JetBrainsFira字体(code)
     function InstallJetBrainsFira(){
-        if wget -P "$Local_Dir" http://auins.auroot.cn/local/JetBrains_Fira_Fonts.zip; then
+        if wget -P "$Local_Dir" "${Source_Local}/JetBrains_Fira_Fonts.zip"; then
             mkdir -p /usr/share/fonts
             unzip -d /usr/share/fonts "${Local_Dir}/JetBrains_Fira_Fonts.zip"
             fc-cache
         fi
     }
     # 根据配置文件安装相应的字体
-    local Common_status="flase" Adobe_status="flase" JetBrainsFira_status="flase"
+    local Common_status="false" Adobe_status="false" JetBrainsFira_status="false"
     function Config_file_install_fonts(){
         case $CONF_Install_Font_Common in
             [Yy]* )  echo -e "\n${out_EXEC} ${green}Installing [Common fonts].${suffix}"; sleep 2s 
@@ -510,21 +523,21 @@ function Install_Font(){
     # 脚本运行时，由脚本自动判断，自动安装配置文件中的选项，另外询问是否安装其他
     function Script_Runing_install_fonts(){
         Config_file_install_fonts
-        Common_status="flase" Adobe_status="flase" JetBrainsFira_status="flase"
+        Common_status="false" Adobe_status="false" JetBrainsFira_status="false"
         case $Common_status in
-            flase) ;;
+            false) ;;
         esac 
-        if [[ $Common_status == "flase" ]]; then
+        if [[ $Common_status == "false" ]]; then
             printf "${outG} ${green}Whether to install the [ Common fonts ] [Y/n]? :${suffix} %s" "$inB"
             case $(Read_user_input) in
                 [Yy]* ) Install_Program "$CONF_PGK_FONTS";;
             esac 
-        elif [[ $Adobe_status == "flase" ]]; then
+        elif [[ $Adobe_status == "false" ]]; then
             printf "${outG} ${green}Whether to install the [ Adobe fonts ] [Y/n]? :${suffix} %s" "$inB"
             case $(Read_user_input) in
                 [Yy]* ) Install_Program "$CONF_PGK_FONTS";;
             esac
-        elif [[ $JetBrainsFira_status == "flase" ]]; then
+        elif [[ $JetBrainsFira_status == "false" ]]; then
             printf "${outG} ${green}Whether to install the [ JetBrainsFira fonts (code) ] [Y/n]? :${suffix} %s" "$inB"
             case $(Read_user_input) in
                 [Yy]* ) Install_Program "$CONF_PGK_FONTS";;
@@ -543,26 +556,61 @@ function Install_Font(){
     esac 
 }
 
-# @install fcitx 
+# @安装 fcitx 输入法
 function Install_Fcitx(){
-    Fcitx_Config="
+    CONF_Install_Fcitx=$(Config_File_Manage CONF Read "Install_Fcitx")
+    CONF_PKG_Fcitx=$(Config_File_Manage CONF Read "PKG_Fcitx")
+
+    function install_fcitx(){
+        echo -e "\n${out_EXEC} ${green}Installing [ Fcitx ].${suffix}"; sleep 2s
+        pacman -Rsc --noconfirm fcitx
+        Install_Program "$CONF_PKG_Fcitx" 
+        Fcitx_Config="
 GTK_IM_MODULE=fcitx
 QT_IM_MODULE=fcitx
 XMODIFIERS=@im=fcitx"
-    CONF_Install_Fcitx=$(Config_File_Manage CONF Read "Install_Fcitx")
-    CONF_PKG_Fcitx=$(Config_File_Manage CONF Read "PKG_Fcitx")
+        echo "$Fcitx_Config" >> /etc/environment
+    }
+
     case $CONF_Install_Fcitx in
-    [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [Fcitx].${suffix}"; sleep 2s
-            pacman -Rsc --noconfirm fcitx
-            Install_Program "$CONF_PKG_Fcitx" 
-            echo "$Fcitx_Config" >> /etc/environment;; 
-        *)  printf "${outG} ${yellow}Whether to install [Fcitx]. Install[y] No[*]${suffix} %s" "$inB"
+    [Yy]*)  install_fcitx;; 
+        *)  printf "${outG} ${yellow}Whether to install [ Fcitx ]. Install[y] No[*]${suffix} %s" "$inB"
             case $(Read_user_input) in
-                [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [Fcitx].${suffix}"; sleep 2s
-                        pacman -Rsc --noconfirm fcitx
-                        Install_Program "$CONF_PKG_Fcitx" 
-                        echo "$Fcitx_Config" >> /etc/environment;;
-                    *) echo -e "${out_SKIP} ${white}[Fcitx].${suffix}\n"
+                [Yy]*)  install_fcitx ;;
+                    *) echo -e "${out_SKIP} ${white}[ Fcitx ].${suffix}\n"
+            esac
+    esac 
+}
+
+# @安装 ibus-rime 输入法
+function Install_ibus_rime() {
+    CONF_Install_Ibus=$(Config_File_Manage CONF Read "Install_Ibus")
+    CONF_PKG_Ibus=$(Config_File_Manage CONF Read "PKG_Ibus")
+
+    function configure_ibus() {
+        if wget -P "$Local_Dir" "${Source_Local}/oh-my-rime.zip" ; then
+            mkdir -p /home/"$INFO_UserName"/.config/ibus 
+            unzip -d /home/"$INFO_UserName"/.config/ibus "${Local_Dir}/oh-my-rime.zip"
+        fi
+        Ibus_Config="
+export GTK_IM_MODULE=ibus
+export XMODIFIERS=@im=ibus
+export QT_IM_MODULE=ibus
+ibus-daemon -d -x"
+        echo "$Ibus_Config" >> /etc/environment
+        echo "$Ibus_Config" >> /etc/profile
+    }
+    
+    case $CONF_Install_Ibus in
+    [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [ ibus-rime ].${suffix}"; sleep 2s
+            Install_Program "$CONF_PKG_Ibus" 
+            configure_ibus;;
+        *)  printf "${outG} ${yellow}Whether to install [ ibus-rime ]. Install[y] No[*]${suffix} %s" "$inB"
+            case $(Read_user_input) in
+                [Yy]*)  echo -e "\n${out_EXEC} ${green}Installing [ ibus-rime ].${suffix}"; sleep 2s
+                        Install_Program "$CONF_PKG_Ibus" 
+                        configure_ibus;;
+                    *) echo -e "${out_SKIP} ${white}[ ibus-rime ].${suffix}\n"
             esac
     esac 
 }
@@ -709,7 +757,7 @@ function Configure_Language(){
         echo -e "${out_EXEC} ${white}Configure enable Network.${suffix}"; sleep 1s
     systemctl enable NetworkManager
         echo -e "${out_EXEC} ${white}Time zone changed to 'Shanghai'. ${suffix}"; sleep 1s
-    ln -sf /usr/share/zoneinfo"$CONF_Timezone" /etc/localtime && hwclock --systohc # 将时区更改为"上海" / 生成 /etc/adjtime
+    ln -sf /usr/share/zoneinfo/"$(Config_File_Manage INFO Read "Timezone")" /etc/localtime &>/dev/null && hwclock --systohc --utc # 将时区更改为"上海" / 生成 /etc/adjtime
         echo -e "${out_EXEC} ${white}Set the hostname \"$CONF_Hostname\". ${suffix}"; sleep 1s
     echo "$CONF_Hostname" > /etc/hostname
         echo -e "${out_EXEC} ${white}Localization language settings. ${suffix}"; sleep 1s
@@ -890,8 +938,8 @@ function Auins_Options(){
     # Install Commands: ("-S = install", "-R = uninstall")
         font ) Install_Font User_options_install_fonts "$2"; exit 0 ;;
         fcitx) Install_Fcitx; exit 0 ;;
-        ibus ) ;;
-        axel ) ;;
+        ibus ) Install_ibus_rime; exit 0 ;;
+        axel ) Axel_Configure "$2";;
         inGpu) Install_Processor_Driver; exit 0 ;;
         inVmt) install_virtualization_service "$Host_Environment"; exit 0 ;;
     # Settings Options:
@@ -999,19 +1047,4 @@ reflector --country China  --protocol http --protocol https
 echo -e "usage: ${0##*/} font [all] or [commin] or [adobe] or [code];"
 
 
-# ibus-rime 输入法
-function Install_ibus_rime() {
-    Install_Program ibus-rime
 
-    echo "
-    export GTK_IM_MODULE=ibus
-    export XMODIFIERS=@im=ibus
-    export QT_IM_MODULE=ibus
-    ibus-daemon -d -x
-    " >> /etc/profile
-
-    if wget -P "$Local_Dir" http://auins.auroot.cn/local/oh-my-rime.zip ; then
-        mkdir -p /home/"$INFO_UserName"/.config/ibus 
-        unzip -d /home/"$INFO_UserName"/.config/ibus "${Local_Dir}/oh-my-rime.zip"
-    fi
-}
