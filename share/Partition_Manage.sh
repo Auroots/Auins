@@ -34,11 +34,11 @@ function Config_File_Manage(){
 # @获取用户输入，并返回
 function Read_user_input(){ local user_input; read -r user_input; echo "$user_input"; }
 # @输出磁盘表及UUID
-function showDisk(){ echo; lsblk -o+UUID | grep -E "sd..|vd..|nvme|mmc"; }
+function showDisk(){ echo; lsblk -o+UUID | grep -E "sd..|vd..|^nvme[0-9]n[0-9]p[1-9]$|^mmcblk[0-9]p[1-9]$"; }
 # @检查磁盘名是否合法
-function testDisk(){ echo "${1}" | cut -d"/" -f3 | grep -E "^[a-z]d[a-z]$|^vd[a-z]|^nvme|^mmc"; }
+function testDisk(){ echo "${1}" | cut -d"/" -f3 | grep -E "^[a-z]d[a-z]$|^vd[a-z]$|^nvme[0-9]n[0-9]$|^mmcblk[0-9]$" || echo "ERROR"; }
 # @检查分区名是否合法
-function testPartition(){ echo "${1}" | cut -d"/" -f3 | grep -E "^[a-z]d[a-z][1-9]|^vd[a-z][1-9]|^nvme*|^mmc*"; }
+function testPartition(){ echo "${1}" | cut -d"/" -f3 | grep -E "^[a-z]d[a-z][1-9]$|^vd[a-z][1-9]$|^nvme[0-9]n[0-9]p[1-9]$|^mmcblk[0-9]p[1-9]$" || echo "ERROR"; }
 # 检查输入的值，是否正确; 获取磁盘[\_partition\_], 获取分区[\_partition_root\_], 获取磁盘类型[\_Disk_Type\_], 挂载分区[\_Open_mount\_] [磁盘] [目录].
 
 
@@ -144,10 +144,10 @@ function partition_facts(){
             fi
     esac
 }
-The partition table does not match the disk bios. Partition table:
+
 # 判断使用的磁盘是否符合当前系统要求，并自定义改变[MBR/GPT]
 function partition_type(){
-    out_WELL _Disk_Type_ "$userinput_disk"
+    partition_facts _Disk_Type_ "$userinput_disk"
     lsblk | grep -E "^[a-z]d[a-z]|^nvme|^mmc"|grep -v "grep" 
     echo;
     if [[ "$user_Disk_Type" != "$Disk_Type" ]] ; then
@@ -309,17 +309,15 @@ function partition_root(){
 
 # 格式化并挂载 UEFI引导分区，输入: /dev/sdX[0-9] | sdX[0-9]
 function partition_booting_UEFI(){
-
     Boot_Dir="${System_Root}/boot/efi"
     umount -R ${Boot_Dir} 2&>/dev/null
     if ! ls ${Boot_Dir} &>/dev/null ; then
         mkdir -p ${Boot_Dir}
     fi
     showDisk 
-    local input_boot_part 
     printf "\n${outY} ${yellow}Choose your [${Boot_Dir}] partition: ${green}/dev/sdX[0-9] | sdX[0-9] ${suffix} %s" "${inY}"
-    input_boot_part=$(Read_user_input)
-    partition_facts _partition_root_ "$input_boot_part"
+    # 等待用户输入引导分区
+    partition_facts _partition_root_ "$(Read_user_input)"
 
     Disk_Filesystem 5 "/dev/$userinput_disk"
     partition_facts _Open_mount_ "/dev/$userinput_disk" ${Boot_Dir}
