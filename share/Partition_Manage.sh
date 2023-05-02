@@ -7,6 +7,7 @@
 # URL Gitee : https://gitee.com/auroot/Auins
 echo &>/dev/null
 # bash "${Share_Dir}/Partition_Manage.sh" "config" "info";
+# bash "${Share_Dir}/Partition_Manage.sh" "config" "info";
 Auins_Config=${1}
 Auins_record=${2}
 Auins_Dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd )
