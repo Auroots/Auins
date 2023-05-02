@@ -10,8 +10,8 @@ echo &>/dev/null
 # bash "${Share_Dir}/Partition_Manage.sh" "config" "info";
 Auins_Config=${1}
 Auins_record=${2}
-Auins_Dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd )
-Share_Dir="${Auins_Dir}"
+Share_Dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd )
+Process_Manage="${Share_Dir}/Process_Manage.sh"
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # 地址: auins.info(INFO)| script.conf(CONF)
@@ -47,7 +47,8 @@ function init(){
     red='\033[1;31m'; green='\033[1;32m'  
     yellow='\033[1;33m'; blue='\033[1;36m'  
     white='\033[1;37m'; suffix='\033[0m'  
-    wg='\033[1;42m';    
+    wg='\033[1;42m';  
+
     #-----------------------------#
     # 交互: 绿 黄
     inG=$(echo -e "${green}-=>${suffix} "); 
@@ -58,12 +59,12 @@ function init(){
     outG="${white}::${green} =>${suffix}"; 
     outY="${white}::${yellow} =>${suffix}"
 
-    out_SKIP="${white}::${yellow} [Skip] =>${suffix}"
-    out_EXEC="${white}::${blue} [Exec] =>${suffix}"
-    out_WELL="${white}::${green} [Well] =>${suffix}"
-    out_ERROR="${white}::${red} [Error] =>${suffix}"
+    out_SKIP="${white}::${yellow} [ Skip ] =>${suffix}"
+    out_EXEC="${white}::${blue} [ Exec ] =>${suffix}"
+    out_WELL="${white}:: ${wg}[ Well ]${suffix}${green} =>${suffix}"
+    out_ERROR="${white}::${red} [ Error ] =>${suffix}"
     # 定义全局变量
-    export System_Root Boot_Type System_Disk_Type
+    export System_Root Boot_Dir Boot_Type System_Disk_Type
     # Detect boot 检查引导, 并赋予引导类型
     if [ -d /sys/firmware/efi ]; then
         Boot_Type="UEFI" System_Disk_Type="GPT"
@@ -72,9 +73,10 @@ function init(){
     fi
     # 记录
     Config_File_Manage INFO Write "Boot_Type" "$Boot_Type" 
-    Config_File_Manage INFO Write "System_Disk_Type" "$System_Disk_Type"
-    # 定义根目录地址
+    Config_File_Manage INFO Write "Disk_Type" "$System_Disk_Type"
+    # 定义目录
     System_Root="/mnt"
+    Boot_Dir="${System_Root}/boot/efi"
 }
 
 # @Stript Management; 脚本进程管理 [start]开启 [restart]重新开启 [stop]杀死脚本进程
@@ -82,9 +84,9 @@ function Process_Management(){
     PM_Enter_1=${1}
     PM_Enter_2=${2}
     case ${PM_Enter_1} in
-        start)   bash "${Share_Dir}/Process_manage.sh" start "${PM_Enter_2}" ;;
-        restart) bash "${Share_Dir}/Process_manage.sh" restart "${PM_Enter_2}" ;;
-        stop)    bash "${Share_Dir}/Process_manage.sh" stop "${PM_Enter_2}"
+        start)   bash "$Process_Manage" start "${PM_Enter_2}" ;;
+        restart) bash "$Process_Manage" restart "${PM_Enter_2}" ;;
+        stop)    bash "$Process_Manage" stop "${PM_Enter_2}"
     esac
 }
 # 磁盘分区
@@ -93,11 +95,11 @@ function partition(){
     printf "\n${outY} ${yellow}Please Select disk: ${green}/dev/sdX | sdX ${suffix} %s" "${inY}"
     input_disk=$(Read_user_input)  # 输入磁盘名
     inspect_Disk=$(partition_facts _disk_ "$input_disk") # 检查磁盘是否输入正确, 如果输入错误则返回"ERROR"
-    partition_type "$input_disk"
     case "$inspect_Disk" in
         ERROR)  echo -e "\n${out_ERROR} ${red} [cfdisk] Please input: /dev/sdX | sdX !!! ${suffix}"  
-                Process_Management stop "$0"; exit 1;;
-        *   )   Config_File_Manage INFO Write "Disk" "$input_disk" && cfdisk "/dev/$inspect_Disk"
+                Process_Management stop "$0";;
+        *   )   Config_File_Manage INFO Write "Disk" "$input_disk" && partition_type "$input_disk"
+                cfdisk "/dev/$inspect_Disk"
     esac
 }
 
@@ -116,7 +118,7 @@ function partition_facts(){
                 sun) printf "sun" ;;
                 *  ) printf "Unformatted Disk"
              esac;;
-        _Open_munt_)  # Mount partition
+        _Open_mount_)  # Mount partition
             if ! mountpoint -q "$Mount_path" ; then  # 测试该目录是否已被挂载，系统全部挂载列表：/proc/self/mountinfo
                 mount "$Input_disk" "$Mount_path"
             else
@@ -158,7 +160,7 @@ function partition_type(){
             ;;
         esac 
     else 
-        printf "\n${out_WELL} ${green}Currently booted with ${blue}[ %s ]. ${green}Select disk type: ${blue}[ %s ].${suffix}" "${Boot_Type}" "${System_Disk_Type}"
+        printf "\n${out_WELL} ${green}Currently booted with ${blue}[ %s ]. ${green}Select disk type: ${blue}[ %s ].${suffix}" "${Boot_Type}" "${System_Disk_Type}"; sleep 3
     fi 
 }
 
@@ -219,13 +221,13 @@ function partition_other(){
         local 
         local path=${System_Root}${1}
         if ls "${path}" &>/dev/null ; then
-            mount_Disk=$(Format "${path}") # 获取磁盘名
+            Format "${path}" # 获取磁盘名
         else
             printf "\n${out_EXEC} ${white}Creating directory: ${blue}[ %s ]${suffix}${white}.${suffix}\n" "${path}"
             mkdir -p "${path}"
-            mount_Disk=$(Format "${path}") # 获取磁盘名
+            Format "${path}" # 获取磁盘名
         fi
-        partition_facts _Open_mount_ "/dev/$mount_Disk" "${path}" # 万事俱备，挂载
+        partition_facts _Open_mount_ "/dev/$Format_return_partition_name" "${path}" # 万事俱备，挂载
         showDisk  # 最后输出一下分区表
     }
     partition_other # 再运行, 输入quit，即退出
@@ -235,17 +237,16 @@ function partition_other(){
 function Format(){
     local input_Path=$1 Rename_root=$2; input_Path=${Rename_root:-$input_Path}
     showDisk 
-    printf "\n${outY} ${yellow}Directory: [ %s ] and Partition: ${green}/dev/sdX[0-9] | sdX[0-9] ${suffix} %s" "${input_Path}" "${inG}"
+    printf "\n${outY} ${yellow}Please Choose your ${white}[ %s ] ${yellow}partition: ${green}/dev/sdX[0-9] | sdX[0-9] ${suffix} %s" "${input_Path}" "${inG}"
     inspect_input_Partition=$(partition_facts _partition_root_ "$(Read_user_input)") # 检查磁盘名称，并返回值
     case "$inspect_input_Partition" in # 格式化
-        ERROR)  printf "\n${out_ERROR} ${red} [ %s ] Please input: /dev/sdX[0-9] | sdX[0-9] !!! ${suffix}" "${input_Path}"
-                Process_Management stop "$0"
-                exit 3;;
+        ERROR)  printf "\n${out_ERROR} ${white} [ %s ] ${red}Please input: /dev/sdX[0-9] | sdX[0-9] !!! ${suffix}\n" "${input_Path}"
+                Process_Management stop "$0" ;;
         *   )   if ! Disk_Filesystem_List "/dev/$inspect_input_Partition" ; then
                     sleep 1;
                 fi 
     esac
-    printf "%s" "$inspect_input_Partition"; # 返回用户输入到分区名
+    Format_return_partition_name="$inspect_input_Partition"; # 返回用户输入到分区名
 }
 
 # 自定义文件系统格式化
@@ -271,36 +272,34 @@ function Disk_Filesystem(){
         8) ntfs-3g   "${Disk}" && Root_SystemFiles="ntfs-3g" ;;
         9) mkfs.reiserfs "${Disk}" && Root_SystemFiles="reiserfs" ;;
     esac
-    printf  "\n${out_WELL} ${green}Successfully formatted ${white}[ %s ]${green} as ${white}[ %s ]${green} file system.${suffix}" "$Disk" "$Root_SystemFiles"
+    printf  "${out_WELL} ${green}Successfully formatted ${white}[ %s ]${green} as ${white}[ %s ]${green} file system.${suffix}\n" "$Disk" "$Root_SystemFiles"
 }
 
 # 格式化并挂载Root分区, 输入: /dev/sdX[0-9] | sdX[0-9]
 function partition_root(){
     umount -R $System_Root* 2>/dev/null
-    Root_partition_name=$(Format $System_Root "root(/)") # 请求输入磁盘地址和文件系统类型，格式化
-    # "$Directory" 变量来自 (Format /mnt "root(/)")函数
-    partition_facts _Open_mount_ "/dev/$Root_partition_name" "$System_Root" # 挂载
+    Format "$System_Root" 'root(/)' # 请求输入磁盘地址和文件系统类型，格式化, 会生成变量：Format_return_partition_name
+    partition_facts _Open_mount_ "/dev/$Format_return_partition_name" "$System_Root" # 挂载
     
-    Config_File_Manage INFO Write Root_partition "/dev/$Root_partition_name"
+    Config_File_Manage INFO Write Root_partition "/dev/$Format_return_partition_name"
     Config_File_Manage INFO Write Root_SystemFile "$Root_SystemFiles"
-    Boot_partition=$(echo "/dev/$Root_partition_name" | awk '{sub(/[1-9]*$/,"");print}')
+    Boot_partition=$(echo "/dev/$Format_return_partition_name" | awk '{sub(/[1-9]*$/,"");print}')
     if [ $Boot_Type = "BIOS" ]; then Config_File_Manage INFO Write Boot_partition "$Boot_partition"; fi
 }
 
 # 格式化并挂载 UEFI引导分区，输入: /dev/sdX[0-9] | sdX[0-9]
 function partition_booting_UEFI(){
-    Boot_Dir="${System_Root}/boot/efi"
     umount -R ${Boot_Dir} 2&>/dev/null
     if ! ls ${Boot_Dir} &>/dev/null ; then
         mkdir -p ${Boot_Dir}
     fi
     showDisk 
-    printf "\n${outY} ${yellow}Choose your [${Boot_Dir}] partition: ${green}/dev/sdX[0-9] | sdX[0-9] ${suffix} %s" "${inY}"
+    printf "\n${outY} ${yellow}Please Choose your ${white}[ UEFI(${Boot_Dir}) ] ${yellow}partition: ${green}/dev/sdX[0-9] | sdX[0-9] ${suffix} %s" "${inY}"
     # 等待用户输入引导分区
     UEFI_partition_name=$(partition_facts _partition_root_ "$(Read_user_input)")
 
     Disk_Filesystem 5 "/dev/$UEFI_partition_name" 
-    partition_facts _Open_mount_ "/dev/$UEFI_partition_name" ${Boot_Dir}
+    partition_facts _Open_mount_ "/dev/$UEFI_partition_name" "$Boot_Dir"
     Config_File_Manage INFO Write Boot_partition "/dev/$UEFI_partition_name"
     Config_File_Manage INFO Write Boot_SystemFile "$Root_SystemFiles"
 }
@@ -317,13 +316,14 @@ function partition_booting_BOIS(){
 # 格式化并挂载虚拟的Swap分区，可自定义大小
 function partition_swap(){
     function Swap_File(){
-        printf "${outG} ${green}Assigned Swap file Size: ${white}[ %s ]${green}.${suffix}\n" "$1"
-        fallocate -l "${1}" /mnt/swapfile  # 创建指定大小的swap虚拟化文件
+        printf "${out_EXEC} ${green}%s${white}[ %s ]${green}.${suffix}\n" "Assigned Swap file Size: " "$1"
+        fallocate -l "${1}" /mnt/swapfile && printf "${out_ERROR} ${red}%s${suffix}\n" "Create Swap failed." # 创建指定大小的swap虚拟化文件
         chmod 600 /mnt/swapfile # 设置权限
         mkswap /mnt/swapfile    # 格式化swap文件
         swapon /mnt/swapfile    # 挂载swap文件
         Config_File_Manage INFO Write Swap "/mnt/swapfile"
         Config_File_Manage INFO Write Swap_size "${1}"
+        printf "${out_WELL} ${green}%s${suffix}\n" "Successfully created Swap."
     }
     function Swap_Partition(){
         input_swap_device="$1"
@@ -334,11 +334,10 @@ function partition_swap(){
         mount -a
         # input_swap_size=$(df -ha | grep "$input_swap_device" | awk -F " " '{print $2}')
         input_swap_size=$(lsblk | grep "$input_swap_device" | awk -F " " '{print $4}')
-        printf "${out_WELL} ${green}Assigned Swap Partition Size: ${white}[ %s ]${green}.${suffix}\n" "$input_swap_size"
+        printf "${out_WELL} ${green}%s${white}[ %s ]${green}.${suffix}\n" "Successfully allocated swap partition, size: " "$input_swap_size"
         Config_File_Manage INFO Write Swap "/dev/$input_swap_device"
         Config_File_Manage INFO Write Swap_size "${input_swap_size}"
     }
-
     showDisk
     CONF_Root_SystemFile=$(Config_File_Manage INFO Read Root_SystemFile)
 
