@@ -42,9 +42,7 @@ function testDisk(){ echo "${1}" | cut -d"/" -f3 | grep -E "^[a-z]d[a-z]$|^vd[a-
 function testPartition(){ echo "${1}" | cut -d"/" -f3 | grep -E "^[a-z]d[a-z][1-9]$|^vd[a-z][1-9]$|^nvme[0-9]n[0-9]p[1-9]$|^mmcblk[0-9]p[1-9]$" || echo "ERROR"; }
 # 检查输入的值，是否正确; 获取磁盘[\_partition\_], 获取分区[\_partition_root\_], 获取磁盘类型[\_Disk_Type\_], 挂载分区[\_Open_mount\_] [磁盘] [目录].
 
-
-# @Colour 该死的颜色
-function facts(){
+function init(){
     # 红 绿 黄 蓝 白 后缀
     red='\033[1;31m'; green='\033[1;32m'  
     yellow='\033[1;33m'; blue='\033[1;36m'  
@@ -64,16 +62,19 @@ function facts(){
     out_EXEC="${white}::${blue} [Exec] =>${suffix}"
     out_WELL="${white}::${green} [Well] =>${suffix}"
     out_ERROR="${white}::${red} [Error] =>${suffix}"
-# Detect boot 检查引导, 并赋予引导类型
+    # 定义全局变量
+    export System_Root Boot_Type System_Disk_Type
+    # Detect boot 检查引导, 并赋予引导类型
     if [ -d /sys/firmware/efi ]; then
-        Boot_Type="UEFI" Disk_Type="GPT"
+        Boot_Type="UEFI" System_Disk_Type="GPT"
     else
-        Boot_Type="BIOS" Disk_Type="MBR"
+        Boot_Type="BIOS" System_Disk_Type="MBR"
     fi
     # 记录
     Config_File_Manage INFO Write "Boot_Type" "$Boot_Type" 
-    Config_File_Manage INFO Write "Disk_Type" "$Disk_Type"
-    
+    Config_File_Manage INFO Write "System_Disk_Type" "$System_Disk_Type"
+    # 定义根目录地址
+    System_Root="/mnt"
 }
 
 # @Stript Management; 脚本进程管理 [start]开启 [restart]重新开启 [stop]杀死脚本进程
@@ -89,96 +90,75 @@ function Process_Management(){
 # 磁盘分区
 function partition(){
     showDisk
-    printf "\n${outY} ${yellow}Select disk: ${green}/dev/sdX | sdX ${suffix} %s" "${inY}"
+    printf "\n${outY} ${yellow}Please Select disk: ${green}/dev/sdX | sdX ${suffix} %s" "${inY}"
     input_disk=$(Read_user_input)  # 输入磁盘名
-    partition_facts _disk_ "$input_disk"
-    partition_type
-    Config_File_Manage INFO Write "Disk" "$input_disk"
-    case "$State" in
-        true)   cfdisk "/dev/$userinput_disk" ;;
-        false)  echo -e "\n${out_ERROR} ${red} [cfdisk] Please input: /dev/sdX | sdX? !!! ${suffix}"  
-                Process_Management stop "$0"
-                exit 1;
+    inspect_Disk=$(partition_facts _disk_ "$input_disk") # 检查磁盘是否输入正确, 如果输入错误则返回"ERROR"
+    partition_type "$input_disk"
+    case "$inspect_Disk" in
+        ERROR)  echo -e "\n${out_ERROR} ${red} [cfdisk] Please input: /dev/sdX | sdX !!! ${suffix}"  
+                Process_Management stop "$0"; exit 1;;
+        *   )   Config_File_Manage INFO Write "Disk" "$input_disk" && cfdisk "/dev/$inspect_Disk"
     esac
 }
 
 function partition_facts(){
-    disk_options=${1}
-    diskName=${2}
-    mountDir=${3}
-    export userinput_disk
-    case ${disk_options} in
-        _disk_)  # Detect disk
-            State="false"
-            if testDisk "${diskName}" &>/dev/null  ; then
-                userinput_disk=$(testDisk "${diskName}")
-                State="true"
+    local Disk_options=$1 Input_disk=$2 Input_partition=$2 Mount_path=$3
+    function inspect_disk_type(){ fdisk -l "/dev/$1" | grep -Eo "gpt|dos|sgi|sun"; }
+
+    case ${Disk_options} in
+        _disk_          ) testDisk "$Input_disk" ;; # 检查磁盘名称，错误返回: "ERROR"
+        _partition_root_) testPartition "$Input_partition" ;; # 检查分区名称，错误返回: "ERROR"
+        _Disk_Type_     )  # Detect disk type
+             case $(inspect_disk_type "$2") in 
+                gpt) printf "GPT" ;;
+                dos) printf "MBR" ;;
+                sgi) printf "sgi" ;;
+                sun) printf "sun" ;;
+                *  ) printf "Unformatted Disk"
+             esac;;
+        _Open_munt_)  # Mount partition
+            if ! mountpoint -q "$Mount_path" ; then  # 测试该目录是否已被挂载，系统全部挂载列表：/proc/self/mountinfo
+                mount "$Input_disk" "$Mount_path"
             else
-                State="false"
-            fi ;;
-        _partition_root_)  # Detection partition
-            State="false"
-            if testPartition "${diskName}"; then
-                userinput_disk=$(testPartition "$diskName")
-                State="true"
-            else
-                State="false"
-            fi ;;
-        _Disk_Type_)  # Detect disk type
-            if fdisk -l /dev/"$userinput_disk" | grep "gpt" ; then
-                user_Disk_Type="GPT"
-            elif fdisk -l /dev/"$userinput_disk" | grep "dos" ; then
-                user_Disk_Type="MBR"
-            elif fdisk -l /dev/"$userinput_disk" | grep "sgi" ; then
-                user_Disk_Type="sgi"
-            elif fdisk -l /dev/"$userinput_disk" | grep "sun" ; then
-                user_Disk_Type="sun"
-            else
-                user_Disk_Type="Unformatted Disk"
-            fi ;;
-        _Open_mount_)  # Mount partition
-            if ! mountpoint -q "$mountDir" ; then  # /proc/self/mountinfo
-                mount "$diskName" "$mountDir"
-            else
-                umount -R "$mountDir" &>/dev/null
-                mount "$diskName" "$mountDir"
+                umount -R "$Mount_path" &>/dev/null
+                mount "$Input_disk" "$Mount_path"
             fi
     esac
 }
 
 # 判断使用的磁盘是否符合当前系统要求，并自定义改变[MBR/GPT]
 function partition_type(){
-    partition_facts _Disk_Type_ "$userinput_disk"
+    local input_disk_name=$1
+    disk_type=$(partition_facts _Disk_Type_ "$input_disk_name")
     lsblk | grep -E "^[a-z]d[a-z]|^nvme|^mmc"|grep -v "grep" 
-    echo;
-    if [[ "$user_Disk_Type" != "$Disk_Type" ]] ; then
-        echo -e "${outR} ${red} Boot and disk do not match ${blue}[ ${Boot_Type}${red} - ${blue}${user_Disk_Type} ]${suffix}${red}.${suffix}"
-        printf "\n${outY} ${yellow}Whether to convert Disklabel type -> ${blue}[$Disk_Type]${yellow}? [y/N]:${suffix} %s" "${inY}"
+    if [[ "$disk_type" != "$System_Disk_Type" ]] ; then
+        printf "\n${outR} ${red} Boot and disk do not match ${blue}[ %s${red} - ${blue}%s ]${suffix}${red}.${suffix}" "${Boot_Type}" "${disk_type}"
+        printf "\n${outY} ${yellow}Whether to convert Disklabel type -> ${blue}[$System_Disk_Type]${yellow}? [y/N]:${suffix} %s" "${inY}"
         case "$(Read_user_input)" in
             [Yy]*)
-                if [[ "$Disk_Type" = "GPT" ]] ; then
-                    Disk_Type="gpt"
-                elif [[ "$Disk_Type" = "MBR" ]] ; then
-                    Disk_Type="msdos"   
+                if [[ "$System_Disk_Type" = "GPT" ]] ; then
+                    System_Disk_Type="gpt"
+                elif [[ "$System_Disk_Type" = "MBR" ]] ; then
+                    System_Disk_Type="msdos"   
                 fi
-                parted "/dev/$userinput_disk" mklabel "$Disk_Type" -s
+                parted "/dev/$input_disk_name" mklabel "$System_Disk_Type" -s
             ;;
             [Nn]*)
-                echo -e "\n${out_ERROR} ${red}Disklabel type${blue}[$user_Disk_Type] ${red}not match and cannot be install System.${suffix}"
+                printf "\n${out_ERROR} ${red}Disklabel type${blue}[ %s ] ${red}not match and cannot be install System.${suffix}" "${disk_type}"
                 Process_Management stop "$0"
                 exit 2;
             ;;
             *)
-                if [[ "$Disk_Type" = "GPT" ]] ; then
-                    Disk_Type="gpt"
-                elif [[ "$Disk_Type" = "MBR" ]] ; then
-                    Disk_Type="msdos"   
+                if [[ "$System_Disk_Type" = "GPT" ]] ; then
+                    System_Disk_Type="gpt"
+                elif [[ "$System_Disk_Type" = "MBR" ]] ; then
+                    System_Disk_Type="msdos"   
                 fi
-                parted /dev/"$userinput_disk" mklabel "$Disk_Type" -s
+                parted /dev/"$input_disk_name" mklabel "$System_Disk_Type" -s
             ;;
         esac 
     else 
-        echo -e "\n${out_WELL} ${green}Currently booted with ${blue}[ ${Boot_Type} ]. ${green}Select disk type: ${blue}[ ${Disk_Type} ].${suffix}"
+        printf "\n${out_WELL} ${green}Currently booted with ${blue}[ %s ]. ${green}Select disk type: ${blue}[ %s ].${suffix}" "${Boot_Type}" "${System_Disk_Type}"
     fi 
 }
 
@@ -196,7 +176,7 @@ echo -e "${green}\n\t File System List${suffix}
     local Disk=$1
     printf "${outG} ${green}Please Select File System. [Default: 3]${suffix} %s" "${inG}"
     input_Fs_type=$(Read_user_input)
-    if [ "$input_Fs_type" = "" ]; then
+    if [[ "$input_Fs_type" = "" ]]; then
         Disk_Filesystem 3 "$Disk"
     else
         Disk_Filesystem "$input_Fs_type" "$Disk"
@@ -205,11 +185,6 @@ echo -e "${green}\n\t File System List${suffix}
 
 #其他分区
 function partition_other(){
-    printf "${outG} ${green}Continue to mount directory. [Y/n]?${suffix} %s" "${inG}"
-    case $(Read_user_input) in
-        [Yy]* ) partition_other_start ;;
-            * ) echo -e "${wg} ::==>> Partition complete. ${suffix}"; exit 0
-    esac
     # @先选择目录, 之后交给: other_Format ;   
     function partition_other_start() {
     echo -e "${green}\n\tMount directory${suffix} 
@@ -232,40 +207,45 @@ function partition_other(){
             quit) echo -e "${out_EXEC} ${wg}Partition complete. ${suffix}"; exit 0 ;;
         esac
     }
+
+    printf "${outG} ${green}Continue to mount directory. [Y/n]?${suffix} %s" "${inG}"
+    case $(Read_user_input) in
+        [Yy]* ) partition_other_start ;;
+            * ) echo -e "${wg} ::==>> Partition complete. ${suffix}"; exit 0
+    esac
+    
     # other_Format [path]， 掩盖/mnt前缀，挂载到新系统的根下某目录，例：other_Format /auroot
     function other_Format(){
+        local 
         local path=${System_Root}${1}
         if ls "${path}" &>/dev/null ; then
-            Format "${path}"
+            mount_Disk=$(Format "${path}") # 获取磁盘名
         else
-            echo -e "${out_EXEC} ${white}Creating directory: ${blue}[ ${path} ]${suffix}${white}.${suffix}"   
+            printf "\n${out_EXEC} ${white}Creating directory: ${blue}[ %s ]${suffix}${white}.${suffix}\n" "${path}"
             mkdir -p "${path}"
-            Format "${path}" # 在这里获取的[$userinput_disk]
+            mount_Disk=$(Format "${path}") # 获取磁盘名
         fi
-        partition_facts _Open_mount_ "/dev/$userinput_disk" "${path}" # 万事俱备，挂载
+        partition_facts _Open_mount_ "/dev/$mount_Disk" "${path}" # 万事俱备，挂载
         showDisk  # 最后输出一下分区表
     }
-    partition_other # 再运行, 输入exit，即退出
+    partition_other # 再运行, 输入quit，即退出
 }
 
-# 格式化函数, 输入: /dev/sdX[0-9] | sdX[0-9]
+# 负责简化和检查输入到磁盘地址: /dev/sdX[0-9] -> sdX[0-9],如果没有问题，将值给Disk_Filesystem_List格式化操作
 function Format(){
-    local Input_Dir=$1; Rename=$2 Input_Dir=${Rename:-$Input_Dir}
+    local input_Path=$1 Rename_root=$2; input_Path=${Rename_root:-$input_Path}
     showDisk 
-    printf "\n${outY} ${yellow}Directory: [ ${Input_Dir} ] and Partition: ${green}/dev/sdX[0-9] | sdX[0-9] ${suffix} %s" "${inY}"
-    input_disk_Format=$(Read_user_input)
-    partition_facts _partition_root_ "$input_disk_Format" # 在这里获取的[$userinput_disk]
-    case "$State" in # 格式化
-        true)
-            if ! Disk_Filesystem_List "/dev/$userinput_disk" ; then
-                sleep 1;
-            fi 
-        ;;
-        false)
-            echo -e "\n${out_ERROR} ${red} [ ${Input_Dir} ] Please input: /dev/sdX[0-9] | sdX[0-9] !!! ${suffix}"  
-            Process_Management stop "$0"
-            exit 3;
+    printf "\n${outY} ${yellow}Directory: [ %s ] and Partition: ${green}/dev/sdX[0-9] | sdX[0-9] ${suffix} %s" "${input_Path}" "${inG}"
+    inspect_input_Partition=$(partition_facts _partition_root_ "$(Read_user_input)") # 检查磁盘名称，并返回值
+    case "$inspect_input_Partition" in # 格式化
+        ERROR)  printf "\n${out_ERROR} ${red} [ %s ] Please input: /dev/sdX[0-9] | sdX[0-9] !!! ${suffix}" "${input_Path}"
+                Process_Management stop "$0"
+                exit 3;;
+        *   )   if ! Disk_Filesystem_List "/dev/$inspect_input_Partition" ; then
+                    sleep 1;
+                fi 
     esac
+    printf "%s" "$inspect_input_Partition"; # 返回用户输入到分区名
 }
 
 # 自定义文件系统格式化
@@ -273,9 +253,9 @@ function Disk_Filesystem(){
     local Options=$1
     local Disk=$2
     case ${Options} in
-        1) mkfs.ext2 "${Disk}"; Root_SystemFiles="ext2" ;;
-        2) mkfs.ext3 "${Disk}"; Root_SystemFiles="ext3" ;;
-        3) mkfs.ext4 "${Disk}"; Root_SystemFiles="ext4" ;;
+        1)  mkfs.ext2 "${Disk}" && Root_SystemFiles="ext2" ;;
+        2)  mkfs.ext3 "${Disk}" && Root_SystemFiles="ext3" ;;
+        3)  mkfs.ext4 "${Disk}" && Root_SystemFiles="ext4" ;;
         4)
             printf "\n${outY} ${green}Please enter the disk label. [Default: Data]${suffix} %s" "${inY}"
             Disk_label=$(Read_user_input)
@@ -283,28 +263,27 @@ function Disk_Filesystem(){
                 mkfs.btrfs -L Data -f "${Disk}"
             else
                 mkfs.btrfs -L "$Disk_label" -f "${Disk}"
-            fi
-            Root_SystemFiles="btrfs"
+            fi && Root_SystemFiles="btrfs"
         ;;
-        5) mkfs.vfat "${Disk}"; Root_SystemFiles="vfat" ;;
-        6) mkfs.f2fs "${Disk}"; Root_SystemFiles="f2fs" ;;
-        7) mkfs.jfs  "${Disk}"; Root_SystemFiles="jfs"  ;;
-        8) ntfs-3g   "${Disk}"; Root_SystemFiles="ntfs-3g" ;;
-        9) mkfs.reiserfs "${Disk}"; Root_SystemFiles="reiserfs" ;;
+        5) mkfs.vfat "${Disk}" && Root_SystemFiles="vfat" ;;
+        6) mkfs.f2fs "${Disk}" && Root_SystemFiles="f2fs" ;;
+        7) mkfs.jfs  "${Disk}" && Root_SystemFiles="jfs" ;;
+        8) ntfs-3g   "${Disk}" && Root_SystemFiles="ntfs-3g" ;;
+        9) mkfs.reiserfs "${Disk}" && Root_SystemFiles="reiserfs" ;;
     esac
+    printf  "\n${out_WELL} ${green}Successfully formatted ${white}[ %s ]${green} as ${white}[ %s ]${green} file system.${suffix}" "$Disk" "$Root_SystemFiles"
 }
 
 # 格式化并挂载Root分区, 输入: /dev/sdX[0-9] | sdX[0-9]
 function partition_root(){
-    System_Root="/mnt"
     umount -R $System_Root* 2>/dev/null
-    Format $System_Root "root(/)"
+    Root_partition_name=$(Format $System_Root "root(/)") # 请求输入磁盘地址和文件系统类型，格式化
     # "$Directory" 变量来自 (Format /mnt "root(/)")函数
-    partition_facts _Open_mount_ "/dev/$userinput_disk" "$System_Root" # 挂载
+    partition_facts _Open_mount_ "/dev/$Root_partition_name" "$System_Root" # 挂载
     
-    Config_File_Manage INFO Write Root_partition "/dev/$userinput_disk"
+    Config_File_Manage INFO Write Root_partition "/dev/$Root_partition_name"
     Config_File_Manage INFO Write Root_SystemFile "$Root_SystemFiles"
-    Boot_partition=$(echo "/dev/$userinput_disk" | awk '{sub(/[1-9]*$/,"");print}')
+    Boot_partition=$(echo "/dev/$Root_partition_name" | awk '{sub(/[1-9]*$/,"");print}')
     if [ $Boot_Type = "BIOS" ]; then Config_File_Manage INFO Write Boot_partition "$Boot_partition"; fi
 }
 
@@ -318,12 +297,12 @@ function partition_booting_UEFI(){
     showDisk 
     printf "\n${outY} ${yellow}Choose your [${Boot_Dir}] partition: ${green}/dev/sdX[0-9] | sdX[0-9] ${suffix} %s" "${inY}"
     # 等待用户输入引导分区
-    partition_facts _partition_root_ "$(Read_user_input)"
+    UEFI_partition_name=$(partition_facts _partition_root_ "$(Read_user_input)")
 
-    Disk_Filesystem 5 "/dev/$userinput_disk"
-    partition_facts _Open_mount_ "/dev/$userinput_disk" ${Boot_Dir}
-    Config_File_Manage INFO Write Boot_partition "/dev/$userinput_disk"
-    Config_File_Manage INFO Write Boot_SystemFile "vfat"
+    Disk_Filesystem 5 "/dev/$UEFI_partition_name" 
+    partition_facts _Open_mount_ "/dev/$UEFI_partition_name" ${Boot_Dir}
+    Config_File_Manage INFO Write Boot_partition "/dev/$UEFI_partition_name"
+    Config_File_Manage INFO Write Boot_SystemFile "$Root_SystemFiles"
 }
 
 # 格式化并挂载 BIOS引导分区，输入: /dev/sdX[0-9] | sdX[0-9]
@@ -338,7 +317,7 @@ function partition_booting_BOIS(){
 # 格式化并挂载虚拟的Swap分区，可自定义大小
 function partition_swap(){
     function Swap_File(){
-        echo -e "${outG} ${green}Assigned Swap file Size: ${white}[ $1 ]${green}.${suffix}"
+        printf "${outG} ${green}Assigned Swap file Size: ${white}[ %s ]${green}.${suffix}\n" "$1"
         fallocate -l "${1}" /mnt/swapfile  # 创建指定大小的swap虚拟化文件
         chmod 600 /mnt/swapfile # 设置权限
         mkswap /mnt/swapfile    # 格式化swap文件
@@ -355,7 +334,7 @@ function partition_swap(){
         mount -a
         # input_swap_size=$(df -ha | grep "$input_swap_device" | awk -F " " '{print $2}')
         input_swap_size=$(lsblk | grep "$input_swap_device" | awk -F " " '{print $4}')
-        echo -e "${out_WELL} ${green}Assigned Swap Partition Size: ${white}[$input_swap_size]${green}.${suffix}"
+        printf "${out_WELL} ${green}Assigned Swap Partition Size: ${white}[ %s ]${green}.${suffix}\n" "$input_swap_size"
         Config_File_Manage INFO Write Swap "/dev/$input_swap_device"
         Config_File_Manage INFO Write Swap_size "${input_swap_size}"
     }
@@ -374,13 +353,13 @@ function partition_swap(){
     elif testPartition "$input_swap" &>/dev/null ; then
          Swap_Partition "$input_swap"
     else
-        echo -e "\n${out_SKIP} ${yellow}create a swap file.${suffix}"; sleep 1
+        echo -e "${out_SKIP} ${yellow}create a swap file.${suffix}"; sleep 1
     fi
 }
 
 # 具体的实现
 # >> >> >> >> >> >> >> >> >> >> >> >>
-clear; facts;
+clear; init;
 partition; # 选择磁盘 #parted /dev/sdb mklabel gpt   转换格式 GPT
 partition_root;
 Conf_New_Other_Partition=$(Config_File_Manage CONF Read "New_Other_Partition")
