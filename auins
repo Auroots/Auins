@@ -9,7 +9,7 @@ echo &>/dev/null
 
 # @ script source
 # auroot  |  gitee  |  github  |  test
-SCRIPTS_SOURCE="auroot"
+SCRIPTS_SOURCE="test"
 
 # @待解决的问题 
 : << EOF
@@ -24,6 +24,7 @@ SCRIPTS_SOURCE="auroot"
     - [x] 修复: 选择磁盘时,无法识别nvme名称;
     - [ ] 修复: 非root权限运行脚本时,不会终止;
     - [x] 修复: 无法正确配置时区;
+    - [x] 修复: Process_Manage无法关闭多个进程;
     - [x] 优化: 部分语法;
 EOF
 # @可能有用的文件
@@ -320,11 +321,11 @@ function Set_Color_Variable(){
     outB="${white}::${blue} =>${suffix}"; # outR="${white}::${red} =>${suffix}"
     outG="${white}::${green} =>${suffix}"; outY="${white}::${yellow} =>${suffix}"
 
-    out_SKIP="${white}::${yellow} [Skip] =>${suffix}"
-    out_WARNING="${white}::${yellow} [Warning] =>${suffix}"
-    out_EXEC="${white}::${blue} [Exec] =>${suffix}"
-    out_WELL="${white}::${green} [Well] =>${suffix}"
-    out_ERROR="${white}::${red} [Error] =>${suffix}"
+    out_SKIP="${white}::${yellow} [ Skip ] =>${suffix}"
+    out_WARNING="${white}::${yellow} [ Warning ] =>${suffix}"
+    out_EXEC="${white}::${blue} [ Exec ] =>${suffix}"
+    out_WELL="${white}::${green} [ Well ] =>${suffix}"
+    out_ERROR="${white}::${red} [ Error ] =>${suffix}"
 }
 
 # @获取用户输入，并返回
