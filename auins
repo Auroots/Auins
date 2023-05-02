@@ -33,7 +33,7 @@ EOF
 # sed -i.bak 's/^aaa=yes/aaa=no/' [file] # 替换并备份
 # @脚本初始化
 function Script_Variable_init(){
-    Script_Version="ArchLinux User Install Scripts v4.6 r5" 
+    Script_Version="ArchLinux User Install Scripts v4.6 r5.5" 
     Auins_Dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd )
     [ "$Auins_Dir" = "/" ] && Auins_Dir=""
     Share_Dir="${Auins_Dir}/share" 
