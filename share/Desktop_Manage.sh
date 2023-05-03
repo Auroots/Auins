@@ -11,7 +11,7 @@
 echo &>/dev/null
 Share_Dir=${1}
 Local_Dir=${2}
-Auins_Config="${Local_Dir}/profile.conf"  
+Auins_Profile="${Local_Dir}/profile.conf"  
 Auins_Infofile="${Local_Dir}/auins.info"
 
 
@@ -40,7 +40,7 @@ function Config_File_Manage(){
     local format=" = "; parameter="$3"; content="$4";
     case "$1" in
         INFO) local Files="$Auins_Infofile" ;;
-        CONF) local Files="$Auins_Config" ;;
+        CONF) local Files="$Auins_Profile" ;;
     esac
     case "$2" in
         Read )   grep -w "$parameter" < "$Files" | awk -F "=" '{print $2}' | awk '{sub(/^[\t ]*/,"");print}' | awk '{sub(/[\t ]*$/,"");print}' ;;

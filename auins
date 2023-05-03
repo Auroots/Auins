@@ -31,34 +31,6 @@ export Source_Share Source_Local
     - [x] 优化: 部分语法;
 EOF
 
-# 模块使用方法, 以下有部分重新定义了名称
-: << EOF
-    Mirrorlist_Script [无]
-    Users_Script [Auins_Profile] [Auins_Infofile]
-    Partition_Script [Auins_Profile] [Auins_Infofile]
-    Desktop_Script 待完善
-    Process_Script [start | restart | stop] [command]
-    Fonts_Script [Share_Dir] [Local_Dir] [使用什么方式运行
-                                            Config_file_install_fonts:   根据配置文件, 安装相应的字体
-                                            User_options_install_fonts:  根据用户选项, 安装相应的字体, 用户的选项有: [all] [common] [adobe] [code]
-                                            Script_Runing_install_fonts: 脚本运行时, 由脚本自动判断, 自动安装配置文件中的选项, 另外询问是否安装其他
-                                            [字体下载URL] [用户的选择]
-    Print_INFO [想要输出的信息:
-                version:    Auins版本信息
-                logos:      Script首页信息, 需要接收: 1=版本号, 2=引导类型, 3=磁盘类型, 4=Chroot状态, 5=脚本开启模式, 6=CPU名称
-                SSH_INFO:   输出SSH信息, 需要接收: 1=用户名, 2=用户密码, 3=有线IP, 4=无线IP
-                Auins_usage:    Auins的帮助文档 Auin_help
-                LivecdHomeList: LiveCD环境下, 首页会显示的列表
-                NormalHomeList: 正常(Normal)环境下, 首页会显示的列表
-                DesktopEnvList: 桌面环境的选择列表
-                DesktopManagerList:         桌面管理器的选择列表
-                Livecd_System_Module_List:  首选项 [4] 的列表
-                InstallSystemInfo:          系统安装成功, 直奔加入chroot的提示信息
-                ConfigSystemInfo:           完成系统配置成功, 可重启的提示信息
-                JetBrainsFira_font_usage:   JetBrainsFira字体安装完成后的使用说明
-                ] [附加输入的信息]......
-EOF
-
 # @可能有用的文件
 # /proc/cmdline
 
@@ -816,6 +788,35 @@ case "${ChrootPatterns}" in
             Normal_Model
         fi
 esac
+
+# 模块使用方法, 以下有部分重新定义了名称
+: << EOF
+    Mirrorlist_Script [无]
+    Users_Script [Auins_Profile] [Auins_Infofile]
+    Partition_Script [Auins_Profile] [Auins_Infofile]
+    Desktop_Script 待完善
+    Process_Script [start | restart | stop] [command]
+    Fonts_Script [Share_Dir] [Local_Dir] [使用什么方式运行
+                                            Config_file_install_fonts:   根据配置文件, 安装相应的字体
+                                            User_options_install_fonts:  根据用户选项, 安装相应的字体, 用户的选项有: [all] [common] [adobe] [code]
+                                            Script_Runing_install_fonts: 脚本运行时, 由脚本自动判断, 自动安装配置文件中的选项, 另外询问是否安装其他
+                                            [字体下载URL] [用户的选择]
+    Print_INFO [想要输出的信息:
+                version:    Auins版本信息
+                logos:      Script首页信息, 需要接收: 1=版本号, 2=引导类型, 3=磁盘类型, 4=Chroot状态, 5=脚本开启模式, 6=CPU名称
+                SSH_INFO:   输出SSH信息, 需要接收: 1=用户名, 2=用户密码, 3=有线IP, 4=无线IP
+                Auins_usage:    Auins的帮助文档 Auin_help
+                LivecdHomeList: LiveCD环境下, 首页会显示的列表
+                NormalHomeList: 正常(Normal)环境下, 首页会显示的列表
+                DesktopEnvList: 桌面环境的选择列表
+                DesktopManagerList:         桌面管理器的选择列表
+                Livecd_System_Module_List:  首选项 [4] 的列表
+                InstallSystemInfo:          系统安装成功, 直奔加入chroot的提示信息
+                ConfigSystemInfo:           完成系统配置成功, 可重启的提示信息
+                JetBrainsFira_font_usage:   JetBrainsFira字体安装完成后的使用说明
+                ] [附加输入的信息]......
+EOF
+
 # >> >> >> >> >> >> >> >> >> >> >> >>
 # reflector --country China  --protocol http --protocol https
 
