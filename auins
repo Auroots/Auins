@@ -37,7 +37,7 @@ EOF
 # sed -i.bak 's/^aaa=yes/aaa=no/' [file] # 替换并备份
 # @脚本初始化
 function Script_Variable_init(){
-    Script_Version="ArchLinux User Install Scripts v4.6 r5.5" 
+    Script_Version="ArchLinux User Install Scripts v4.6 r6" 
     Auins_Dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd )
     [ "$Auins_Dir" = "/" ] && Auins_Dir=""
     Share_Dir="${Auins_Dir}/share" 
@@ -333,17 +333,17 @@ function Install_Archlinux(){
     Config_File_Manage INFO Write LinuxKernel "$LinuxKernel";
     cp -rf "${Local_Dir}" "$System_Root" 
     cp -rf "${Share_Dir}" "$System_Root" 
-    cat "$0" > $System_Root/auin.sh  && chmod +x $System_Root/auin.sh 
+    cat "$0" > $System_Root/auins  && chmod +x $System_Root/auins 
     touch $System_Root/local/Chroot && echo "Chroot=ON" > $System_Root/local/Chroot
 }
 # @Chroot -> $System_Root
 function Auin_chroot(){    
-    cat "$0" > $System_Root/auin.sh  && chmod +x $System_Root/auin.sh
+    cat "$0" > $System_Root/auins  && chmod +x $System_Root/auins
     cp -rf "$Share_Dir" $System_Root 2> /dev/null
     cp -rf "$Local_Dir" $System_Root 2> /dev/null
     rm -rf $System_Root/local/LiveCD 2> /dev/null
     echo "No" > $System_Root/local/LiveCD_OFF 2> /dev/null
-    arch-chroot $System_Root /bin/bash -c "/auin.sh"
+    arch-chroot $System_Root /bin/bash -c "/auins"
 }
 
 # @安装 fcitx 输入法
