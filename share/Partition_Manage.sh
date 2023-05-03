@@ -5,13 +5,6 @@
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
-echo &>/dev/null
-# bash "${Share_Dir}/Partition_Manage.sh" "config" "info";
-# bash "${Share_Dir}/Partition_Manage.sh" "config" "info";
-Auins_Config=${1}
-Auins_record=${2}
-Share_Dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd )
-Process_Manage="${Share_Dir}/Process_Manage.sh"
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # 地址: auins.info(INFO)| script.conf(CONF)
@@ -20,8 +13,8 @@ Process_Manage="${Share_Dir}/Process_Manage.sh"
 function Config_File_Manage(){ 
     local format=" = "; parameter="$3"; content="$4";
     case "$1" in
-        INFO) local Files="$Auins_record" ;;
-        CONF) local Files="$Auins_Config" ;;
+        INFO) local Files="$Auins_Infofile" ;;
+        CONF) local Files="$Auins_Profile" ;;
     esac
     case "$2" in
         Read )   grep -w "$parameter" < "$Files" | awk -F "=" '{print $2}' | awk '{sub(/^[\t ]*/,"");print}' | awk '{sub(/[\t ]*$/,"");print}' ;;
@@ -356,8 +349,12 @@ function partition_swap(){
     fi
 }
 
-# 具体的实现
-# >> >> >> >> >> >> >> >> >> >> >> >>
+# 具体的实现 >> >> >> >> >> >> >> >> 
+echo &>/dev/null
+Auins_Profile=${1}
+Auins_Infofile=${2}
+Share_Dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd )
+Process_Manage="${Share_Dir}/Process_Manage.sh"
 clear; init;
 partition; # 选择磁盘 #parted /dev/sdb mklabel gpt   转换格式 GPT
 partition_root;
@@ -366,3 +363,5 @@ if [ "$Boot_Type" = "UEFI" ]; then partition_booting_UEFI; else partition_bootin
 partition_swap;  #swap file 虚拟文件(类似与win里的虚拟文件) 对于swap分区我更推荐这个，后期灵活更变
 if [ "$Conf_New_Other_Partition" = yes ]; then partition_other; fi
 echo -e "${wg} ::==>> Partition complete. ${suffix}"
+
+# bash "${Share_Dir}/Partition_Manage.sh" [profile] [info];

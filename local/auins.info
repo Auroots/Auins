@@ -3,21 +3,21 @@
 # Please clean this file immediately after system installation.
 # So as not to reveal privacy !!!
 
-Public_IP = 
-Country =
-Country_Name =
-Timezone =
+Public_IP = 182.245.71.140
+Country = CN
+Country_Name = China
+Timezone = Asia/Shanghai
 
-CPU_Vendor =
-CPU_Name =
-Host_Environment =
+CPU_Vendor = intel
+CPU_Name = 12th Gen Intel(R) Core(TM) i5-12490F
+Host_Environment = Computer
 LinuxKernel =
 Livecd_version =
-Local_Ethernet_IP =
+Local_Ethernet_IP = 192.168.101.3
 Local_Wifi_IP =
-Patterns = Chroot-OFF
-Boot_Type =
-Disk_Type =
+Patterns = Chroot-ON
+Boot_Type = UEFI
+Disk_Type = GPT
 Disk =
 Boot_SystemFile =
 Root_SystemFile =

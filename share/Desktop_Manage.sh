@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Author: Auroot
 # QQ： 2763833502
-# Description： Auto Install Desktop -> auin V4.6 r5
+# Description： Auto Install Desktop -> auin V4.5
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
@@ -12,7 +12,7 @@ echo &>/dev/null
 Share_Dir=${1}
 Local_Dir=${2}
 Auins_Config="${Local_Dir}/profile.conf"  
-Auins_record="${Local_Dir}/auins.info"
+Auins_Infofile="${Local_Dir}/auins.info"
 
 
 Desktop_Display_Manager=$(Config_File_Manage CONF Read "Desktop_Display_Manager")
@@ -39,7 +39,7 @@ out_ERROR="${white}::${red} [Error] =>${suffix}"
 function Config_File_Manage(){ 
     local format=" = "; parameter="$3"; content="$4";
     case "$1" in
-        INFO) local Files="$Auins_record" ;;
+        INFO) local Files="$Auins_Infofile" ;;
         CONF) local Files="$Auins_Config" ;;
     esac
     case "$2" in

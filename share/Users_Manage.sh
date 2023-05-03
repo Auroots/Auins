@@ -6,8 +6,6 @@
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
 # set -xe
-Auins_Config=${1}
-Auins_record=${2}
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # 地址: auins.info(INFO)| script.conf(CONF)
@@ -16,8 +14,8 @@ Auins_record=${2}
 function Config_File_Manage(){ 
     local format=" = "; parameter="$3"; content="$4";
     case "$1" in
-        INFO) local Files="$Auins_record" ;;
-        CONF) local Files="$Auins_Config" ;;
+        INFO) local Files="$Auins_Infofile" ;;
+        CONF) local Files="$Auins_Profile" ;;
     esac
     case "$2" in
         Read )   grep -w "$parameter" < "$Files" | awk -F "=" '{print $2}' | awk '{sub(/^[\t ]*/,"");print}' | awk '{sub(/[\t ]*$/,"");print}' ;;
@@ -109,6 +107,8 @@ function Set_Color_Variable(){
 
 # Start Script | 从这里开始
 # >> >> >> >> >> >> >> >> >> >> >> >> 
+Auins_Profile=${1}
+Auins_Infofile=${2}
 Script_init_Variable
 Set_Color_Variable
 

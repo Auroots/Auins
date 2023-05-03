@@ -171,8 +171,8 @@ Server = https://mirrors.tuna.tsinghua.edu.cn/arch4edu/\$arch
 clear;
 echo &>/dev/null
 # bash "${Share_Dir}/Partition.sh" "config" "info";
-Auins_Config=${1}
-Auins_record=${2}
+Auins_Profile=${1}
+Auins_Infofile=${2}
 PacmanConf_file="/etc/pacman.conf"
 MirrorList_file="/etc/pacman.d/mirrorlist"
 # 备份的文件夹
@@ -186,8 +186,8 @@ Script_Time=$(date +%k:%M-%Y:%m:%d)
 function Config_File_Manage(){ 
     local format=" = "; parameter="$3"; content="$4";
     case "$1" in
-        INFO) local Files="$Auins_record" ;;
-        CONF) local Files="$Auins_Config" ;;
+        INFO) local Files="$Auins_Infofile" ;;
+        CONF) local Files="$Auins_Profile" ;;
     esac
     case "$2" in
         Read )   grep -w "$parameter" < "$Files" | awk -F "=" '{print $2}' | awk '{sub(/^[\t ]*/,"");print}' | awk '{sub(/[\t ]*$/,"");print}' ;;
