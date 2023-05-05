@@ -18,95 +18,129 @@ function Set_Color_Variable(){
     # rw='\033[1;41m'  #--红白
     wg='\033[1;42m'; ws='\033[1;43m'      #白绿 \ 白褐
     #wb='\033[1;44m'; wq='\033[1;45m'    #白蓝 \ 白紫
-    # wa='\033[1;46m'; bx='\033[1;4;36m'  #白青 \ 蓝 下划线
+    # wa='\033[1;46m';  #白青
+    bx='\033[1;4;36m' # 蓝 下划线
     #-----------------------------#
     # 提示 蓝 红 绿 黄
-    outB="${white}::${blue} =>${suffix}"; # outR="${white}::${red} =>${suffix}"
+    outB="${white}::${blue} =>${suffix}";  outR="${white}::${red} =>${suffix}"
     outG="${white}::${green} =>${suffix}"; outY="${white}::${yellow} =>${suffix}"
+    out_WELL="${white}::${green} =>${suffix}"
+    out_ERROR="${white}::${red} [ Error ] =>${suffix}"
 }
 
-
-# @Script首页信息, 需要接收: 1=版本号, 2=引导类型, 3=磁盘类型, 4=Chroot状态, 5=脚本开启模式, 6=CPU名称
+# @Script首页信息, 需要接收: 1=版本号, 2=引导类型, 3=磁盘类型, 4=Chroot状态, 5=脚本开启模式, 6=有线IP, 7=有线网卡名, 8=无线IP, 9=无线网卡名
 function logos(){
-    Script_Version="$1" 
-    Boot_Type="$2" 
-    Disk_Type="$3" 
-    ChrootPatterns_Print="$4" 
-    StartPatterns="$5" 
-    CPU_Name="$6"
-    clear;  echo -e "
-${white}        _             _       _     _                     ${suffix}
-${green}       / \   _ __ ___| |__   | |   (_)_ __  _   ___  __   ${suffix}
-${blue}      / _ \ | '__/ __| '_ \  | |   | | '_ \| | | \ \/ /    ${suffix}
-${yellow}     / ___ \| | | (__| | | | | |___| | | | | |_| |>  <   ${suffix}
-${red}    /_/   \_\_|  \___|_| |_| |_____|_|_| |_|\__,_/_/\_\     ${suffix}
-${red}----------------------------------------------------------${suffix}
-${green} Script Name: ${Script_Version}.${suffix}
-${green} Boot Mode:   ${white}[${blue}${Boot_Type}${white}] ${red}- ${white}[${blue}${Disk_Type}${white}]${suffix}      
-${green} Patterns:    ${ChrootPatterns_Print} ${red}-${suffix} ${StartPatterns}${suffix}
-${green} Ethernet:    ${blue}${Local_Ethernet_IP:-No network.} ${red}- ${white}[${green}${Ethernet_Name:-No}${white}]${suffix}
-${green} WIFI:        ${blue}${Local_Wifi_IP:-No network.} ${red}- ${white}[${green}${Wifi_Name:-No}${white}] ${suffix}
-${green} SSH:         ${white}ssh ${blue}$USER@${blue}${Local_Ethernet_IP:-${Local_Wifi_IP}}${suffix}
-${green} CPU Info:    ${blue}${CPU_Name}${suffix}  
-${red}==========================================================${suffix}"   
+    Script_Version="${1}" 
+    Boot_Type=$(echo -e "${white}[ ${blue}${2}${white} ]${suffix}")
+    Disk_Type=$(echo -e "${white}[ ${blue}${3}${white} ]${suffix}")
+
+    Chroot_Patterns_Print="$4"
+    case "${Chroot_Patterns_Print}" in 
+        Chroot-OFF) Chroot_Patterns_Print="$(echo -e "${white}[${red} Chroot-OFF ${white}]${suffix}")" ;;
+        Chroot-ON ) Chroot_Patterns_Print="$(echo -e "${white}[${green} Chroot-ON ${white}]${suffix}")"
+    esac
+    Start_Patterns="$5"
+    case "${Start_Patterns}" in 
+        LiveCD ) Start_Patterns=$(echo -e "${white}[${green} LiveCD ${white}]${suffix}") ;;
+        Normal ) Start_Patterns=$(echo -e "${white}[ Normal ]${suffix}")
+    esac
+
+    Local_Ethernet_IP=$(echo -e "${blue}${6:-No network.}")
+    Ethernet_Name=$(echo -e "${white}[${green} ${7:-No} ${white}]${suffix}")
+
+    Local_Wifi_IP=$(echo -e "${blue}${8:-No network.}")
+    Wifi_Name=$(echo -e "${white}[${green} ${9:-No} ${white}]${suffix}")
+
+    SSH_IP=$(echo -e "${blue}${Local_Ethernet_IP:-${Local_Wifi_IP}}${suffix}")
+
+    CPU_Name=$(head -n 5 /proc/cpuinfo | grep "model name" | awk -F ": " '{print $2}')
+    CPU_Temp="$(($(if [ -e /sys/class/thermal/thermal_zone1/temp ]; then cat /sys/class/thermal/thermal_zone1/temp; else echo '00'; fi)/1000))°C"
+
+    not_intercept_gpu_info=$(lspci | grep -i VGA | awk -F ":" '{print $3}' | sed 's/^[ ]*//g')
+    intercept_gpu_info=$(lspci  | grep -i VGA | awk -F ":" '{print $3}' | grep -o '\[.*\]')
+    Unrecognized=$(echo -e "${white}Unrecognized${suffix}")
+    GPU_Info_0="${intercept_gpu_info:-$not_intercept_gpu_info}"
+    GPU_Info="${GPU_Info_0:-$Unrecognized}"
+
+    Memory_Info=$(($(sed -n '1,1p' /proc/meminfo | awk '{print $2}')/1000000))
+    clear; printf "
+${white}         _             _       _     _                     
+${green}        / \   _ __ ___| |__   | |   (_)_ __  _   ___  __   
+${blue}       / _ \ | '__/ __| '_ \  | |   | | '_ \| | | \ \/ /    
+${yellow}      / ___ \| | | (__| | | | | |___| | | | | |_| |>  <   
+${red}     /_/   \_\_|  \___|_| |_| |_____|_|_| |_|\__,_/_/\_\     
+${bx}-----------------------  Script Info  -----------------------${suffix}
+${green} Script Name:\t%s.
+${green} Boot Mode:\t%s ${red}- %s
+${green} Patterns: \t%s ${red}- %s
+${green} Ethernet: \t%s ${red}- %s
+${green} Wifi_net: \t%s ${red}- %s
+${green} SSH:      \t${white}ssh %s@%s
+${green} CPU&Temp: \t%s ${white}&${suffix} ${green}%s
+${green} GPU_Info: \t%s
+${green} Memory:   \t%sG
+${red}--=--*--=--*--=--*--=--*--=--=*=--=--*--=--*--=--*--=--*--=--${suffix}" \
+"$Script_Version" "$Boot_Type" "$Disk_Type" "$Chroot_Patterns_Print" "$Start_Patterns" \
+"$Local_Ethernet_IP" "$Ethernet_Name" "$Local_Wifi_IP" "$Wifi_Name" \
+"$USER" "$SSH_IP" "$CPU_Name" "$CPU_Temp" "$GPU_Info" "$Memory_Info" 
 }
 
 # @正常(Normal)环境下，首页会显示的列表
 function NormalHomeList(){
     echo -e "
-${outB} \t${green}Configure Mirrorlist     ${white}[${blue}1${white}]${suffix}
-${outB} \t${green}Configure Network        ${white}[${blue}2${white}]${suffix}
-${outG} \t${green}Configure SSH            ${white}[${blue}3${white}]${suffix}
-${outY} \t${green}Installation Desktop.    ${white}[${blue}4${white}]${suffix}
-${outY} \t${green}Installation Drive.      ${white}[${blue}5${white}]${suffix}
-${outY} \t${green}Install virtual tools.   ${white}[${blue}6${white}]${suffix}
-${outY} \t${green}Delete scripts & caches. ${white}[${red}D${white}] ${suffix}
-${outG} \t${green}Exit Script              ${white}[${red}Q${white}] ${suffix}"   
+${outB}\t${white}[${blue}1${white}]${green} Configure Mirrorlist   ${suffix}
+${outB}\t${white}[${blue}2${white}]${green} Configure Network      ${suffix}
+${outG}\t${white}[${blue}3${white}]${green} Configure SSH          ${suffix}
+${outY}\t${white}[${blue}4${white}]${green} Installation Desktop   ${suffix}
+${outY}\t${white}[${blue}5${white}]${green} Installation Drive     ${suffix}
+${outY}\t${white}[${blue}6${white}]${green} Install virtual tools  ${suffix}
+${outY}\t${white}[${red}D${white}]${green} Delete scripts & caches ${suffix}
+${outR}\t${white}[${red}Q${white}]${green} Exit Script             ${suffix}"   
 }
 
 # @LiveCD环境下，首页会显示的列表
 function LivecdHomeList(){ 
     echo -e "
-${outB} \t${green}Configure Mirrorlist   ${white}[${blue}1${white}]${suffix}
-${outB} \t${green}Configure Network      ${white}[${blue}2${white}]${suffix}
-${outG} \t${green}Configure SSH          ${white}[${blue}3${white}]${suffix}
-${outY} \t${green}Install System         ${white}[${blue}4${white}]${suffix}
-${outG} \t${green}Exit Script            ${white}[${red}Q${white}] ${suffix}"   
+${outB}\t${white}[${blue}1${white}]${green} Configure Mirrorlist${suffix}
+${outB}\t${white}[${blue}2${white}]${green} Configure Network   ${suffix}
+${outG}\t${white}[${blue}3${white}]${green} Configure SSH       ${suffix}
+${outY}\t${white}[${blue}4${white}]${green} Install System      ${suffix}
+${outR}\t${white}[${red}Q${white}]${green} Exit Script          ${suffix}"   
 }
 
 # @首选项 [4] 的列表
 function Livecd_System_Module_List(){
     echo -e "
 \n\t${white}*** ${red}Install System Module ${white}***${suffix}  
---------------------------------------------
-${outY} ${green}   Disk Partition.        ${red}**  ${white}[1]  ${suffix}
-${outY} ${green}   Install System Files.  ${red}**  ${white}[2]  ${suffix}
-${outY} ${green}   Configurt System.      ${red}**  ${white}[3]  ${suffix}
-${outG} ${green}   Installation Desktop.  ${blue}*   ${white}[4]  ${suffix}
-${outG} ${green}   Installation Drive.    ${blue}*   ${white}[11] ${suffix}
-${outY} ${green}   Install virtual tools. ${blue}*   ${white}[22] ${suffix}" 
+---------------------------------------------
+${outY} \t${white}[${blue}1${white}]${green}  Disk Partition         ${red}**${suffix}
+${outY} \t${white}[${blue}2${white}]${green}  Install System Files   ${red}**${suffix}
+${outY} \t${white}[${blue}3${white}]${green}  Configurt System       ${red}**${suffix}
+${outG} \t${white}[${blue}4${white}]${green}  Installation Desktop    ${blue}*${suffix}
+${outG} \t${white}[${blue}11${white}]${green}${green} Installation Drive      ${blue}*${suffix}
+${outY} \t${white}[${blue}22${white}]${green}${green} Install virtual tools   ${blue}*${suffix}" 
 }
 
 # @系统安装成功, 直奔加入chroot的提示信息
 function InstallSystemInfo(){
     sleep 1; echo -e "\n
-${wg}#======================================================#${suffix}
-${wg}#::  System components installation completed.         #${suffix}
-${wg}#::  Entering chroot mode.                             #${suffix}
-${wg}#::  Execute in 3 seconds.                             #${suffix}
-${wg}#::  Later operations are oriented to the new system.  #${suffix}
-${wg}#======================================================#${suffix}"
+${wg}+-====================================================-+${suffix}
+${wg}|::  System components installation completed.         |${suffix}
+${wg}|::  Entering chroot mode.                             |${suffix}
+${wg}|::  Execute in 3 seconds.                             |${suffix}
+${wg}|::  Later operations are oriented to the new system.  |${suffix}
+${wg}+-====================================================-+${suffix}"
 }
 
 # @完成系统配置成功, 可重启的提示信息
 function ConfigSystemInfo(){
-    echo -e "
-${ws}#======================================================#${suffix}
-${ws}#::                 Exit in 3/s                        #${suffix}
-${ws}#::  When finished, restart the computer.              #${suffix}
-${ws}#::  If there is a problem during the installation     #${suffix}
-${ws}#::  Please contact me. QQ:2763833502                  #${suffix}
-${ws}#======================================================#${suffix}"
+    printf "
+${ws}+-====================================================-+${suffix}
+${ws}|::                 Exit in 3/s                        |${suffix}
+${ws}|:: When finished, restart the computer.               |${suffix}
+${ws}|:: If there is a problem during the installation      |${suffix}
+${ws}|:: Please contact me. QQ:%s or Group:%s|${suffix}
+${ws}+-====================================================-+${suffix}" "2763833502" "346952836"
 }
 
 # @JetBrainsFira字体安装完成后的使用说明
@@ -130,17 +164,21 @@ function SSH_INFO(){
     CONF_Password_SSH=$2
     Local_Ethernet_IP=$3
     Local_Wifi_IP=$4
-    SSH_Port=$(netcap | grep sshd)
+    if netcap | grep sshd &>/dev/null ; then
+        SSH_Port=$(netcap | grep sshd)
+        SSH_status=$(echo -e "${out_WELL} ${white}SSH service successfully started.${suffix}")
+    else 
+        SSH_status=$(echo -e "${out_ERROR} ${white}SSH service startup failed.${suffix}")
+    fi 
     echo -e "
 ${green} -------------${white} Connection method ${green}------------- ${suffix}
 [$USER@$HOSTNAME ~]$ ssh $USER@${Local_Ethernet_IP:-${Local_Wifi_IP}}
 
  Enter username -=> ${white}$USER${suffix}
  Enter password -=> ${white}$CONF_Password_SSH${suffix}
-
 ${green} -----------${white} SSH Port Information ${green}------------ ${suffix}
 ${SSH_Port}
-
+${SSH_status}
 ${green} --------------------------------------------- ${suffix}"
 }
 
@@ -176,7 +214,7 @@ usage: ${0##*/} [-h] [-V] command ...
 # @Auins版本信息
 function version(){    
     echo -e "${wg} ${Script_Version} ${suffix}
-Copyright (C) 2022 Auroot.                   
+Copyright (C) 2020 - 2023 Auroot.                   
 URL GitHub: https://github.com/Auroots/Auins 
 URL Gitee : https://gitee.com/auroot/Auins   
                                             
@@ -189,18 +227,35 @@ Contact information:
 # 具体的实现 >> >> >> >> >> >> >> >> 
 Set_Color_Variable
 case ${1} in
-    "version"   ) version ;; # Auins版本信息
-    "logos"     ) logos "$2" "$3" "$4" "$5" "$6" "$7";; # Script首页信息, 需要接收: 1=版本号, 2=引导类型, 3=磁盘类型, 4=Chroot状态, 5=脚本开启模式, 6=CPU名称
-    "SSH_INFO"  ) SSH_INFO "$2" "$3" "$4" "$5" "$6" "$7";; # 输出SSH信息, 需要接收: 1=用户名, 2=用户密码, 3=有线IP, 4=无线IP
-    "Auins_usage"   ) Auins_usage ;; # Auins的帮助文档 Auin_help
-    "LivecdHomeList" ) LivecdHomeList ;; # LiveCD环境下，首页会显示的列表
-    "NormalHomeList" ) NormalHomeList ;; # 正常(Normal)环境下，首页会显示的列表
-    "DesktopEnvList" ) DesktopEnvList ;; # 桌面环境的选择列表
-    "DesktopManagerList") DesktopManagerList ;; # 桌面管理器的选择列表
-    "Livecd_System_Module_List" ) Livecd_System_Module_List;; # 首选项 [4] 的列表
-    "InstallSystemInfo"     ) InstallSystemInfo ;; # 系统安装成功, 直奔加入chroot的提示信息
-    "ConfigSystemInfo"      ) ConfigSystemInfo ;; # 完成系统配置成功, 可重启的提示信息
-    "JetBrainsFira_font_usage"  ) JetBrainsFira_font_usage # JetBrainsFira字体安装完成后的使用说明
+    # Auins版本信息
+    "version"   ) version ;; 
+    # Script首页信息, 需要接收: 
+    # 1=版本号(Script_Version), 2=引导类型(Boot_Type), 3=磁盘类型(Disk_Type), 4=Chroot状态(Chroot_Patterns_Print) 5=脚本开启模式(Start_Patterns)
+    # 6=有线IP(Local_Ethernet_IP), 7=有线网卡名(Ethernet_Name), 8=无线IP(Local_Wifi_IP), 9=无线网卡名(Wifi_Name)
+    "logos"     ) logos "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}";; 
+    # 输出SSH信息, 需要接收: 1=用户名, 2=用户密码, 3=有线IP, 4=无线IP
+    "SSH_INFO"  ) SSH_INFO "$2" "$3" "$4" "$5" "$6" "$7";;
+     # Auins的帮助文档 Auin_help
+    "Auins_usage"   ) Auins_usage ;;
+    # LiveCD环境下，首页会显示的列表
+    "LivecdHomeList" ) LivecdHomeList ;; 
+    # 正常(Normal)环境下，首页会显示的列表
+    "NormalHomeList" ) NormalHomeList ;; 
+    # 桌面环境的选择列表
+    "DesktopEnvList" ) DesktopEnvList ;; 
+    # 桌面管理器的选择列表
+    "DesktopManagerList") DesktopManagerList ;; 
+    # 首选项 [4] 的列表
+    "Livecd_System_Module_List" ) Livecd_System_Module_List;; 
+    # 系统安装成功, 直奔加入chroot的提示信息
+    "InstallSystemInfo"     ) InstallSystemInfo ;; 
+    # 完成系统配置成功, 可重启的提示信息
+    "ConfigSystemInfo"      ) ConfigSystemInfo ;; 
+    # JetBrainsFira字体安装完成后的使用说明
+    "JetBrainsFira_font_usage"  ) JetBrainsFira_font_usage 
 esac
 
 # Print_INFO [想要输出的信息] [附加输入的信息]...... 
+
+# 如何查看网卡名
+# cat /proc/net/dev | awk '{if($2>0 && NR > 2) print substr($1, 0, index($1, ":") - 1)}'

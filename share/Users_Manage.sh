@@ -1,13 +1,31 @@
 #!/bin/bash
 # Author: Auroot
 # QQ： 2763833502
-# Description： Configure users -> Auins v4.5.3
+# Description： Configure users -> Auins v4.6 r7
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
 # set -xe
+# 该死的颜色
+# 红 绿 黄 蓝 白 后缀
+# red='\033[1;31m'; User_Password_INFO
+green='\033[1;32m' yellow='\033[1;33m'; 
+# blue='\033[1;36m'  
+white='\033[1;37m'; suffix='\033[0m' 
 
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+# @获取用户输入，并返回
+function Read_user_input(){ local user_input; read -r user_input; echo "$user_input"; }
+# Tips output colour: white
+function tips_white() { printf "\033[1;37m:: $(tput bold; tput setaf 2)\033[1;37m%s \033[1;32m-+> \033[0m$(tput sgr0)" "${*}"; }
+# Error message wrapper
+# function err(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 1)[ x Error ] => \033[1;31m${*}\033[0m$(tput sgr0)"; exit 255; } 
+# Warning message wrapper
+function warn(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 3)[ ! Warning ] => \033[1;33m${*}\033[0m$(tput sgr0)"; }
+# Run message wrapper
+function run() { echo -e "\033[1;37m:: $(tput bold; tput setaf 2)[ + Exec ] => \033[1;32m${*}\033[0m$(tput sgr0)"; }
+# Skip message wrapper
+function skip() { echo -e "\033[1;37m:: $(tput bold; tput setaf 0)[ - Skip ] => ${*}\033[0m$(tput sgr0)"; }
+
 # 地址: auins.info(INFO)| script.conf(CONF)
 # 读取: Config_File_Manage [INFO/CONF] [Read] [头部参数]
 # 写入: Config_File_Manage [INFO/CONF] [Write] [头部参数] [修改内容]
@@ -21,8 +39,12 @@ function Config_File_Manage(){
         Read )   grep -w "$parameter" < "$Files" | awk -F "=" '{print $2}' | awk '{sub(/^[\t ]*/,"");print}' | awk '{sub(/[\t ]*$/,"");print}' ;;
         Write) 
                 List_row=$(grep -nw "$parameter" < "$Files" | awk -F ":" '{print $1}';)
-                sed -i "${List_row:-Not}c ${parameter}${format}${content}" "$Files" 2>/dev/null
-    esac
+                if [ -n "$List_row" ]; then
+                    sed -i "${List_row}c ${parameter}${format}${content}" "$Files" 2>/dev/null
+                else
+                    warn "File: $Files, missing value for [ $content ]."+
+                fi
+    esac 
 }
 
 function Script_init_Variable(){
@@ -90,36 +112,20 @@ function Configure_Sudo_Nopasswd(){
     fi
 }
 
-# 该死的颜色
-function Set_Color_Variable(){
-    # 红 绿 黄 蓝 白 后缀
-    # red='\033[1;31m'; User_Password_INFO
-    green='\033[1;32m'  
-    yellow='\033[1;33m'; blue='\033[1;36m'  
-    white='\033[1;37m'; suffix='\033[0m'     
-
-    out_SKIP="${white}::${yellow} [Skip] =>${suffix}"
-    out_WARNING="${white}::${yellow} [Warning] =>${suffix}"
-    out_EXEC="${white}::${blue} [Exec] =>${suffix}"
-    # out_WELL="${white}::${green} [Well] =>${suffix}"
-    # out_ERROR="${white}::${red} [ Error ] =>${suffix}"
-}
-
 # Start Script | 从这里开始
 # >> >> >> >> >> >> >> >> >> >> >> >> 
 Auins_Profile=${1}
 Auins_Infofile=${2}
 Script_init_Variable
-Set_Color_Variable
 
 case "$Auto_Config_Users" in 
     [Yy]*)
         # 配置用户 >> >> >> >> >> >> >> >> >> 
-        echo -e "${out_EXEC} ${green}Configuring user [${white}$User_Name_Conf${suffix}${green}].${suffix}" && sleep 1;
+        run "Configuring user [${white} $User_Name_Conf ${suffix}${green}].${suffix}" && sleep 1;
         useradd -m -g users -G wheel -s /bin/bash "${User_Name_Conf}"  # 新建用户
-        echo -e "${out_EXEC} ${green}Configuring user [${white}$User_Name_Conf${suffix}${green}] password.${suffix}" && sleep 1;
+        run "Configuring user [${white} $User_Name_Conf ${suffix}${green}] password.${suffix}" && sleep 1;
         echo "${User_Name_Conf}:${User_Password_Conf}" | chpasswd &> /dev/null # 设置密码 
-        echo -e "${out_EXEC} ${green}Configuring sudo permission.${suffix}" && sleep 1;
+        run "Configuring sudo permission." && sleep 1;
         cp /etc/sudoers /etc/sudoers.back
         # chmod 770 /etc/sudoers
         sed -i "${WHELL_LINE}i %wheel ALL=\(ALL:ALL\) ALL" /etc/sudoers
@@ -129,20 +135,20 @@ case "$Auto_Config_Users" in
         Config_File_Manage INFO Write UsersID "$UsersID"
         # Config_File_Manage INFO Write User_Password "${User_Password_Conf}"
         # 配置Root用户 >> >> >> >> >> >> >> >> >> 
-        echo -e "${out_EXEC} ${green}Configuring user [${white}root${suffix}${green}] password.${suffix}" && sleep 1;
+        run "Configuring user [${white} root ${suffix}${green}] password.${suffix}" && sleep 1;
         echo "root:${Root_Password_Conf}" | chpasswd &> /dev/null   # 输入两次正确，将在这里设置Root密码
         # Config_File_Manage INFO Write "Root_Password" "${Root_Password_Conf}"
         # 配置Nopasswd用户 >> >> >> >> >> >> >> >> >> 
         case $Sudo_Nopasswd in
             [Yy]*)
-                    echo -e "${out_WARNING} ${green}Enable Sudo Nopasswd.${suffix}" && sleep 1;
+                    warn "Enable Sudo [${white} Nopasswd ${suffix}${yellow}]." && sleep 1;
                     chmod 770 /etc/sudoers 
                     sed -i "${WHELL_LINE}"d /etc/sudoers  
                     sed -i "${NOPASSWD_LINE}i %wheel ALL=\(ALL:ALL\) NOPASSWD: ALL" /etc/sudoers
                     chmod 440 /etc/sudoers
             ;;
             [Nn]*)
-                    echo -e "${out_SKIP} ${green}Not Sudo Nopasswd.${suffix}" && sleep 1;
+                    skip "Not Sudo Nopasswd." && sleep 1;
         esac
     ;;
     [Nn]*)
@@ -156,6 +162,6 @@ case "$Auto_Config_Users" in
             Configure_Sudo_Nopasswd
         else
             whiptail --title "ArchLinux - User settings." --msgbox "Users: ${UserName}, Setup has been completed. [Ok]" 10 60
-            echo -e "${PSY} ${yellow}The User: ${green}${UserName} ${yellow}has been set. [Ok]${suffix}"
+            feed_well "The User: [ ${white}${UserName}${green} ] has been set. [Ok]${suffix}"
         fi
 esac

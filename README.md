@@ -17,11 +17,12 @@
   <br>
 </h1>
 <h3>
-当前版本：v4.5.2 请使用最新的archiso镜像
+当前版本：v4.6 请使用最新的archiso镜像
 <a href="https://github.com/Auroots/Auins/blob/main/doc/update-zh.md">
     <img src="https://img.shields.io/badge/journal-%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97-brightgreen?style=flat-square&logo=appveyor">
 </a>
 </h3>
+
 
 
 
@@ -64,27 +65,32 @@ chmod +x auin.sh && bash auin.sh
 (4->0)  Chroot      需系统安装后，即可执行;
 ```
 
-#### 💻 其他功能
+#### 💻 其他选项
 
 ```bash
-Auins is a script for ArchLinux installation and deployment.
+:: Auins is a script for ArchLinux installation and deployment.
 usage: auins [-h] [-V] command ...
-    Optional arguments:
-       -m | --mirror    配置源;
-       -w | --cwifi     配置wifi;
-       -s | --openssh   配置并开启ssh服务; 
-      -ec --conf    	编辑配置文件 (./local/profile.conf);
-           -vc      	查看脚本配置文件 (profile.conf);
-          --info    	查看脚本生成的信息(auins.info);
-           -ds      	删除脚本和其他缓存;
-       -h | --help      帮助;
-       -v | --version   版本;
-       
-    Optional Installation:
-            -vm        安装并配置vm-tools;
-            -fo        安装 Fonts;
-            -fc        安装 Fcitx;
-            -vcd       安装显卡驱动 (Nvidia\Amdgpu);
+
+    Install Commands: ("-R = uninstall"):
+        font    Install Fonts, Options: [all], [common], [adobe], [code].
+        fcitx   Automatic installation 'fcitx' input method, Other options: [-R].
+        ibus    Automatic installation 'ibus-rime' input method, Other options: [-R].
+        axel    Automatic installation 'Axel' (Pacman multi threaded download), Other options: [-R].
+        inGpu   Install Video card driver ( "Nvidia" \ "Amdgpu" ).
+        inVmt   Install Vmware/Virtualbox Tools and exit.
+        
+    Settings Options:
+        -m, --mirror        Automatically configure mirrorlist file and exit.
+        -w, --wifi          Connect to a WIFI and exit.
+        -s, --openssh       Open SSH service (default password: 123456) and exit.
+             
+    Global Options:
+        -e, --edit-conf     Edit ("local/profile.conf").
+        -f, --view-conf     View ("local/profile.conf").
+        -i, --view-info     View ("local/auins.info").
+        -c, --clean-cache   Delete scripts and other caches.
+        -h, --help          Show this help message and exit.
+        -v, --version       Show the conda version number and exit.
 ```
 
 **由于ArchLinux经常更新，安装方式也随之改变，导致脚本无法与之匹配，发生在某阶段出现错误，如果您发现问题，或以加以改进，可以创建Pull Request 提交脚本.**
@@ -98,6 +104,24 @@ usage: auins [-h] [-V] command ...
 - [ ] ☁️  脚本：[v5.0]Beta `s2arch.sh` Archlinux can be installed on VPS;
 - [x] 🗔 Script：At startup, print information first，eg：CPU，LiveCD，network，disk...
 - [ ] ⚙️ 检查reflector报错的问题(不影响正常使用)
+- [x] 优化: 部分语法;
+- [ ] 检查reflector报错的问题(不影响正常使用);
+- [ ] 新增: (v4.5)快照备份软件(timeshift)，开启方式：配置文件，默认开启;
+- [x] 修改: (v4.5)配置系统不再自动安装字体,只有安装桌面环境后,才会提示;
+- [ ] 修复: (v4.5)解决不输入Root密码,自动跳过; ?检查代码未发现问题
+- [ ] 修复: (v4.5)解决设置Swap大小不成功或自动跳过的问题 (虚拟机下正常;
+- [x] 修复: (v4.5)选择磁盘时,无法识别nvme名称;
+- [ ] 修复: (v4.5)非root权限运行脚本时,不会终止;
+- [x] 修复: (r4)无法正确配置时区;
+- [x] 新增: (r5)pacman多线程下载(axel)，开启方式：配置文件中或脚本选项;
+- [x] 新增: (r5)输入法(ibus-rime)，开启方式：配置文件中或脚本选项;
+- [x] 新增: (r5)脚本选项逻辑,加入set选项,将设置选项归类;
+- [x] 新增: (r5)独立的字体安装模块;
+- [x] 新增: (r5)独立的信息输出模块;
+- [x] 修复: (r5)Process_Manage无法关闭多个进程;
+- [ ] 修复: (r6)首页信息输出不全;
+- [ ] 修改: (r6)archiso第一个月的更新提示,只在脚本结束任务后显示;
+
 
 
 

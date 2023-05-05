@@ -27,11 +27,18 @@ inB=$(echo -e "${blue}-=>${suffix} ");
 # 提示 蓝 红 绿 黄
 outG="${white}::${green} =>${suffix}";
 outB="${white}::${blue} =>${suffix}";
-out_SKIP="${white}::${yellow} [Skip] =>${suffix}"
-out_WARNING="${white}::${yellow} [Warn] =>${suffix}"
-out_EXEC="${white}::${blue} [Exec] =>${suffix}"
-out_WELL="${white}::${green} [Well] =>${suffix}"
-out_ERROR="${white}::${red} [Error] =>${suffix}"
+# @获取用户输入，并返回
+function Read_user_input(){ local user_input; read -r user_input; echo "$user_input"; }
+# Tips output colour: white
+function tips_white() { printf "\033[1;37m:: $(tput bold; tput setaf 2)\033[1;37m%s \033[1;32m-+> \033[0m$(tput sgr0)" "${*}"; }
+# Error message wrapper
+function err(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 1)[ x Error ] => \033[1;31m${*}\033[0m$(tput sgr0)"; exit 255; } 
+# Warning message wrapper
+function warn(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 3)[ ! Warning ] => \033[1;33m${*}\033[0m$(tput sgr0)"; }
+# Run message wrapper
+function run() { echo -e "\033[1;37m:: $(tput bold; tput setaf 2)[ + Exec ] => \033[1;32m${*}\033[0m$(tput sgr0)"; }
+# Skip message wrapper
+function skip() { echo -e "\033[1;37m:: $(tput bold; tput setaf 0)[ - Skip ] => ${*}\033[0m$(tput sgr0)"; }
 
 # 地址: auins.info(INFO)| script.conf(CONF)
 # 读取: Config_File_Manage [INFO/CONF] [Read] [头部参数]
@@ -57,10 +64,11 @@ function Config_File_Manage(){
 function Process_Management(){
     PM_Enter_1=${1}
     PM_Enter_2=${2}
+    PM_Enter_3=${3}
     case ${PM_Enter_1} in
-        start)   bash "${Share_Dir}/Process_manage.sh" start "${PM_Enter_2}" ;;
-        restart) bash "${Share_Dir}/Process_manage.sh" restart "${PM_Enter_2}" ;;
-        stop)    bash "${Share_Dir}/Process_manage.sh" stop "${PM_Enter_2}"
+        start)   bash "$Process_Manage" start "${PM_Enter_2}" "${PM_Enter_3}" ;;
+        restart) bash "$Process_Manage" restart "${PM_Enter_2}" "${PM_Enter_3}" ;;
+        stop)    bash "$Process_Manage" stop "${PM_Enter_2}" "${PM_Enter_3}"
     esac
 }
 
