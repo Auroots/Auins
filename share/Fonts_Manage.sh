@@ -105,19 +105,19 @@ function Config_file_install_fonts(){
     CONF_PGK_FONTS_ADOBE=$2
 
     case $CONF_Install_Font_Common in
-        [Yy]* )  run "Installing [Common fonts]."; sleep 2s 
+        [Yy]* )  run "Installing [ ${white}Common fonts${green} ]."; sleep 2s 
                 Install_Program "$CONF_PGK_FONTS"; Common_status="true" ;; 
-            * )  skip "[Common fonts]."
+            * )  skip "[ Common fonts ]."
     esac   
     case $CONF_Install_Font_Adobe in
-        [Yy]* )  run "Installing [Adobe fonts]."; sleep 2s
+        [Yy]* )  run "Installing [ ${white}Adobe fonts${green} ]."; sleep 2s
                 Install_Program "$CONF_PGK_FONTS_ADOBE"; Adobe_status="true" ;;
-            * )  skip "[Adobe fonts]."
+            * )  skip "[ Adobe fonts ]."
     esac
     case $CONF_Install_Font_JetBrains_Fira in
-        [Yy]* )  run "Installing [JetBrains / Fira fonts]."; sleep 2s 
+        [Yy]* )  run "Installing [ ${white}JetBrains / Fira fonts${green} ]."; sleep 2s 
                 InstallJetBrainsFira; JetBrainsFira_status="true" ;;
-            * )  skip "[JetBrains / Fira fonts]."
+            * )  skip "[ JetBrains / Fira fonts ]."
     esac 
 }
 # 根据用户选项安装相应的字体

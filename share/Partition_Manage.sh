@@ -144,17 +144,11 @@ function partition_facts(){
                                 Process_Management stop "$0" "${white} [ ${Input_partition} ] ${red}Please input: /dev/sdX[0-9] | sdX[0-9] !!! ${suffix}"
                             fi ;; 
         _Disk_Type_     )   # Detect disk type
-                            case $(if [[ $(inspect_disk_type "$Input_disk") != "" ]] ;then
-                                        inspect_disk_type "$Input_disk"
-                                    else
-                                        echo "Error"
-                                    fi
-                                ) in 
+                            case $(inspect_disk_type "$Input_disk") in 
                                 gpt  ) printf "GPT" ;;
                                 dos  ) printf "MBR" ;;
                                 sgi  ) printf "sgi" ;;
                                 sun  ) printf "sun" ;;
-                                "Error") printf "Error";;
                                 *  ) printf "Unformatted Disk"
                             esac ;; 
         _Open_mount_)       # Mount partition
@@ -348,7 +342,7 @@ function partition_swap(){
     function Swap_File(){
         run "Assigned Swap file Size: ${white}[ $1 ]${suffix}"
         fallocate -l "${1}" /mnt/swapfile \
-            && err "Create Swap failed." # 创建指定大小的swap虚拟化文件
+            || err "Create Swap failed." # 创建指定大小的swap虚拟化文件
         chmod 600 /mnt/swapfile # 设置权限
         mkswap /mnt/swapfile    # 格式化swap文件
         swapon /mnt/swapfile    # 挂载swap文件

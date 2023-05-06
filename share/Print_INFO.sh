@@ -46,10 +46,10 @@ function logos(){
     esac
 
     Local_Ethernet_IP=$(echo -e "${blue}${6:-No network.}")
-    Ethernet_Name=$(echo -e "${white}[${green} ${7:-No} ${white}]${suffix}")
+    Ethernet_Name=$(echo -e "${white}[${green} ${7:-void} ${white}]${suffix}")
 
     Local_Wifi_IP=$(echo -e "${blue}${8:-No network.}")
-    Wifi_Name=$(echo -e "${white}[${green} ${9:-No} ${white}]${suffix}")
+    Wifi_Name=$(echo -e "${white}[${green} ${9:-void} ${white}]${suffix}")
 
     SSH_IP=$(echo -e "${blue}${Local_Ethernet_IP:-${Local_Wifi_IP}}${suffix}")
 
@@ -224,6 +224,37 @@ Contact information:
 "
 }     
 
+# 桌面环境的选择列表
+function DesktopEnvList(){
+        echo -e "
+\n\t   ${white}***${suffix} ${blue}Install Desktop${suffix} ${white}***${suffix}    
+------------------------------------------------
+
+${outB} \t${blue}[1]${blue}${green}   KDE plasma. \tDefault: ${blue}sddm     ${suffix}
+${outB} \t${white}[2]${white}${green}   Gnome.    \tDefault: ${yellow}gdm      ${suffix}
+${outB} \t${blue}[3]${blue}${green}   Deepin.     \tDefault: ${green}lightdm  ${suffix}  
+${outB} \t${white}[4]${white}${green}   Xfce4.    \tDefault: ${green}lightdm  ${suffix}
+${outB} \t${blue}[5]${blue}${green}   i3wm.       \tDefault: ${blue}sddm     ${suffix}
+${outB} \t${white}[6]${blue}${green}   lxde.       \tDefault: \033[1;34mlxdm     ${suffix}
+${outB} \t${blue}[7]${white}${green}   Cinnamon. \tDefault: ${green}lightdm  ${suffix}
+${outB} \t${white}[8]${blue}${green}   Mate.       \tDefault: ${green}lightdm  ${suffix}
+${outB} \t${blue}[9]${blue}${green}   Plasma_Wayland. \tDefault: ${blue}sddm     ${suffix}
+${outB} \t${white}[10]${blue}${green}  Openbox.    \tDefault: ${blue}sddm     ${suffix}
+------------------------------------------------\n"  
+}
+
+# 桌面管理器的选择列表
+function DesktopManagerList(){
+        echo -e "
+----------------------------
+${outB} ${blue}[1]${green}   sddm.     ${suffix}
+${outB} ${yellow}[2]${green}   gdm.     ${suffix}
+${outB} ${green}[3]${green}   lightdm.  ${suffix}  
+${outB} \033[1;34m[4]${green}   lxdm.     ${suffix} 
+${outB} ${white}[*]${green}   default.${suffix}
+============================"
+}
+
 # 具体的实现 >> >> >> >> >> >> >> >> 
 Set_Color_Variable
 case ${1} in
@@ -257,5 +288,3 @@ esac
 
 # Print_INFO [想要输出的信息] [附加输入的信息]...... 
 
-# 如何查看网卡名
-# cat /proc/net/dev | awk '{if($2>0 && NR > 2) print substr($1, 0, index($1, ":") - 1)}'
