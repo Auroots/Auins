@@ -23,7 +23,7 @@ export LOCAL_ETHERNET_IP ETHERNET_NAME LOCAL_WIFI_IP WIFI_NAME
     - [?] 修复: (v4.5)解决不输入Root密码,自动跳过; ?检查代码未发现问题
     - [ ] 修复: (v4.5)解决设置Swap大小不成功或自动跳过的问题 (虚拟机下正常;
     - [x] 修复: (v4.5)选择磁盘时,无法识别nvme名称;
-    - [ ] 修复: (v4.5)非root权限运行脚本时,不会终止;
+    - [x] 修复: (v4.5)非root权限运行脚本时,不会终止;
     - [x] 修复: (r4)无法正确配置时区;
     - [x] 新增: (r5)pacman多线程下载(axel)，开启方式：配置文件中或脚本选项;
     - [x] 新增: (r5)输入法(ibus-rime)，开启方式：配置文件中或脚本选项;
@@ -34,6 +34,9 @@ export LOCAL_ETHERNET_IP ETHERNET_NAME LOCAL_WIFI_IP WIFI_NAME
     - [x] 修复: (r6)首页信息输出不全;
     - [x] 修改: (r6)archiso第一个月的更新提示,只在脚本结束任务后显示;
     - [x] 新增：(r7)加入BlackArch setup脚本;
+    - [x] 新增：(r7)随时更新脚本的功能,在 profile.conf 中开启;
+    - [x] 修复：(r7)USB无线网卡无法正常识别;
+    - [x] 修复: (r7)修补桌并完善桌面模块;
 EOF
 
 # @可能有用的文件
@@ -67,35 +70,32 @@ function Script_Variable_init(){
     Process_Script="${Share_Dir}/Process_Manage.sh"
     Fonts_Script="${Share_Dir}/Fonts_Manage.sh"
     Print_INFO="${Share_Dir}/Print_INFO.sh"
+    Blarckarch_Script="${Share_Dir}/blackarch_strap.sh"
     System_Root="/mnt"
     Livecd_Version_Route="/run/archiso/airootfs/version"
     # entries_Boot="/sys/firmware/efi/efivars"  # discern: UEFI
-    if [ ! -d "${Local_Dir}" ]; then mkdir -p "${Local_Dir}"; fi
-    if [ ! -d "${Share_Dir}" ]; then mkdir -p "${Share_Dir}"; fi
+    if [ ! -d "$Local_Dir" ]; then mkdir -p "$Local_Dir"; fi
+    if [ ! -d "$Share_Dir" ]; then mkdir -p "$Share_Dir"; fi
+    if [ ! -f "$Auins_Profile" ]; then touch "$Auins_Profile"; fi
+
 }
 # @该死的颜色
-function Set_Color_Variable(){
-    # 红 绿 黄 蓝 白 后缀
-    red='\033[1;31m'; green='\033[1;32m'  
-    yellow='\033[1;33m'; blue='\033[1;36m'  
-    white='\033[1;37m'; suffix='\033[0m'     
-    #-----------------------------#
-    # rw='\033[1;41m'  #--红白
-    wg='\033[1;42m'; # ws='\033[1;43m'      #白绿 \ 白褐
-    #wb='\033[1;44m'; wq='\033[1;45m'    #白蓝 \ 白紫
-    # wa='\033[1;46m';   #白青 \ 
-    # bx='\033[1;4;36m'; # 下划线 蓝
-    #-----------------------------
-    # 提示 绿 黄
-    outG="${white}::${green} =>${suffix}"; outY="${white}::${yellow} =>${suffix}"
-}
+# 红 绿 黄 蓝 白 后缀
+red='\033[1;31m'; green='\033[1;32m'  
+yellow='\033[1;33m'; blue='\033[1;36m'  
+white='\033[1;37m'; suffix='\033[0m'     
+#-----------------------------#
+# rw='\033[1;41m'  #--红白
+wg='\033[1;42m'; # ws='\033[1;43m'      #白绿 \ 白褐
+#wb='\033[1;44m'; wq='\033[1;45m'    #白蓝 \ 白紫
+# wa='\033[1;46m';   #白青 \ 
+# bx='\033[1;4;36m'; # 下划线 蓝
+#-----------------------------
+# 提示 绿 黄
+outG="${white}::${green} =>${suffix}"; outY="${white}::${yellow} =>${suffix}"
 
-# @获取用户输入，并返回
-function Read_user_input(){ local user_input; read -r user_input; echo "$user_input"; }
-# Tips output colour: white
-function tips_white() { printf "\033[1;37m:: $(tput bold; tput setaf 2)\033[1;37m%s \033[1;32m-+> \033[0m$(tput sgr0)" "${*}"; }
-# feedback successfully info
-function feed_well(){ echo -e "\033[1;37m:: $(tput bold; tput setaf 2)=> \033[1;32m${*}\033[0m$(tput sgr0)"; }
+
+
 # Error message wrapper
 function err(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 1)[ x Error ] => \033[1;31m${*}\033[0m$(tput sgr0)"; exit 255; } 
 # Warning message wrapper
@@ -104,7 +104,18 @@ function warn(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 3)[ ! Warning
 function run() { echo -e "\033[1;37m:: $(tput bold; tput setaf 2)[ + Exec ] => \033[1;32m${*}\033[0m$(tput sgr0)"; }
 # Skip message wrapper
 function skip() { echo -e "\033[1;37m:: $(tput bold; tput setaf 0)[ - Skip ] => ${*}\033[0m$(tput sgr0)"; }
-
+# @获取用户输入，并返回
+function Read_user_input(){ local user_input; read -r user_input; echo "$user_input"; }
+# Tips output colour: white
+function tips_white() { printf "\033[1;37m:: $(tput bold; tput setaf 2)\033[1;37m%s \033[1;32m-+> \033[0m$(tput sgr0)" "${*}"; }
+  # feedback successfully info
+function feed_status(){ 
+    if [ $? = 0 ]; then 
+        echo -e "\033[1;37m:: $(tput bold; tput setaf 2)=> \033[1;32m${1}\033[0m$(tput sgr0)"; 
+    else 
+        err "$2"
+    fi
+}
 # check for root privilege
 function check_priv()
 {
@@ -124,26 +135,39 @@ function Config_File_Manage(){
         CONF) local Files="$Auins_Profile" ;;
     esac
     case "$2" in
-        Read )   grep -w "$parameter" < "$Files" | awk -F "=" '{print $2}' | awk '{sub(/^[\t ]*/,"");print}' | awk '{sub(/[\t ]*$/,"");print}' ;;
+        Read ) 
+                read_info=$(grep -w "$parameter" < "$Files") # 在文件中查找匹配的值
+                if [ -n "$read_info" ]; then 
+                    echo "$read_info" | awk -F "=" '{print $2}' | awk '{sub(/^[\t ]*/,"");print}' | awk '{sub(/[\t ]*$/,"");print}' 
+                else
+                    warn "Read file: $Files, missing value [${white} $parameter  ${yellow}]."
+                    sleep 3
+                fi
+         ;;
         Write) 
-                List_row=$(grep -nw "$parameter" < "$Files" | awk -F ":" '{print $1}';)
+                List_row=$(grep -nw "$parameter" < "$Files" | awk -F ":" '{print $1}';) # 在文件中查找匹配的值, 并打印行号
                 if [ -n "$List_row" ]; then
                     sed -i "${List_row}c ${parameter}${format}${content}" "$Files" 2>/dev/null
                 else
-                    warn "File: $Files, missing value for [ $content ]."+
+                    warn "Write file: $Files, missing value [${white} $parameter  ${yellow}] + [${white} $content ${yellow}]."
+                    sleep 3
                 fi
     esac 
 }
 
 # @install Programs 安装包
-function Install_Program() {
+function Install_Progsram() {
     # arch-chroot ${MNT_DIR} bash -c "$COMMAND"
     set +e
     IFS=' '; PACKAGES=("$@");
     for VARIABLE in {1..3}
     do
         local COMMAND="pacman -Syu --noconfirm --needed ${PACKAGES[@]}"
-        if ! bash -c "$COMMAND" ; then break; else sleep 3; break; fi
+        if ! bash -c "$COMMAND" ; then
+            break;
+        else
+            sleep 3; break;
+        fi
     done
     echo "$VARIABLE" &> /dev/null
     set -e
@@ -165,13 +189,14 @@ function Process_Management(){
 function Script_init(){
     # Read Profile.conf
     CONF_Hostname=$(Config_File_Manage CONF Read Hostname)
-    CONF_Password_SSH=$(Config_File_Manage CONF Read "Password_SSH")
-    CONF_Service_SSH=$(Config_File_Manage CONF Read "Service_SSH")
+    CONF_Password_SSH=$(Config_File_Manage CONF Read Password_SSH)
+    CONF_Service_SSH=$(Config_File_Manage CONF Read Service_SSH)
     # Detect CPU
     CPU_Name=$(head -n 5 /proc/cpuinfo | grep "model name" | awk -F ": " '{print $2}')
-    if lscpu | grep GenuineIntel &>/dev/null  ; then CPU_Vendor="intel";
-    elif lscpu | grep AuthenticAMD &>/dev/null; then CPU_Vendor="amd";
-    fi
+    
+    lscpu | grep GenuineIntel &>/dev/null && CPU_Vendor="intel";
+    lscpu | grep AuthenticAMD &>/dev/null && CPU_Vendor="amd";
+
     Config_File_Manage INFO Write CPU_Name "$CPU_Name"
     Config_File_Manage INFO Write CPU_Vendor "$CPU_Vendor"
     # Detect Host_Environment
@@ -190,9 +215,9 @@ function Script_init(){
     else
         BOOT_TYPE="BIOS" DISK_TYPE="MBR"
     fi
-    Config_File_Manage INFO Write BOOT_TYPE ${BOOT_TYPE}
-    Config_File_Manage INFO Write DISK_TYPE ${DISK_TYPE}
-    INFO_Boot_way=$(Config_File_Manage INFO Read "BOOT_TYPE")
+    Config_File_Manage INFO Write Boot_Type ${BOOT_TYPE}
+    Config_File_Manage INFO Write Disk_Type ${DISK_TYPE}
+    INFO_Boot_way=$(Config_File_Manage INFO Read "Boot_Type")
     
     # 本地化地区
     Country_Name=$(Config_File_Manage INFO Read "Country_Name")
@@ -211,7 +236,7 @@ function Script_init(){
         API_Country_Name=$(grep -w "country_name" "$Auins_api_file" | awk '{print $2}' | sed 's#",##' | sed 's#"##')  && Config_File_Manage INFO Write Country_Name "$API_Country_Name";
     fi
     # 校准live环境的时间
-    ln -sf /usr/share/zoneinfo/"$(Config_File_Manage INFO Read "Timezone")" /etc/localtime &>/dev/null && hwclock --systohc --utc
+    ln -sf "/usr/share/zoneinfo/$(Config_File_Manage INFO Read Timezone)" /etc/localtime &>/dev/null && hwclock --systohc --utc
     case "$ChrootPatterns" in  
         Chroot-OFF) 
             # 根据配置文件, 判断是否开启SSH远程服务, Chroot下不执行
@@ -232,49 +257,100 @@ function Update_Share(){
     # 根据配置文件选择源, 将其作为脚本的下载源 Module URL: Default settings
     function URL(){
         case ${1} in
-            "gitee"  ) source="https://gitee.com/auroot/Auins/raw/master" ;;
-            "github" ) source="https://raw.githubusercontent.com/Auroots/Auins/main";;
-            "auroot" ) source="http://auins.auroot.cn" ;;
-            "test"   ) source="http://test.auroot.cn" 
+            "gitee"  ) SOURCE="https://gitee.com/auroot/Auins/raw/master" ;;
+            "github" ) SOURCE="https://raw.githubusercontent.com/Auroots/Auins/main";;
+            "auroot" ) SOURCE="http://auins.auroot.cn" ;;
+            "test"   ) SOURCE="http://test.auroot.cn" 
         esac
-        SOURCE_SHARE="${source}/share"
-        SOURCE_LOCAL="${source}/local"
+        SOURCE_SHARE="${SOURCE}/share"
+        SOURCE_LOCAL="${SOURCE}/local"
+    }
+    # 检查与审核文件是否存在或为空, 1.如果不存在则下载, 2.如果为空则删除, 3,如果本地与云端不一致将自动更新
+    function audit_file() {
+        local directory=$1; file_path=$2; file_name=$(echo "$file_path" | awk -F"/" '{print $NF}')
+        case $directory in 
+            [Ss]*) SOURCE_URL="${SOURCE}/share";;
+            [Ll]*) SOURCE_URL="${SOURCE}/local"
+        esac
+        if [ -z "$(cat "$Auins_Profile")" ]; then
+            Profile_name=$(echo "$Auins_Profile" | awk -F"/" '{print $NF}')
+            curl -fsSL "${SOURCE}/local/${Profile_name}" > "$Auins_Profile"
+            feed_status "Successfully download: [${white} ${Profile_name} ${green}]" "Download failed: [${white} ${Profile_name} ${red}]";
+        fi
+        if [ ! -e "$file_path" ]; then
+            curl -fsSL "${SOURCE_URL}/${file_name}" > "$file_path"  
+            feed_status "Successfully download: [${white} $file_name ${green}]" "Download failed: [${white} $file_name ${red}]";
+            case $(echo "$file_name" | awk -F"." '{print $NF}') in 
+                sh) chmod +x "$file_path" || if [ -z "$(cat "$file_path")" ]; then rm -f "$file_path"; fi
+            esac      
+        fi
+        case $(Config_File_Manage CONF Read Now_update_auins) in
+            [Yy]*)
+                    if [[ $file_name != "$(echo "$Auins_Infofile" | awk -F"/" '{print $NF}')" ]] \
+                    && [[ $file_name != "$(echo "$Auins_Profile" | awk -F"/" '{print $NF}')" ]]; then
+                        if [[ "$(cat "$file_path")" != "$(curl -fsSL "${SOURCE_URL}/${file_name}")" ]]; then 
+                            curl -fsSL "${SOURCE_URL}/${file_name}" > "$file_path"
+                            feed_status "Successfully update: [${white} $file_name ${green}]" "Update failed: [${white} $file_name ${red}]";
+                        fi
+                    fi 
+                ;;
+        esac 
     }
     # 下载想要脚本模块 
     function Download_Script(){
-        if [ ! -e "$Print_INFO" ]; then         curl -fsSL "${SOURCE_SHARE}/Print_INFO.sh" > "$Print_INFO"                && chmod +x "$Print_INFO";          fi
-        if [ ! -e "$Mirrorlist_Script" ]; then  curl -fsSL "${SOURCE_SHARE}/Mirrorlist_Manage.sh" > "$Mirrorlist_Script"  && chmod +x "$Mirrorlist_Script";   fi
-        if [ ! -e "$Users_Script"    ]; then    curl -fsSL "${SOURCE_SHARE}/Users_Manage.sh"    > "$Users_Script"         && chmod +x "$Users_Script";        fi
-        if [ ! -e "$Partition_Script"  ]; then  curl -fsSL "${SOURCE_SHARE}/Partition_Manage.sh"  > "$Partition_Script"   && chmod +x "$Partition_Script";    fi
-        if [ ! -e "$Desktop_Script" ]; then     curl -fsSL "${SOURCE_SHARE}/Desktop_Manage.sh" > "$Desktop_Script"        && chmod +x "$Desktop_Script";      fi
-        if [ ! -e "$Fonts_Script" ]; then       curl -fsSL "${SOURCE_SHARE}/Fonts_Manage.sh" > "$Fonts_Script"            && chmod +x "$Fonts_Script";        fi
-        if [ ! -e "$Process_Script"    ]; then  curl -fsSL "${SOURCE_SHARE}/Process_Manage.sh" > "$Process_Script"        && chmod +x "$Process_Script";      fi
-        if [ ! -e "${Auins_Profile}" ]; then    curl -fsSL "${SOURCE_LOCAL}/profile.conf" > "$Auins_Profile"; fi
-        if [ ! -e "${Auins_Infofile}" ]; then   curl -fsSL "${SOURCE_LOCAL}/auins.info" > "$Auins_Infofile";  fi
+        audit_file local "$Auins_Profile"
+        audit_file local "$Auins_Infofile"
+
+        audit_file share "$Print_INFO"  
+        audit_file share "$Mirrorlist_Script"
+        audit_file share "$Users_Script"
+        audit_file share "$Partition_Script"
+        audit_file share "$Desktop_Script"
+        audit_file share "$Fonts_Script"
+        audit_file share "$Process_Script"
+        audit_file share "$Blarckarch_Script"
+        # if [[ "$(cat "$0")" != "$(curl -fsSL "${SOURCE}/${AUINS_SCRIPT_NAME}")" ]]; then 
+        #     curl -fsSL "${SOURCE}/${AUINS_SCRIPT_NAME}" > "$0"
+        #     feed_status "Successfully update: [${white} Auins ${green}]" "Update failed: [${white} Auins ${red}]"; sleep 0.2
+        # fi
     }
+    
     case ${1} in
         "URL") URL "$2";;
-        "Download_Script") Download_Script
+        "Download_Script") Download_Script ;;
     esac
 }
+# 如何查看网卡名
+# awk '{if($1>0 && NR > 2) print substr($1, 0, index($1, ":") - 1)}' /proc/net/dev
 
 # @网络部分集合
 function Network(){
     # @获取本机IP地址，并储存到$Auins_Infofile， Network Variable
     function ethernet_info(){    
-        local Info_Nic
-        for  ((Cycle_number=3;Cycle_number<=10;Cycle_number++)); do
-            Info_Nic=$(cut -d":" -f1 /proc/net/dev | sed -n "$Cycle_number",1p | sed 's/^[ ]*//g')
-            if echo "$Info_Nic" | grep "en" &>/dev/null ; then 
-                ETHERNET_NAME="$Info_Nic"
-                LOCAL_ETHERNET_IP=$(ip route list | grep "${ETHERNET_NAME}" | cut -d" " -f9 | sed -n '2,1p')
-                Config_File_Manage INFO Write LOCAL_ETHERNET_IP "${LOCAL_ETHERNET_IP:-Not}"; break;
-            elif echo "$Info_Nic" | grep "wl" &>/dev/null ; then
-                WIFI_NAME="$Info_Nic"
-                LOCAL_WIFI_IP=$(ip route list | grep "${WIFI_NAME}" | cut -d" " -f9 | sed -n '2,1p') 
-                Config_File_Manage INFO Write LOCAL_WIFI_IP "${LOCAL_WIFI_IP:-Not}"; break;
+        local info_all_nic
+        info_all_nic=$(awk '{if($1>0 && NR > 2) print substr($1, 0, index($1, ":") - 1)}' /proc/net/dev)
+
+        ETHERNET_NAME=$(for ((i=1;i<=10;i++)); do 
+            if echo "$info_all_nic" | grep -E "^en*|^et*" &>/dev/null ; then 
+                echo "$info_all_nic" | sed -n "$i",1p | sed 's/^[ ]*//g' | grep -E "^en*|^et*";
             fi
-        done    
+        done)
+
+        WIFI_NAME=$(for  ((i=1;i<=10;i++)); do 
+            if echo "$info_all_nic" | grep -E "^wl*" &>/dev/null ; then 
+                echo "$info_all_nic" | sed -n "$i",1p | sed 's/^[ ]*//g' | grep -E "^wl*" 
+            fi
+        done)
+        
+        LOCAL_WIFI_IP=$(ip route list | grep "${WIFI_NAME}" | cut -d" " -f9 | sed -n '2,1p')
+        LOCAL_ETHERNET_IP=$(ip route list | grep "${ETHERNET_NAME}" | cut -d" " -f9 | sed -n '2,1p')
+        [[ "$LOCAL_WIFI_IP" == "$LOCAL_ETHERNET_IP" ]]; LOCAL_WIFI_IP="";
+        
+        Config_File_Manage INFO Write Local_Wifi_Name "${WIFI_NAME:-void}"
+        Config_File_Manage INFO Write Local_Ethernet_Name "${ETHERNET_NAME:-void}"
+
+        Config_File_Manage INFO Write Local_Wifi_IP "${LOCAL_WIFI_IP:-void}"
+        Config_File_Manage INFO Write Local_Ethernet_IP "${LOCAL_ETHERNET_IP:-void}"   
     }
     # @配置WIFI，Configure WIFI
     function configure_wifi() {
@@ -341,7 +417,8 @@ function ConfigurePassworld(){
             fi
         done
         if [ -z "$CheckingUsers" ] ; then
-            bash "$Users_Script" "$Auins_Profile" "$Auins_Infofile"; sleep 1;
+            clear;
+            bash "$Users_Script" "$Auins_Profile" "$Auins_Infofile";
         fi
     fi
 }
@@ -544,11 +621,11 @@ function Configure_Grub(){
             echo "GRUB_DISABLE_OS_PROBER=false" >> /etc/default/grub
             grub-mkconfig -o /boot/grub/grub.cfg
             if efibootmgr | grep "$CONF_Hostname" &>/dev/null ; then
-                run "Grub installed successfully -=> [$CONF_Hostname]"  
-                echo -e "${green}     $(efibootmgr | grep "$CONF_Hostname")  ${suffix}\n"  
+                run "Grub installed successfully -=> [${white} $CONF_Hostname ${green}]"  
+                echo -e "${white}     $(efibootmgr | grep "$CONF_Hostname")  ${suffix}\n"  
                 sleep 2s
             else
-                echo -e "${green}     $(efibootmgr)  ${suffix}\n"
+                echo -e "${yellow}     $(efibootmgr)  ${suffix}\n"
                 err "Grub installed failed."
             fi
         ;;
@@ -559,7 +636,7 @@ function Configure_Grub(){
             grub-install --target=i386-pc --recheck --force "$INFO_Boot_partition"
             grub-mkconfig -o /boot/grub/grub.cfg
             if echo $? &>/dev/null ; then
-                run "Grub installed successfully -=> [Archlinux]"  
+                run "Grub installed successfully -=> [${white} $CONF_Hostname ${green}]" 
                 sleep 2s
             else
                 err "Grub installed failed."
@@ -569,21 +646,20 @@ function Configure_Grub(){
 # @配置本地化 时区 主机名 语音等  
 function Configure_Language(){
     language="LANG=en_US.UTF-8"
-        run "Configure enable Network."; sleep 1s
+        run "Configure enable Network."; sleep 0.2
     systemctl enable NetworkManager
-        run "Time zone changed to 'Shanghai'."; sleep 1s
+        run "Time zone changed to 'Shanghai'."; sleep 0.2
     ln -sf /usr/share/zoneinfo/"$(Config_File_Manage INFO Read "Timezone")" /etc/localtime &>/dev/null && hwclock --systohc --utc # 将时区更改为"上海" / 生成 /etc/adjtime
-        run "Set the hostname \"$CONF_Hostname\"." ; sleep 1s
+        run "Set the hostname \"$CONF_Hostname\"." ; sleep 0.2
     echo "$CONF_Hostname" > /etc/hostname
-        run "Localization language settings."; sleep 1s
+        run "Localization language settings."; sleep 0.2
     sed -i 's/#.*en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
-        run "Write 'en_US.UTF-8 UTF-8' To /etc/locale.gen."; sleep 1s  
+        run "Write 'en_US.UTF-8 UTF-8' To /etc/locale.gen."; sleep 0.2
     sed -i 's/#.*zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/' /etc/locale.gen
-        run "Write 'zh_CN.UTF-8 UTF-8' To /etc/locale.gen."; sleep 1s 
+        run "Write 'zh_CN.UTF-8 UTF-8' To /etc/locale.gen."; sleep 0.2
     locale-gen
-        run "Configure local language defaults 'en_US.UTF-8'."; sleep 1s  
+        run "Configure local language defaults 'en_US.UTF-8'."; sleep 0.2
     echo "$language" > /etc/locale.conf       # 系统语言 "英文" 默认为英文   
-    sleep 3;
 }
 # @Install/Configure virtualbox-guest-utils / open-vm-tools, 安装虚拟化插件
 function install_virtualization_service(){
@@ -616,21 +692,21 @@ function Archiso_Version_Testing(){
     First_Month_Reminder=""
     case $Time_interval in
         [0])    ;;
-        [1])    warn "${white}Please update as soon as possible archiso ! ${suffix}"
+        [1])    echo; warn "Please update as soon as possible archiso ! "
                 warn "Archiso Version: ${white}[ ${TIME_ARCHISO} ]${suffix}"
                 ;;
-        [2])    warn "${white}You haven't updated in more than 2 month archiso !" 
+        [2])    echo; warn "You haven't updated in more than 2 month archiso !" 
                 warn "Archiso Version: ${white}[ ${TIME_ARCHISO} ]${suffix}"
                 sleep 3
                 ;;
-        [3])    warn "${white}You haven't updated in more than 3 month archiso !"
+        [3])    echo; warn "You haven't updated in more than 3 month archiso !"
                 warn "Archiso Version: ${white}[ ${TIME_ARCHISO} ]${suffix}"
                 tips_white "Whether to start the script [Y/n]?"
                     case $(Read_user_input) in
                         [Yy]*)  sleep 1 ;;
                             *)  clear; warn "Please update archiso."; exit 30
                     esac ;;
-        *)      warn "Archiso Version: ${white}[ ${TIME_ARCHISO} ]${suffix}"
+        *)      echo; warn "Archiso Version: ${white}[ ${TIME_ARCHISO} ]${suffix}"
                 warn "You haven't updated for a long time, Please update your archisoarchiso!!!"
                 exit 30
     esac
@@ -676,7 +752,7 @@ function Configure_System(){
         if [ "$(Config_File_Manage CONF Read "Archlinucn")" = "yes" ]; then Install_Program archlinuxcn-keyring; fi
         if [ "$(Config_File_Manage CONF Read "Blackarch")" = "yes" ]; then Install_Program blackarch-keyring; fi
         bash "$Fonts_Script" "${Share_Dir}" "${Local_Dir}" Config_file_install_fonts "$SOURCE_LOCAL"
-        bash "$Print_INFO" ConfigSystemInfo; sleep 3
+        bash "$Print_INFO" ConfigSystemInfo; sleep 2
     else
         sleep 1; Process_Management restart "$0" "${red}The system is not installed. Exec: 4->2 ${suffix}"
     fi
@@ -702,10 +778,12 @@ function Delete_Script(){
 
 # @ Archiso LiveCD 下自动启用
 function LiveCD_Model(){
-    bash "$Print_INFO" logos "$SCRIPT_VERSION" "$BOOT_TYPE" "$DISK_TYPE" "$CHROOT_PATTERNS_PRINT" "$START_PATTERNS" "$LOCAL_ETHERNET_IP" "$ETHERNET_NAME ""$LOCAL_WIFI_IP" "$WIFI_NAME"
+    bash "$Print_INFO" logos "$SCRIPT_VERSION" "$BOOT_TYPE" "$DISK_TYPE" "$CHROOT_PATTERNS_PRINT" "$START_PATTERNS" "$LOCAL_ETHERNET_IP" "$ETHERNET_NAME" "$LOCAL_WIFI_IP" "$WIFI_NAME"
     # 检查archiso版本，如果过低，叫提醒更新
-    CONF_Archiso_Version_check=$(Config_File_Manage CONF Read "Archiso_Version_check");
-    case $CONF_Archiso_Version_check in [Yy]*) Archiso_Version_Testing "$Livecd_Version_Route"; esac
+    if [[ $ChrootPatterns == "Chroot-OFF" ]]; then
+        CONF_Archiso_Version_check=$(Config_File_Manage CONF Read "Archiso_Version_check");
+        case $CONF_Archiso_Version_check in [Yy]*) Archiso_Version_Testing "$Livecd_Version_Route"; esac
+    fi
     # 输出首页选项列表
     bash "$Print_INFO" LivecdHomeList;   
     echo -e "\n${Chroot_status:- }"
@@ -735,7 +813,7 @@ function LiveCD_Model(){
 }
 # @ 安装完Archlinux后 正常可用情况下自动启用
 function Normal_Model(){
-    bash "$Print_INFO" logos "$SCRIPT_VERSION" "$BOOT_TYPE" "$DISK_TYPE" "$CHROOT_PATTERNS_PRINT" "$START_PATTERNS" "$LOCAL_ETHERNET_IP" "$ETHERNET_NAME ""$LOCAL_WIFI_IP" "$WIFI_NAME"
+    bash "$Print_INFO" logos "$SCRIPT_VERSION" "$BOOT_TYPE" "$DISK_TYPE" "$CHROOT_PATTERNS_PRINT" "$START_PATTERNS" "$LOCAL_ETHERNET_IP" "$ETHERNET_NAME" "$LOCAL_WIFI_IP" "$WIFI_NAME"
     echo -e "${First_Month_Reminder:- }"
     bash "$Print_INFO" NormalHomeList;   
     echo -e "\n${Chroot_status:- }"
@@ -785,8 +863,7 @@ function Auins_Options(){
 # Start Script | 从这里开始
 # >> >> >> >> >> >> >> >> >> >> >> >> 
 check_priv
-Script_Variable_init 
-Set_Color_Variable  
+Script_Variable_init
 Update_Share URL "$SCRIPTS_SOURCE"  # 锁定脚本下载源
 Update_Share Download_Script        # 下载脚本需要的脚本
 Script_init
