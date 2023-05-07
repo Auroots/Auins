@@ -123,21 +123,26 @@ case "$Auto_Config_Users" in
         # 配置用户 >> >> >> >> >> >> >> >> >> 
         run "Configuring user [${white} $User_Name_Conf ${suffix}${green}].${suffix}" && sleep 1;
         useradd -m -g users -G wheel -s /bin/bash "${User_Name_Conf}"  # 新建用户
+
         run "Configuring user [${white} $User_Name_Conf ${suffix}${green}] password.${suffix}" && sleep 1;
         echo "${User_Name_Conf}:${User_Password_Conf}" | chpasswd &> /dev/null # 设置密码 
+
         run "Configuring sudo permission." && sleep 1;
         cp /etc/sudoers /etc/sudoers.back
         # chmod 770 /etc/sudoers
         sed -i "${WHELL_LINE}i %wheel ALL=\(ALL:ALL\) ALL" /etc/sudoers
         # chmod 440 /etc/sudoers
+
         UsersID=$(id -u "$UserName_INFO" 2> /dev/null)
         Config_File_Manage INFO Write Users "${User_Name_Conf}"
         Config_File_Manage INFO Write UsersID "$UsersID"
         # Config_File_Manage INFO Write User_Password "${User_Password_Conf}"
+
         # 配置Root用户 >> >> >> >> >> >> >> >> >> 
         run "Configuring user [${white} root ${suffix}${green}] password.${suffix}" && sleep 1;
         echo "root:${Root_Password_Conf}" | chpasswd &> /dev/null   # 输入两次正确，将在这里设置Root密码
         # Config_File_Manage INFO Write "Root_Password" "${Root_Password_Conf}"
+
         # 配置Nopasswd用户 >> >> >> >> >> >> >> >> >> 
         case $Sudo_Nopasswd in
             [Yy]*)
@@ -157,6 +162,7 @@ case "$Auto_Config_Users" in
             UsersID=$(id -u "$UserName_INFO" 2> /dev/null)
             Config_File_Manage INFO Write Users "$UserName"
             Config_File_Manage INFO Write UsersID "$UsersID"
+            
             Configure_Users
             Configure_Root_Password
             Configure_Sudo_Nopasswd

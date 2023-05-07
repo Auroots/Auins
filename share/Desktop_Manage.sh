@@ -37,7 +37,6 @@ function check_priv()
   fi
 }
 
-
 # 地址: auins.info(INFO)| script.conf(CONF)
 # 读取: Config_File_Manage [INFO/CONF] [Read] [头部参数]
 # 写入: Config_File_Manage [INFO/CONF] [Write] [头部参数] [修改内容]
@@ -138,7 +137,7 @@ function Set_Desktop_Env(){
         Desktop_Env_ID "$DESKTOP_ID"
         Desktop_Tuple[1]="$CONF_Desktop_Display_Manager"
     else # 使用用户输入的设置
-        bash "$Print_INFO" DesktopEnvList; 
+        bash "$Print_Info_Script" desktop_env_list; 
         printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}.\n" "${CheckingUsers:-$INFO_UserName}" "${CheckingID:-$INFO_UsersID}"
         tips_white "Please select desktop"
         DESKTOP_ID="0"; ID=$(Read_user_input)
@@ -171,7 +170,7 @@ function Install_Desktop_Env(){
 
 # @桌面管理器选择列表，选择后，自动安装及配置服务；
 function Desktop_Manager(){
-    bash "$Print_INFO" DesktopManagerList
+    bash "$Print_Info_Script" desktop_manager_list
     tips_white "Please select Desktop Manager"
     case $(Read_user_input) in
         1) 
@@ -231,7 +230,7 @@ function Installation_Desktop(){
     #  安装桌面环境
         Install_Desktop_Env;
     #  安装字体
-        Fonts_Script;      
+        bash "$Fonts_Script" "${Share_Dir}" "${Local_Dir}";      
         tips_white "Whether to install Common Drivers? [Y/n]?"
         case $(Read_user_input) in
             [Yy]*) Install_Io_Driver ;;
@@ -252,7 +251,7 @@ Auins_Profile="${Local_Dir}/profile.conf"
 Auins_Infofile="${Local_Dir}/auins.info"
 # 需要调用的模块
 Process_Script="${Share_Dir}/Process_Manage.sh"
-Print_INFO="${Share_Dir}/Print_INFO.sh"
+Print_Info_Script="${Share_Dir}/Print_Info.sh"
 Fonts_Script="${Share_Dir}/Fonts_Manage.sh"
 
 # @该死的颜色

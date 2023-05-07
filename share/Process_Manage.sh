@@ -27,7 +27,7 @@ function feed_status(){
 function Stript_Process_Management(){
     Exec_status="$1"   # 启动 重启 停止
     Process_Path="$2"  # 脚本 或者 进程
-    Print_INFO="$3"    # 需要输出的错误信息
+    Output_Info="$3"    # 需要输出的错误信息
     case ${Exec_status} in
         start   )   
                     bash "$Process_Path" \
@@ -43,7 +43,7 @@ function Stript_Process_Management(){
                     kill "$(pgrep -f "$Process_Path" | sed "s/$$//g")" &> /dev/null
                     sleep 0.1; clear
                     warn "\033[1;37m\"$Process_Path\"\033[1;33m has been Stopped.\033[0m"
-                    err "$Print_INFO"
+                    [[ $Output_Info == "" ]] && echo &>/dev/null || err "$Output_Info";
                 ;;
         *       ) 
                     exit 1

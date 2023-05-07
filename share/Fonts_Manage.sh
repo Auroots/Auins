@@ -89,7 +89,7 @@ function InstallJetBrainsFira(){
         fc-cache
     fi
     # 输出使用方法
-    bash "$Print_INFO" JetBrainsFira_font_usage
+    bash "$Print_Info_Script" JetBrainsFira_font_usage
 }
 # 根据配置文件安装相应的字体
 function Config_file_install_fonts(){
@@ -178,18 +178,19 @@ function Script_Runing_install_fonts(){
 # 具体的实现 >> >> >> >> >> >> >> >> 
 echo &>/dev/null
 check_priv
-Share_Dir=${1}
-Local_Dir=${2}
+Share_Dir=$1
+Local_Dir=$2
+Source_Local=$3
 Auins_Profile="${Local_Dir}/profile.conf"  
 Auins_Infofile="${Local_Dir}/auins.info"
-Print_INFO="${Share_Dir}/Print_INFO.sh"
+Print_Info_Script="${Share_Dir}/Print_Info.sh"
 Process_Manage="${Share_Dir}/Process_Manage.sh"
 # 获取配置文件中的软件包名
 # CONF_PGK_FONTS=$(Config_File_Manage CONF Read "PGK_Fonts")
 # CONF_PGK_FONTS_ADOBE=$(Config_File_Manage CONF Read "PGK_Fonts_Adobe")
 # # 获取配置文件中的用户设置
-Source_Local="$4"
-case ${3} in
+
+case ${4} in
     # 根据配置文件安装相应的字体
     "Config_file_install_fonts") Config_file_install_fonts "$CONF_PGK_FONTS" "$CONF_PGK_FONTS_ADOBE" ;;
     # 根据用户选项安装相应的字体

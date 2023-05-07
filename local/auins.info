@@ -3,21 +3,23 @@
 # Please clean this file immediately after system installation.
 # So as not to reveal privacy !!!
 
+ChrootPatterns = 
 Public_IP = 
 Country = 
 Country_Name = 
 Timezone = 
+Archiso_version = 
 
 CPU_Vendor = 
-CPU_Name = 
+CPU = 
+GPU = 
+Memory =
 Host_Environment = 
 LinuxKernel =
-Livecd_version =
 Local_Ethernet_Name =
 Local_Ethernet_IP =
 Local_Wifi_Name =
 Local_Wifi_IP =
-Patterns = 
 Boot_Type = 
 Disk_Type = 
 Disk =

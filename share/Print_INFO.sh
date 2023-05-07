@@ -13,7 +13,8 @@ function Set_Color_Variable(){
     # 红 绿 黄 蓝 白 后缀
     red='\033[1;31m'; green='\033[1;32m'  
     yellow='\033[1;33m'; blue='\033[1;36m'  
-    white='\033[1;37m'; suffix='\033[0m'     
+    white='\033[1;37m'; suffix='\033[0m'  
+    whites='\033[1;30m';   
     #-----------------------------#
     # rw='\033[1;41m'  #--红白
     wg='\033[1;42m'; ws='\033[1;43m'      #白绿 \ 白褐
@@ -28,65 +29,95 @@ function Set_Color_Variable(){
     out_ERROR="${white}::${red} [ Error ] =>${suffix}"
 }
 
-# @Script首页信息, 需要接收: 1=版本号, 2=引导类型, 3=磁盘类型, 4=Chroot状态, 5=脚本开启模式, 6=有线IP, 7=有线网卡名, 8=无线IP, 9=无线网卡名
-function logos(){
-    Script_Version="${1}" 
-    Boot_Type=$(echo -e "${white}[ ${blue}${2}${white} ]${suffix}")
-    Disk_Type=$(echo -e "${white}[ ${blue}${3}${white} ]${suffix}")
+# 地址: auins.info(INFO)| script.conf(CONF)
+# 读取: Config_File_Manage [INFO/CONF] [Read] [头部参数]
+# 写入: Config_File_Manage [INFO/CONF] [Write] [头部参数] [修改内容]
+function Config_File_Manage(){ 
+    local format=" = "; parameter="$3"; content="$4";
+    case "$1" in
+        INFO) local Files="$Auins_Infofile" ;;
+        CONF) local Files="$Auins_Profile" ;;
+    esac
+    case "$2" in
+        Read ) 
+                read_info=$(grep -w "$parameter" < "$Files") # 在文件中查找匹配的值
+                if [ -n "$read_info" ]; then 
+                    echo "$read_info" | awk -F "=" '{print $2}' | awk '{sub(/^[\t ]*/,"");print}' | awk '{sub(/[\t ]*$/,"");print}' 
+                else
+                    warn "Read file: $Files, missing value [${white} $parameter  ${yellow}]."
+                    sleep 3
+                fi
+         ;;
+        Write) 
+                List_row=$(grep -nw "$parameter" < "$Files" | awk -F ":" '{print $1}';) # 在文件中查找匹配的值, 并打印行号
+                if [ -n "$List_row" ]; then
+                    sed -i "${List_row}c ${parameter}${format}${content}" "$Files" 2>/dev/null
+                else
+                    warn "Write file: $Files, missing value [${white} $parameter  ${yellow}] + [${white} $content ${yellow}]."
+                    sleep 3
+                fi
+    esac 
+}
 
-    Chroot_Patterns_Print="$4"
+# @Script首页信息, 需要接收: 1=Chroot状态, 2=脚本开启模式
+function logos(){
+    Script_Version=$(Config_File_Manage INFO Read Auins_version) 
+
+    Chroot_Patterns_Print="$1"
     case "${Chroot_Patterns_Print}" in 
         Chroot-OFF) Chroot_Patterns_Print="$(echo -e "${white}[${red} Chroot-OFF ${white}]${suffix}")" ;;
         Chroot-ON ) Chroot_Patterns_Print="$(echo -e "${white}[${green} Chroot-ON ${white}]${suffix}")"
     esac
-    Start_Patterns="$5"
+    Start_Patterns="$2"
     case "${Start_Patterns}" in 
         LiveCD ) Start_Patterns=$(echo -e "${white}[${green} LiveCD ${white}]${suffix}") ;;
         Normal ) Start_Patterns=$(echo -e "${white}[ Normal ]${suffix}")
     esac
 
-    Local_Ethernet_IP=$(echo -e "${blue}${6:-No network.}")
-    Ethernet_Name=$(echo -e "${white}[${green} ${7:-void} ${white}]${suffix}")
+    INFO_Local_Ethernet_Name=$(Config_File_Manage INFO Read Local_Ethernet_Name)
+    INFO_Local_Ethernet_IP=$(Config_File_Manage INFO Read Local_Ethernet_IP)
+    INFO_Local_Wifi_Name=$(Config_File_Manage INFO Read Local_Wifi_Name)
+    INFO_Local_Wifi_IP=$(Config_File_Manage INFO Read Local_Wifi_IP)
 
-    Local_Wifi_IP=$(echo -e "${blue}${8:-No network.}")
-    Wifi_Name=$(echo -e "${white}[${green} ${9:-void} ${white}]${suffix}")
+    SSH_IP=$(echo -e "${blue}${INFO_Local_Ethernet_IP:-${INFO_Local_Wifi_IP}}${suffix}")
 
-    SSH_IP=$(echo -e "${blue}${Local_Ethernet_IP:-${Local_Wifi_IP}}${suffix}")
-
-    CPU_Name=$(head -n 5 /proc/cpuinfo | grep "model name" | awk -F ": " '{print $2}')
-    CPU_Temp="$(($(if [ -e /sys/class/thermal/thermal_zone1/temp ]; then cat /sys/class/thermal/thermal_zone1/temp; else echo '00'; fi)/1000))°C"
-
-    not_intercept_gpu_info=$(lspci | grep -i VGA | awk -F ":" '{print $3}' | sed 's/^[ ]*//g')
-    intercept_gpu_info=$(lspci  | grep -i VGA | awk -F ":" '{print $3}' | grep -o '\[.*\]')
-    Unrecognized=$(echo -e "${white}Unrecognized${suffix}")
-    GPU_Info_0="${intercept_gpu_info:-$not_intercept_gpu_info}"
-    GPU_Info="${GPU_Info_0:-$Unrecognized}"
-
-    Memory_Info=$(($(sed -n '1,1p' /proc/meminfo | awk '{print $2}')/1000000))
+    # CPU_Temp="$(($(if [ -e /sys/class/thermal/thermal_zone1/temp ]; then cat /sys/class/thermal/thermal_zone1/temp; else echo '00'; fi)/1000))°C"
+    
     clear; printf "
-${white}         _             _       _     _                     
-${green}        / \   _ __ ___| |__   | |   (_)_ __  _   ___  __   
-${blue}       / _ \ | '__/ __| '_ \  | |   | | '_ \| | | \ \/ /    
-${yellow}      / ___ \| | | (__| | | | | |___| | | | | |_| |>  <   
-${red}     /_/   \_\_|  \___|_| |_| |_____|_|_| |_|\__,_/_/\_\     
-${bx}-----------------------  Script Info  -----------------------${suffix}
-${green} Script Name:\t%s.
-${green} Boot Mode:\t%s ${red}- %s
-${green} Patterns: \t%s ${red}- %s
-${green} Ethernet: \t%s ${red}- %s
-${green} Wifi_net: \t%s ${red}- %s
-${green} SSH:      \t${white}ssh %s@%s
-${green} CPU&Temp: \t%s ${white}&${suffix} ${green}%s
-${green} GPU_Info: \t%s
-${green} Memory:   \t%sG
+${white}       _             _       _     _                           
+${green}      / \   _ __ ___| |__   | |   (_)_ __  _%s   
+${blue}     / _ \ | '__/ __| '_ \  | |   | | '_ \| | | \ \/ /    
+${yellow}    / ___ \| | | (__| | | | | |___| | | | | |_| |>  <   
+${red}   /_/   \_\_|  \___|_| |_| |_____|_|_| |_|\__,_/_/\_\ 
+${bx}-----------------------  Auins Info  -----------------------${suffix}
+${green} Script_Name:\t%s.
+${green} CPU&Mem:    \t%s
+${green} GPU_Info:   \t%s
+${green} Timezone:   \t%s
+${green} Boot_Type:  \t%s ${red}- %s
+${green} Patterns:   \t%s ${red}- %s
+${green} Ethernet:   \t%s ${red}- %s
+${green} Wifi_Net:   \t%s ${red}- %s
+${green} SSH:        \t${white}ssh %s@%s
 ${red}--=--*--=--*--=--*--=--*--=--=*=--=--*--=--*--=--*--=--*--=--${suffix}" \
-"$Script_Version" "$Boot_Type" "$Disk_Type" "$Chroot_Patterns_Print" "$Start_Patterns" \
-"$Local_Ethernet_IP" "$Ethernet_Name" "$Local_Wifi_IP" "$Wifi_Name" \
-"$USER" "$SSH_IP" "$CPU_Name" "$CPU_Temp" "$GPU_Info" "$Memory_Info" 
+"$(Config_File_Manage INFO Read Archiso_version)" \
+"$Script_Version" \
+"$(echo -e "$(Config_File_Manage INFO Read CPU) ${whites}& ${green}$(Config_File_Manage INFO Read Memory)MB")" \
+"$(Config_File_Manage INFO Read GPU)" \
+"$(Config_File_Manage INFO Read Timezone)" \
+"$(echo -e "${white}[ ${blue}$(Config_File_Manage INFO Read Boot_Type)${white} ]${suffix}")" \
+"$(echo -e "${white}[ ${blue}$(Config_File_Manage INFO Read Disk_Type)${white} ]${suffix}")" \
+"$Chroot_Patterns_Print" "$Start_Patterns" \
+"$(echo -e "${blue}${INFO_Local_Ethernet_IP:-No network.}")" \
+"$(echo -e "${white}[${green} ${INFO_Local_Ethernet_Name:-void} ${white}]${suffix}")" \
+"$(echo -e "${blue}${INFO_Local_Wifi_IP:-No network.}")" \
+"$(echo -e "${white}[${green} ${INFO_Local_Wifi_Name:-void} ${white}]${suffix}")" \
+"$USER" "$SSH_IP"
 }
 
+    
 # @正常(Normal)环境下，首页会显示的列表
-function NormalHomeList(){
+function normal_home_list(){
     echo -e "
 ${outB}\t${white}[${blue}1${white}]${green} Configure Mirrorlist   ${suffix}
 ${outB}\t${white}[${blue}2${white}]${green} Configure Network      ${suffix}
@@ -99,7 +130,7 @@ ${outR}\t${white}[${red}Q${white}]${green} Exit Script             ${suffix}"
 }
 
 # @LiveCD环境下，首页会显示的列表
-function LivecdHomeList(){ 
+function livecd_home_list(){ 
     echo -e "
 ${outB}\t${white}[${blue}1${white}]${green} Configure Mirrorlist${suffix}
 ${outB}\t${white}[${blue}2${white}]${green} Configure Network   ${suffix}
@@ -109,7 +140,7 @@ ${outR}\t${white}[${red}Q${white}]${green} Exit Script          ${suffix}"
 }
 
 # @首选项 [4] 的列表
-function Livecd_System_Module_List(){
+function livecd_system_module_list(){
     echo -e "
 \n\t${white}*** ${red}Install System Module ${white}***${suffix}  
 ---------------------------------------------
@@ -122,7 +153,7 @@ ${outY} \t${white}[${blue}22${white}]${green}${green} Install virtual tools   ${
 }
 
 # @系统安装成功, 直奔加入chroot的提示信息
-function InstallSystemInfo(){
+function install_system_info(){
     sleep 1; echo -e "\n
 ${wg}+-====================================================-+${suffix}
 ${wg}|::  System components installation completed.         |${suffix}
@@ -133,7 +164,7 @@ ${wg}+-====================================================-+${suffix}"
 }
 
 # @完成系统配置成功, 可重启的提示信息
-function ConfigSystemInfo(){
+function config_system_info(){
     printf "
 ${ws}+-====================================================-+${suffix}
 ${ws}|::                 Exit in 3/s                        |${suffix}
@@ -158,12 +189,12 @@ function JetBrainsFira_font_usage() {
 }\n\n" "/home/$USER/.config/\"vsCode_directory\"/User/settings.json" 
 }
 
-# @输出SSH信息, 需要接收: 1=用户名, 2=用户密码, 3=有线IP, 4=无线IP
-function SSH_INFO(){   
-    USER=$1
-    CONF_Password_SSH=$2
-    Local_Ethernet_IP=$3
-    Local_Wifi_IP=$4
+# @输出SSH信息
+function ssh_info(){   
+    CONF_Password_SSH=$(Config_File_Manage CONF Read Password_SSH)
+    INFO_Local_Ethernet_IP=$(Config_File_Manage INFO Read Local_Ethernet_IP)
+    INFO_Local_Wifi_IP=$(Config_File_Manage INFO Read Local_Wifi_IP)
+
     if netcap | grep sshd &>/dev/null ; then
         SSH_Port=$(netcap | grep sshd)
         SSH_status=$(echo -e "${out_WELL} ${white}SSH service successfully started.${suffix}")
@@ -172,7 +203,7 @@ function SSH_INFO(){
     fi 
     echo -e "
 ${green} -------------${white} Connection method ${green}------------- ${suffix}
-[$USER@$HOSTNAME ~]$ ssh $USER@${Local_Ethernet_IP:-${Local_Wifi_IP}}
+[$USER@$HOSTNAME ~]$ ssh $USER@${INFO_Local_Ethernet_IP:-${INFO_Local_Wifi_IP}}
 
  Enter username -=> ${white}$USER${suffix}
  Enter password -=> ${white}$CONF_Password_SSH${suffix}
@@ -183,7 +214,7 @@ ${green} --------------------------------------------- ${suffix}"
 }
 
 # @Auins的帮助文档 Auin_help
-function Auins_usage() {
+function auins_usage() {
     echo -e "
 :: Auins is a script for ArchLinux installation and deployment.
 usage: ${0##*/} [-h] [-V] command ...
@@ -213,7 +244,7 @@ usage: ${0##*/} [-h] [-V] command ...
 
 # @Auins版本信息
 function version(){    
-    echo -e "${wg} ${Script_Version} ${suffix}
+    echo -e "${wg} $(Config_File_Manage INFO Read Auins_version) ${suffix}
 Copyright (C) 2020 - 2023 Auroot.                   
 URL GitHub: https://github.com/Auroots/Auins 
 URL Gitee : https://gitee.com/auroot/Auins   
@@ -225,7 +256,7 @@ Contact information:
 }     
 
 # 桌面环境的选择列表
-function DesktopEnvList(){
+function desktop_env_list(){
         echo -e "
 \n\t   ${white}***${suffix} ${blue}Install Desktop${suffix} ${white}***${suffix}    
 ------------------------------------------------
@@ -244,7 +275,7 @@ ${outB} \t${white}[10]${blue}${green}  Openbox.    \tDefault: ${blue}sddm     ${
 }
 
 # 桌面管理器的选择列表
-function DesktopManagerList(){
+function desktop_manager_list(){
         echo -e "
 ----------------------------
 ${outB} ${blue}[1]${green}   sddm.     ${suffix}
@@ -255,36 +286,37 @@ ${outB} ${white}[*]${green}   default.${suffix}
 ============================"
 }
 
+Auins_Profile=$2
+Auins_Infofile=$3
 # 具体的实现 >> >> >> >> >> >> >> >> 
 Set_Color_Variable
-case ${1} in
-    # Auins版本信息
-    "version"   ) version ;; 
-    # Script首页信息, 需要接收: 
-    # 1=版本号(Script_Version), 2=引导类型(Boot_Type), 3=磁盘类型(Disk_Type), 4=Chroot状态(Chroot_Patterns_Print) 5=脚本开启模式(Start_Patterns)
-    # 6=有线IP(Local_Ethernet_IP), 7=有线网卡名(Ethernet_Name), 8=无线IP(Local_Wifi_IP), 9=无线网卡名(Wifi_Name)
-    "logos"     ) logos "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}";; 
-    # 输出SSH信息, 需要接收: 1=用户名, 2=用户密码, 3=有线IP, 4=无线IP
-    "SSH_INFO"  ) SSH_INFO "$2" "$3" "$4" "$5" "$6" "$7";;
+case $1 in
+    # Auins版本信息, 需要接收: [Auins_Profile] [Auins_Infofile]
+    "version"   ) version "$2";; 
+    # Script首页信息, 需要接收: 1=Chroot状态(Chroot_Patterns_Print) 2=脚本开启模式(Start_Patterns)
+    "logos" ) logos "$4" "$5";; 
+    # 输出SSH信息, 需要接收: [Auins_Profile] [Auins_Infofile]
+    "ssh_info" ) ssh_info ;; 
      # Auins的帮助文档 Auin_help
-    "Auins_usage"   ) Auins_usage ;;
+    "auins_usage" ) auins_usage ;;
     # LiveCD环境下，首页会显示的列表
-    "LivecdHomeList" ) LivecdHomeList ;; 
+    "livecd_home_list" ) livecd_home_list ;; 
     # 正常(Normal)环境下，首页会显示的列表
-    "NormalHomeList" ) NormalHomeList ;; 
+    "normal_home_list" ) normal_home_list ;; 
     # 桌面环境的选择列表
-    "DesktopEnvList" ) DesktopEnvList ;; 
+    "desktop_env_list" ) desktop_env_list ;; 
     # 桌面管理器的选择列表
-    "DesktopManagerList") DesktopManagerList ;; 
+    "desktop_manager_list") desktop_manager_list ;; 
     # 首选项 [4] 的列表
-    "Livecd_System_Module_List" ) Livecd_System_Module_List;; 
+    "livecd_system_module_list" ) livecd_system_module_list;; 
     # 系统安装成功, 直奔加入chroot的提示信息
-    "InstallSystemInfo"     ) InstallSystemInfo ;; 
+    "install_system_info" ) install_system_info ;; 
     # 完成系统配置成功, 可重启的提示信息
-    "ConfigSystemInfo"      ) ConfigSystemInfo ;; 
+    "config_system_info" ) config_system_info ;; 
     # JetBrainsFira字体安装完成后的使用说明
-    "JetBrainsFira_font_usage"  ) JetBrainsFira_font_usage 
+    "JetBrainsFira_font_usage" ) JetBrainsFira_font_usage 
 esac
+
 
 # Print_INFO [想要输出的信息] [附加输入的信息]...... 
 
