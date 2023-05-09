@@ -244,6 +244,7 @@ function Script_init(){
     # 查询并写入地区 IP 国家
     Country_Name=$(Config_File_Manage INFO Read "Country_Name")
     if [ -z  "$Country_Name" ] ; then
+        # https://api.ip.sb/geoip
         curl -fsSL --fail https://ipapi.co/json > "$Auins_api_file"
         CONF_Timezone=$(Config_File_Manage CONF Read Timezone)
         if [[ "$CONF_Timezone" == "" ]]; then
