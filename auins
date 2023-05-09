@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash
 # Author/Wechat: Auroot
 # Script name: Auins (ArchLinux User Installation Scripts) 
 # URL GitHub: https://github.com/Auroots/Auins
@@ -8,21 +8,21 @@
 echo &>/dev/null
 export AUINS_SCRIPT_NAME SOURCE_SHARE SOURCE_LOCAL TIME_ARCHISO SCRIPTS_SOURCE
 export BOOT_TYPE DISK_TYPE CHROOT_PATTERNS_PRINT START_PATTERNS AUINS_VERSION
-export LOCAL_ETHERNET_IP ETHERNET_NAME LOCAL_WIFI_IP WIFI_NAME
+export Auins_Profile Auins_Infofile
 
 # @ script source
 # auroot  |  gitee  |  github  |  test
 SCRIPTS_SOURCE="test"
-AUINS_VERSION="ArchLinux User Install Scripts v4.6 r8" 
+AUINS_VERSION="ArchLinux User Install Scripts v4.6-rc8" 
 
 # @待解决的问题 
 : << EOF
     - [x] 优化: 部分语法;
-    - [ ] 检查reflector报错的问题(不影响正常使用);
+    - [x] 检查: reflector报错的问题(不影响正常使用);
     - [ ] 新增: (v4.5)快照备份软件(timeshift)，开启方式：配置文件，默认开启;
     - [x] 修改: (v4.5)配置系统不再自动安装字体,只有安装桌面环境后,才会提示;
     - [?] 修复: (v4.5)解决不输入Root密码,自动跳过; ?检查代码未发现问题
-    - [ ] 修复: (v4.5)解决设置Swap大小不成功或自动跳过的问题 (虚拟机下正常;
+    - [x] 修复: (v4.5)解决设置Swap大小不成功或自动跳过的问题,注意: ext[2-4]以外的文件系统不正常swap文件;
     - [x] 修复: (v4.5)选择磁盘时,无法识别nvme名称;
     - [x] 修复: (v4.5)非root权限运行脚本时,不会终止;
     - [x] 修复: (r4)无法正确配置时区;
@@ -38,7 +38,8 @@ AUINS_VERSION="ArchLinux User Install Scripts v4.6 r8"
     - [x] 新增：(r7)随时更新脚本的功能,在 profile.conf 中开启;
     - [x] 修复：(r7)USB无线网卡无法正常识别;
     - [x] 修复: (r7)修补桌并完善桌面模块;
-    - [ ] 修复: (r8)多网卡时，无法正常显示;
+    - [x] 新增: (r8)多网卡时,按顺序显示网卡名与IP;
+    - [x] 新增: reflector自动更新所在国家的镜像站,不再使用固定的
 EOF
 
 # sed -i.bak 's/^aaa=yes/aaa=no/' [file] # 替换并备份
@@ -71,7 +72,10 @@ function Script_Variable_init(){
 
 # 模块使用方法, 以下有部分重新定义了名称
 # @modules
-function update_mirrors(){ bash "$Mirrorlist_Script" "$Auins_Profile" "$Auins_Infofile"; }
+function update_mirrors(){ 
+    bash "$Mirrorlist_Script" "${Auins_Profile}" "${Auins_Infofile}"; 
+    bash "${0}"; 
+}
 function configure_user(){ bash "$Users_Script" "$Auins_Profile" "$Auins_Infofile"; }
 function configure_desktop(){ bash "$Desktop_Script" "${Share_Dir}" "${Local_Dir}"; }
 function blarckarch_script(){ bash "$Blarckarch_Script"; }
@@ -79,8 +83,8 @@ function configure_partition(){
     bash "$Partition_Script" "$Auins_Profile" "$Auins_Infofile" || exit 1; 
     sleep 1; bash "${0}"
 }
-# @Process_Management; 脚本进程管理 [start]开启 [restart]重新开启 [stop]杀死脚本进程
-function process_management(){
+# @process_manage; 脚本进程管理 [start]开启 [restart]重新开启 [stop]杀死脚本进程
+function process_manage(){
     PM_Enter_1=${1}
     PM_Enter_2=${2}
     PM_Enter_3=${3}
@@ -117,13 +121,13 @@ function err(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 1)[ x Error ] 
 # Warning message wrapper
 function warn(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 3)[ ! Warning ] => \033[1;33m${*}\033[0m$(tput sgr0)"; }
 # Run message wrapper
-function run() { echo -e "\033[1;37m:: $(tput bold; tput setaf 2)[ + Exec ] => \033[1;32m${*}\033[0m$(tput sgr0)"; }
+function run(){ echo -e "\033[1;37m:: $(tput bold; tput setaf 2)[ + Exec ] => \033[1;32m${*}\033[0m$(tput sgr0)"; }
 # Skip message wrapper
-function skip() { echo -e "\033[1;37m:: $(tput bold; tput setaf 0)[ - Skip ] => ${*}\033[0m$(tput sgr0)"; }
+function skip(){ echo -e "\033[1;37m:: $(tput bold; tput setaf 0)[ - Skip ] => ${*}\033[0m$(tput sgr0)"; }
 # @获取用户输入，并返回
 function Read_user_input(){ local user_input; read -r user_input; echo "$user_input"; }
 # Tips output colour: white
-function tips_white() { printf "\033[1;37m:: $(tput bold; tput setaf 2)\033[1;37m%s \033[1;32m-+> \033[0m$(tput sgr0)" "${*}"; }
+function tips_white(){ printf "\033[1;37m:: $(tput bold; tput setaf 2)\033[1;37m%s \033[1;32m-+> \033[0m$(tput sgr0)" "${*}"; }
   # feedback successfully info
 function feed_status(){ 
     if [ $? = 0 ]; then 
@@ -145,7 +149,7 @@ function check_priv()
 # 读取: Config_File_Manage [INFO/CONF] [Read] [头部参数]
 # 写入: Config_File_Manage [INFO/CONF] [Write] [头部参数] [修改内容]
 function Config_File_Manage(){ 
-    local format=" = "; parameter="$3"; content="$4";
+    local format=" = "; parameter="$3"; content="$4"; itself=$(echo "$0" | awk -F"/" '{print $NF}')
     case "$1" in
         INFO) local Files="$Auins_Infofile" ;;
         CONF) local Files="$Auins_Profile" ;;
@@ -156,7 +160,7 @@ function Config_File_Manage(){
                 if [ -n "$read_info" ]; then 
                     echo "$read_info" | awk -F "=" '{print $2}' | awk '{sub(/^[\t ]*/,"");print}' | awk '{sub(/[\t ]*$/,"");print}' 
                 else
-                    warn "Read file: $Files, missing value [${white} $parameter  ${yellow}]."
+                    warn "${white}$itself ${yellow}Read file: ${white}$Files${yellow} missing value: [${white} $parameter  ${yellow}]."
                     sleep 3
                 fi
          ;;
@@ -165,7 +169,7 @@ function Config_File_Manage(){
                 if [ -n "$List_row" ]; then
                     sed -i "${List_row}c ${parameter}${format}${content}" "$Files" 2>/dev/null
                 else
-                    warn "Write file: $Files, missing value [${white} $parameter  ${yellow}] + [${white} $content ${yellow}]."
+                    warn "${white}$itself ${yellow}Write file: ${white}$Files${yellow} missing value: [${white} $parameter  ${yellow}] + [${white} $content ${yellow}]."
                     sleep 3
                 fi
     esac 
@@ -319,7 +323,6 @@ function Update_Share(){
     function download_script(){
         audit_file local "$Auins_Profile"
         audit_file local "$Auins_Infofile"
-
         audit_file share "$Print_Info_Script"  
         audit_file share "$Mirrorlist_Script"
         audit_file share "$Users_Script"
@@ -328,83 +331,164 @@ function Update_Share(){
         audit_file share "$Fonts_Script"
         audit_file share "$Process_Script"
         audit_file share "$Blarckarch_Script"
-        if [[ "$(cat "$0")" != "$(curl -fsSL "${SOURCE}/${AUINS_SCRIPT_NAME}")" ]]; then 
-            curl -fsSL "${SOURCE}/${AUINS_SCRIPT_NAME}" > "$0"
-            feed_status "Successfully update: [${white} Auins ${green}]" "Update failed: [${white} Auins ${red}]"; sleep 0.2
-        fi
+        # 更新auins
+        # case $(Config_File_Manage CONF Read Now_update_auins) in
+        # [Yy]*)
+        #     if [[ "$(cat "$0")" != "$(curl -fsSL "${SOURCE}/${AUINS_SCRIPT_NAME}")" ]]; then 
+        #         curl -fsSL "${SOURCE}/${AUINS_SCRIPT_NAME}" > "$0"
+        #         feed_status "Successfully update: [${white} Auins ${green}]" "Update failed: [${white} Auins ${red}]" && exit 0;
+        #     fi
+        # esac
     }
     
     case ${1} in
         "auins_download_url") auins_download_url "$2";;
-        "download_script") download_script ;;
+        "download_script") download_script 
     esac
 }
-# 如何查看网卡名
-# awk '{if($1>0 && NR > 2) print substr($1, 0, index($1, ":") - 1)}' /proc/net/dev
 
 # @网络部分集合
 function Network(){
+    # info_all_nic=$(awk '{if($1>0 && NR > 2) print substr($1, 0, index($1, ":") - 1)}' /proc/net/dev)
+    info_all_nic=$(awk '{if($1>0 && NR > 2) print substr($1, 0, index($1, ":") - 1)}' /proc/net/dev | sed '/lo/d' | sed '/vi/d')
+    declare -A NET_Interface=()
+    declare -A NET_IP=()
+    Show_Network(){
+        local VARIABLE
+        case $1 in 
+            WIFI )  Show="^wl*"; 
+        ;;  ETHERNET ) Show="^en*|^et*"; 
+        esac
+        for  ((VARIABLE=1;VARIABLE<=10;VARIABLE++)); do
+            if echo "$info_all_nic" | grep -E "$Show" &>/dev/null ; then 
+                Temp_name=$(echo "$info_all_nic" | grep -E "$Show" |  sed -n "$VARIABLE,1p" | sed 's/^[ ]*//g') 
+                if [[ $Temp_name == "" ]]; then
+                    break;
+                else
+                    LOCAL_IP=$(ip route list | grep "$Temp_name" | cut -d" " -f9 | sed -n '2, 1p')
+                fi
+                NET_Interface[$VARIABLE]=$Temp_name
+                NET_IP[$Temp_name]=$LOCAL_IP
+            else  # 当WIFI或Ethrnet其中一个设备不存在时,将输出void,确保完整性
+                if [[ $1 == "WIFI" ]]; then
+                    NET_Interface=([1]=void)
+                    NET_IP=([void]=void)
+                else
+                    NET_Interface=([1]=void)
+                    NET_IP=([void]=void)
+                fi
+            fi
+        done
+        # 格式化网卡与IP
+        for ((VARIABLE=1;VARIABLE<=8;VARIABLE++)); do 
+            NAME_TEMP=${NET_Interface[$VARIABLE]};
+            if [[ $NAME_TEMP != "" ]]; then
+                if [[ "${NET_IP[$NAME_TEMP]}" != "" ]]; then
+                    NET_IP_TEMP=${NET_IP[$NAME_TEMP]};
+                else
+                    NET_IP_TEMP="void";
+                fi 
+                echo -n "$NAME_TEMP:${NET_IP_TEMP} | " ;
+            else
+                break;
+            fi
+        done; 
+    }
     # @获取本机IP地址，并储存到$Auins_Infofile， Network Variable
     function ethernet_info(){    
-        local info_all_nic
-        info_all_nic=$(awk '{if($1>0 && NR > 2) print substr($1, 0, index($1, ":") - 1)}' /proc/net/dev)
+        local Temp_name VARIABLE
 
-        ETHERNET_NAME=$(for ((i=1;i<=10;i++)); do 
-            if echo "$info_all_nic" | grep -E "^en*|^et*" &>/dev/null ; then 
-                echo "$info_all_nic" | sed -n "$i",1p | sed 's/^[ ]*//g' | grep -E "^en*|^et*";
-            fi
-        done)
-
-        WIFI_NAME=$(for  ((i=1;i<=10;i++)); do 
-            if echo "$info_all_nic" | grep -E "^wl*" &>/dev/null ; then 
-                echo "$info_all_nic" | sed -n "$i",1p | sed 's/^[ ]*//g' | grep -E "^wl*" 
-            fi
-        done)
+        function NET_LIST(){
+            for ((VARIABLE=1;VARIABLE<=$(echo "$1" | grep -o '|' | wc -l);VARIABLE++)) 
+            do 
+                list=$(echo "$1" | awk -F'|' '{print $test}' test="$VARIABLE" | sed 's/^[ ]*//g')
+                list_ip=$(echo "$list" | awk -F':' '{print $2}')
+                if [[ $list_ip != "" ]]; then 
+                    PRINT_NET_Interface=$(echo "$list" | awk -F':' '{print $1}')
+                    PRINT_NET_IP=$list_ip
+                    echo -e "\t${VARIABLE}: ${PRINT_NET_Interface} - ${PRINT_NET_IP}"
+                fi 
+            done
+        }
         
-        LOCAL_WIFI_IP=$(ip route list | grep "${WIFI_NAME}" | cut -d" " -f9 | sed -n '2,1p')
-        LOCAL_ETHERNET_IP=$(ip route list | grep "${ETHERNET_NAME}" | cut -d" " -f9 | sed -n '2,1p')
-        [[ "$LOCAL_WIFI_IP" == "$LOCAL_ETHERNET_IP" ]] && LOCAL_WIFI_IP="";
-        
-        Config_File_Manage INFO Write Local_Wifi_Name "${WIFI_NAME:-void}"
-        Config_File_Manage INFO Write Local_Ethernet_Name "${ETHERNET_NAME:-void}"
+        Config_File_Manage INFO Write Wifi "$(Show_Network WIFI)"
+        Config_File_Manage INFO Write Ethernet "$(Show_Network ETHERNET)"
 
-        Config_File_Manage INFO Write Local_Wifi_IP "${LOCAL_WIFI_IP:-void}"
-        Config_File_Manage INFO Write Local_Ethernet_IP "${LOCAL_ETHERNET_IP:-void}"   
+        case $1 in 
+            WIFI )  
+                    echo -e "\033[1;37m:: $(tput bold; tput setaf 2)\033[1;36mWIFI: \n\033[1;37m$(NET_LIST "$(Show_Network WIFI)")\033[0m$(tput sgr0)"
+        ;;  ETHERNET ) 
+                    echo -e "\033[1;37m:: $(tput bold; tput setaf 2)\033[1;36mETHERNET: \n\033[1;37m$(NET_LIST "$(Show_Network ETHERNET)")\033[0m$(tput sgr0)"
+        ;;  * )
+        esac 
     }
     # @配置WIFI，Configure WIFI
+    # https://wiki.archlinuxcn.org/wiki/%E7%BD%91%E7%BB%9C%E9%85%8D%E7%BD%AE/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C%E9%85%8D%E7%BD%AE
     function configure_wifi() {
-        tips_white "Enter wifi name(SSID) 'TP-Link...'"
-        WIFI_SSID=$(Read_user_input)
+        # 显示网卡信息: 1: wlan0 - void(ip)
+        run "Checking the currently available network..."; sleep 1;
+        echo; Network ethernet_info WIFI; echo;
+        # 用户选择网卡
+        tips_white "Please select WiFi interface [1,2,3...]?"
+        WIFI_user_number=$(Read_user_input)
+        Show_Network WIFI &>/dev/null
+        WIFI_Interface=${NET_Interface[$WIFI_user_number]}
+        [[ $WIFI_Interface == "" ]] && err "This interface was not found."
+        # 打印WIFI列表
+        WIFI_INFO=$(iwlist "$WIFI_Interface" scan)
+        feed_status "[ $WIFI_Interface ] Interface scan successful." 
+        # 比较详细的wifi列表
+        echo -e "${white}:: ${blue}A detailed WiFi list:${suffix}"
+        echo -e "${white}$(echo "$WIFI_INFO" | sed 's/^[ ]*//g' | grep -Ew "^ESSID*|^Frequency*|^Quality*" | \
+        sed -e 's/^F/\\n   F/g' -e 's/^E/   E/g' -e 's/^Q/   Q/g')${suffix}\n"
+        # 只有wifi名称的列表
+        echo -e "${white}:: ${blue}A simple WiFi list:${suffix}\n"
+        echo -e "${white}$(echo "$WIFI_INFO" | sed 's/^[ ]*//g' | grep -Ew "^ESSID*" | sed -e 's/^E/   E/g' )${suffix}\n"
+        # 用户输入WIFI名称
+        tips_white "Enter wifi name(SSID)?"
+        WIFI_ESSID=$(Read_user_input)
+        # 用户输入WIFI密码
         tips_white "Wifi Password"
         WIFI_PASSWD=$(Read_user_input)
-        iwctl --passphrase "$WIFI_PASSWD" station "$WIFI_NAME" connect "$WIFI_SSID"
-        sleep 2; ip address show "${WIFI_NAME}"
-        if ! ping -c 3 gitee.com; then
-            Process_Management stop "$0" "${red}Network ping check failed. Cannot continue.${suffix}"
+        # 根据用户输入, 尝试连接网络
+        iwctl --passphrase "$WIFI_PASSWD" station "$WIFI_Interface" connect "$WIFI_ESSID"
+        feed_status "Successfully connected to WiFi: [${white} $WIFI_ESSID ${green}]" \
+        "Please check if the input is correct: SSID(${white}$WIFI_ESSID${red}) and password (${white}$WIFI_PASSWD${red})."
+
+        sleep 2; ip address show "${WIFI_Interface}"
+        if ! ping -c 3 61.166.150.123; then
+            process_manage stop "$0" "Network ping check failed. Cannot continue."
         fi
     }
     # @配置有线网络，Configure Ethernet.
     function configure_ethernet(){
-        echo ":: One moment please............"
-        ip link set "${ETHERNET_NAME}" up
-        ip address show "${ETHERNET_NAME}"
-        ping -c 3 gitee.com
+        # 显示网卡信息: 1: enp5s0 - 192.168.101.3(ip)
+        run "Checking the currently available network..."; sleep 1;
+        Network ethernet_info ETHERNET
+
+        tips_white "Please select Ethernet interface [1,2,3...]?"
+        Ethernet_user_number=$(Read_user_input)
+        Show_Network ETHERNET &> /dev/null 
+        Ethernet_Interface=${NET_Interface[$Ethernet_user_number]}
+
+        feed_status ":: One moment please..."
+        ip link set "${Ethernet_Interface}" up
+        ip address show "${Ethernet_Interface}"
+        ping -c 3 61.166.150.123
         sleep 1;
     }
     # @配置网络
     function configure_all(){
-        echo -e "\n${white}:: Checking the currently available network."; sleep 2;
-        echo -e "${white}:: Ethernet: ${red}${ETHERNET_NAME}${suffix}\n${white}:: Wifi:   ${red}${WIFI_NAME}${suffix}"
-        tips_white "Query Network: Ethernet[1] Wifi[2] Exit[3]?"
+        tips_white "Query Network: Ethernet[1] Wifi[2] Exit[q]?"
         case $(Read_user_input) in
             1 ) configure_ethernet ;;
             2 ) configure_wifi ;;
-            3 ) bash "${0}"
+            [Qq]* ) bash "${0}"
         esac
     }
     # Ethernet
     case ${1} in
-        INFO     ) ethernet_info ;;
+        ethernet_info ) ethernet_info "$2" ;;
         Conf_wifi) configure_wifi ;;
         Conf_Eth ) configure_ethernet ;;
         Conf_all ) configure_all
@@ -412,8 +496,11 @@ function Network(){
 }
 # @开启SSH服务， Start ssh service 
 function Open_SSH(){
-    Network INFO; 
-    echo "${USER}:${CONF_Password_SSH}" | chpasswd &>/dev/null 
+    clear;
+    run "Checking the currently available network..."; sleep 1;
+    Network ethernet_info WIFI 
+    Network ethernet_info ETHERNET
+    echo; echo "${USER}:${CONF_Password_SSH}" | chpasswd &>/dev/null 
     systemctl start sshd.service
     print_info ssh_info 
 }
@@ -451,6 +538,9 @@ function Install_Archlinux(){
         linux-lts) pacstrap "$System_Root" base base-devel linux-firmware linux-lts linux-lts-headers vim unzip ;; 
         linux-zen) pacstrap "$System_Root" base base-devel linux-firmware linux-zen linux-zen-headers vim unzip
     esac
+    feed_status "The installation of the kernel basic package was successful." \
+    "The installation of the kernel basic package failed. \n${white}:: Suggest remount the disk or restart the system.${suffix}"
+
     run Configure fstab.; sleep 1s
     genfstab -U $System_Root >> $System_Root/etc/fstab; sleep 1s
     LinuxKernel=$(arch-chroot $System_Root /usr/bin/uname -a | /usr/bin/cut -d"#" -f1  | awk -F " " '{print $3}')
@@ -506,7 +596,7 @@ XMODIFIERS=@im=fcitx"
          *) warn "Input error or the option does not exist."; 
             status="true"
     esac
-    if [[ ! ${status} == true ]]; then install; fi 
+    [[ ${status} != "true" ]] && install; 
 }
 
 # @安装 ibus-rime 输入法
@@ -552,7 +642,7 @@ ibus-daemon -d -x"
         -R) remove && status="flase" ;;
         * ) warn "Input error or the option does not exist." && status="true"
     esac
-    if [[ ! ${status} == true ]]; then install; fi 
+    [[ ${status} != "true" ]] && install; 
 }
 
 # @Pacman multi threaded download [Axel]
@@ -736,7 +826,7 @@ function Installation_System(){
     if [ -n "$INFO_Root_partition" ]; then  # 后续待修改部分
         Install_Archlinux
     else
-        sleep 1; Process_Management restart "$0" "${white}The partition is not mounted.${suffix}"
+        sleep 1; process_manage restart "$0" "${white}The partition is not mounted.${suffix}"
     fi
     print_info install_system_info 
     sleep 2; echo;    # Chroot到新系统中完成基础配置
@@ -765,14 +855,16 @@ function Configure_System(){
         ConfigurePassworld
         INFO_UserName=$(Config_File_Manage INFO Read "Users")
         INFO_UsersID=$(id -u "$INFO_UserName" 2> /dev/null)
-        printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}.\n" "${CheckingUsers:-$INFO_UserName}" "${CheckingID:-$INFO_UsersID}"
+        printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}.\n" \
+        "${CheckingUsers:-$INFO_UserName}" "${CheckingID:-$INFO_UsersID}"
+
         rm -rf "$Local_Dir"/Config_System; # 删除这个文件，才能进 Normal_Model  
         if [ "$(Config_File_Manage CONF Read "Archlinucn")" = "yes" ]; then Install_Program archlinuxcn-keyring; fi
         if [ "$(Config_File_Manage CONF Read "Blackarch")" = "yes" ]; then Install_Program blackarch-keyring; fi
         configure_fonts Config_file_install_fonts "$SOURCE_LOCAL"
         print_info config_system_info; sleep 2
     else
-        sleep 1; Process_Management restart "$0" "${red}The system is not installed. Exec: 4->2 ${suffix}"
+        sleep 1; process_manage restart "$0" "${red}The system is not installed. Exec: 4->2 ${suffix}"
     fi
     rm -rf "$Local_Dir"/Config_System 2> /dev/null
 }
@@ -802,7 +894,7 @@ function LiveCD_Model(){
     # printf "${outG} ${yellow} Please enter${white}[1,2,3..]${yellow} Exit${white}[${red}Q${white}]${suffix} %s" "$inB"
     tips_white "Please enter[1,2,3..] Exit[Q]"
     case $(Read_user_input) in
-        1)  bash "$Mirrorlist_Script" "${Auins_Profile}" "${Auins_Infofile}" ; bash "${0}" ;; # 配置源
+        1)  update_mirrors ; bash "${0}" ;; # 配置源
         2)  Network Conf_all;; # 配置网络
         3)  Open_SSH ;; # 配置SSH
         4) # 二级列表 隐
@@ -820,11 +912,16 @@ function LiveCD_Model(){
                 22) install_virtualization_service "$Host_Environment"; sleep 3; bash "$0" ;; # 安装Vm tools
             esac ;;
         [Ss]*) bash ;;
-        [Qq]* | *) Process_Management stop "$0" 
+        [Qq]* | *) process_manage stop "$0" 
     esac
 }
 # @ 安装完Archlinux后 正常可用情况下自动启用
 function Normal_Model(){
+    CONF_Blackarch=$(Config_File_Manage CONF Read "Blackarch")
+    INFO_Blackarch=$(Config_File_Manage INFO Read "Blackarch")
+    [[ $INFO_Blackarch == "" ]] && Config_File_Manage INFO Write Blackarch no
+    [[ $CONF_Blackarch == "yes" &&  $INFO_Blackarch == "no" ]] && blarckarch_script
+
     print_info logos "$CHROOT_PATTERNS_PRINT" "$START_PATTERNS"
     echo -e "${First_Month_Reminder:- }"
     print_info normal_home_list;   
@@ -832,7 +929,7 @@ function Normal_Model(){
     # printf "${outG} ${yellow} Please enter${white}[1,2,3,22..]${yellow} Exit${white}[${red}Q${white}]${suffix} %s" "$inB"
     tips_white "Please enter[1,2,3,22..] Exit[Q]"
     case $(Read_user_input) in
-        1)  bash "$Mirrorlist_Script" "${Auins_Profile}" "${Auins_Infofile}" ; bash "${0}" ;; # 配置源
+        1)  update_mirrors ;; # 配置源
         2)  Network Conf_all;; # 配置网络
         3)  Open_SSH ;; # 配置SSH
         4)  ConfigurePassworld; configure_desktop ;; # 安装桌面
@@ -840,7 +937,7 @@ function Normal_Model(){
         6)  install_virtualization_service "$Host_Environment"; sleep 3; bash "$0" ;; # 安装Vm tools
         [Dd]) Delete_Script ;;
         [Ss]*) bash ;;
-        [Qq]* | *) Process_Management stop "$0" 
+        [Qq]* | *) process_manage stop "$0" 
     esac
 }
 
@@ -851,11 +948,12 @@ function Auins_Options(){
         font ) configure_fonts User_options_install_fonts "$SOURCE_LOCAL" "$2"; exit 0 ;;
         fcitx) Configure_fcitx "$2"; exit 0 ;;
         ibus ) Configure_ibus_rime "$2"; exit 0 ;;
-        axel ) Axel_Configure "$2";;
+        axel ) Axel_Configure "$2"; exit 0 ;;
         inGpu) warn "Functional improvement in progress..."; exit 0 ;;
         inVmt) install_virtualization_service "$Host_Environment"; exit 0 ;;
+        black) blarckarch_script; exit0;; 
     # Settings Options:
-        -m | --mirror ) bash "$Mirrorlist_Script" "$Auins_Profile" "$Auins_Infofile"; exit 0 ;;
+        -m | --mirror ) update_mirrors; exit 0 ;;
         -w | --wifi   ) Network Conf_wifi; exit 0 ;;
         -s | --openssh) 
                         case "$CONF_Service_SSH" in
@@ -868,12 +966,15 @@ function Auins_Options(){
         -i | --view-info  ) clear; less "${Auins_Infofile}"; exit 0 ;;
         -c | --clean-cache) Delete_Script; exit 0 ;;
         -h | --help       ) print_info auins_usage; exit 0 ;;
-        -v | --version    ) print_info version; exit 0 
+        -v | --version    ) print_info version; exit 0 ;;
+        [Aa]uins          ) clear; echo -e "${white}${0##*/}: Thank you for your use. I look forward to not letting you down.${suffix}"; exit 0 ;;
+        # --versions        ) echo "$AUINS_VERSION" | awk -F "v" '{print $NF}' | sed 's/\.//g' | sed 's/-\([a-z][a-z]\+\)//g';
     esac
 }
 
 # Start Script | 从这里开始
 # >> >> >> >> >> >> >> >> >> >> >> >> 
+
 # @该死的颜色
 # 红 绿 黄 蓝 白 后缀
 red='\033[1;31m'; green='\033[1;32m'  
@@ -893,13 +994,14 @@ check_priv
 Script_Variable_init
 Update_Share auins_download_url "$SCRIPTS_SOURCE"  # 锁定脚本下载源
 Update_Share download_script        # 下载脚本需要的脚本
+Network ethernet_info
 Script_init
-Network INFO
+
+Auins_Options "$1" "$2" 
 # 具体的实现
 INFO_Host_Env=$(Config_File_Manage INFO Read Host_Environment)
 [[ "$INFO_Host_Env" == "Computer" ]] && INFO_Host_Env="" || INFO_Host_Env=" $INFO_Host_Env"
 
-Auins_Options "${1}" "${2}"
 case "${ChrootPatterns}" in 
     Chroot-OFF)
         CHROOT_PATTERNS_PRINT="Chroot-OFF";
@@ -930,37 +1032,8 @@ case "${ChrootPatterns}" in
 esac
 
 # >> >> >> >> >> >> >> >> >> >> >> >>
-# reflector --country China  --protocol http --protocol https
 
-################################################################################
-################# Arch Linux mirrorlist generated by Reflector #################
-################################################################################
 
-# With:       reflector --country China --protocol http --protocol https
-# When:       2023-04-07 06:52:04 UTC
-# From:       https://archlinux.org/mirrors/status/json/
-# Retrieved:  2023-04-07 06:52:03 UTC
-# Last Check: 2023-04-07 06:41:56 UTC
-
-# Server = http://mirrors.ustc.edu.cn/archlinux/$repo/os/$arch
-# Server = http://mirrors.tuna.tsinghua.edu.cn/archlinux/$repo/os/$arch
-# Server = http://mirrors.neusoft.edu.cn/archlinux/$repo/os/$arch
-# Server = https://mirrors.neusoft.edu.cn/archlinux/$repo/os/$arch
-# Server = http://mirrors.zju.edu.cn/archlinux/$repo/os/$arch
-# Server = http://mirrors.cqu.edu.cn/archlinux/$repo/os/$arch
-# Server = https://mirrors.cqu.edu.cn/archlinux/$repo/os/$arch
-# Server = https://mirrors.xjtu.edu.cn/archlinux/$repo/os/$arch
-# Server = https://mirrors.sjtug.sjtu.edu.cn/archlinux/$repo/os/$arch
-# Server = http://mirrors.bfsu.edu.cn/archlinux/$repo/os/$arch
-# Server = https://mirrors.bfsu.edu.cn/archlinux/$repo/os/$arch
-# Server = http://mirrors.hit.edu.cn/archlinux/$repo/os/$arch
-# Server = https://mirrors.hit.edu.cn/archlinux/$repo/os/$arch
-# Server = http://mirrors.wsyu.edu.cn/archlinux/$repo/os/$arch
-# Server = https://mirrors.wsyu.edu.cn/archlinux/$repo/os/$arch
-# Server = http://mirrors.aliyun.com/archlinux/$repo/os/$arch
-# Server = https://mirrors.aliyun.com/archlinux/$repo/os/$arch
-# Server = http://mirrors.shanghaitech.edu.cn/archlinux/$repo/os/$arch
-# Server = https://mirrors.shanghaitech.edu.cn/archlinux/$repo/os/$arch
 
 # mirror_file="mirror"
 # list_number=$(wc -l $mirror_file | awk -F " " '{print $1}')

@@ -41,7 +41,7 @@ function check_priv()
 # 读取: Config_File_Manage [INFO/CONF] [Read] [头部参数]
 # 写入: Config_File_Manage [INFO/CONF] [Write] [头部参数] [修改内容]
 function Config_File_Manage(){ 
-    local format=" = "; parameter="$3"; content="$4";
+    local format=" = "; parameter="$3"; content="$4"; itself=$(echo "$0" | awk -F"/" '{print $NF}')
     case "$1" in
         INFO) local Files="$Auins_Infofile" ;;
         CONF) local Files="$Auins_Profile" ;;
@@ -52,7 +52,7 @@ function Config_File_Manage(){
                 if [ -n "$read_info" ]; then 
                     echo "$read_info" | awk -F "=" '{print $2}' | awk '{sub(/^[\t ]*/,"");print}' | awk '{sub(/[\t ]*$/,"");print}' 
                 else
-                    warn "Read file: $Files, missing value [${white} $parameter  ${yellow}]."
+                    warn "${white}$itself ${yellow}Read file: ${white}$Files${yellow} missing value: [${white} $parameter  ${yellow}]."
                     sleep 3
                 fi
          ;;
@@ -61,7 +61,7 @@ function Config_File_Manage(){
                 if [ -n "$List_row" ]; then
                     sed -i "${List_row}c ${parameter}${format}${content}" "$Files" 2>/dev/null
                 else
-                    warn "Write file: $Files, missing value [${white} $parameter  ${yellow}] + [${white} $content ${yellow}]."
+                    warn "${white}$itself ${yellow}Write file: ${white}$Files${yellow} missing value: [${white} $parameter  ${yellow}] + [${white} $content ${yellow}]."
                     sleep 3
                 fi
     esac 

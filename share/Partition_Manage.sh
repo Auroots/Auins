@@ -10,20 +10,31 @@
 # 地址: auins.info(INFO)| script.conf(CONF)
 # 读取: Config_File_Manage [INFO/CONF] [Read] [头部参数]
 # 写入: Config_File_Manage [INFO/CONF] [Write] [头部参数] [修改内容]
-export Root_SystemFiles
-
 function Config_File_Manage(){ 
-    local format=" = "; parameter="$3"; content="$4";
+    local format=" = "; parameter="$3"; content="$4"; itself=$(echo "$0" | awk -F"/" '{print $NF}')
     case "$1" in
         INFO) local Files="$Auins_Infofile" ;;
         CONF) local Files="$Auins_Profile" ;;
     esac
     case "$2" in
-        Read )   grep -w "$parameter" < "$Files" | awk -F "=" '{print $2}' | awk '{sub(/^[\t ]*/,"");print}' | awk '{sub(/[\t ]*$/,"");print}' ;;
+        Read ) 
+                read_info=$(grep -w "$parameter" < "$Files") # 在文件中查找匹配的值
+                if [ -n "$read_info" ]; then 
+                    echo "$read_info" | awk -F "=" '{print $2}' | awk '{sub(/^[\t ]*/,"");print}' | awk '{sub(/[\t ]*$/,"");print}' 
+                else
+                    warn "${white}$itself ${yellow}Read file: ${white}$Files${yellow} missing value: [${white} $parameter  ${yellow}]."
+                    sleep 3
+                fi
+         ;;
         Write) 
-                List_row=$(grep -nw "$parameter" < "$Files" | awk -F ":" '{print $1}';)
-                sed -i "${List_row:-Not}c ${parameter}${format}${content}" "$Files" 2>/dev/null
-    esac
+                List_row=$(grep -nw "$parameter" < "$Files" | awk -F ":" '{print $1}';) # 在文件中查找匹配的值, 并打印行号
+                if [ -n "$List_row" ]; then
+                    sed -i "${List_row}c ${parameter}${format}${content}" "$Files" 2>/dev/null
+                else
+                    warn "${white}$itself ${yellow}Write file: ${white}$Files${yellow} missing value: [${white} $parameter  ${yellow}] + [${white} $content ${yellow}]."
+                    sleep 3
+                fi
+    esac 
 }
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -83,13 +94,13 @@ function testPartition(){
         echo "$Partition_Test_Status"
     fi 
 }
-function init(){
+function init(){ 
     # 红 绿 黄 蓝 白 后缀
     red='\033[1;31m'; green='\033[1;32m'  
-    # yellow='\033[1;33m'; 
+    yellow='\033[1;33m'; 
     blue='\033[1;36m'  
     white='\033[1;37m'; suffix='\033[0m'  
-    wg='\033[1;42m';  
+    wg='\033[1;42m'; 
     # 定义全局变量
     export System_Root Boot_Dir Boot_Type System_Disk_Type
     # Detect boot 检查引导, 并赋予引导类型
@@ -138,10 +149,12 @@ function partition_facts(){
         _disk_          )   # 检查磁盘名称，错误返回: "ERROR"
                             if [[ $(testDisk "$Input_disk") = "ERROR" ]]; then 
                                 Process_Management stop "$0" "${red} Unable to find the ${white}[ ${Input_disk} ] ${red} disk address, please check if the disk exists! \n${white}:: => Please input: /dev/sdX | sdX !!!${suffix}"
+                                exit 70
                             fi ;; 
         _partition_root_)   # 检查分区名称，错误返回: "ERROR"
                             if [[ $(testPartition "$Input_partition") = "ERROR" ]]; then 
                                 Process_Management stop "$0" "${white} [ ${Input_partition} ] ${red}Please input: /dev/sdX[0-9] | sdX[0-9] !!! ${suffix}"
+                                exit 70
                             fi ;; 
         _Disk_Type_     )   # Detect disk type
                             case $(inspect_disk_type "$Input_disk") in 
@@ -368,16 +381,26 @@ function partition_swap(){
 
     tips_white "Please set swap size: [ 256M-100G~ ]? Or exchange partition: sdX[0-9]? Skip: [No]?"
     input_swap=$(Read_user_input)
-    if echo "$input_swap" | grep -E "^[0-9]*[kK|mM|gG]$" &>/dev/null ; then
-        case $CONF_Root_SystemFile in
-            ext[2-4]) Swap_File "$input_swap";;
-                   *) err "Swapfile cannot be created." ;;
-        esac 
-    elif testPartition "$input_swap" &>/dev/null ; then
-         Swap_Partition "$input_swap"
-    else
+    case $input_swap in 
+    [Nn]*)
         skip "create a swap file."; sleep 1
-    fi
+    ;; 
+    *)
+        if [[ $input_swap != "" ]]; then
+            if echo "$input_swap" | grep -E "^[0-9]*[kK|mM|gG]$" &>/dev/null ; then
+                case $CONF_Root_SystemFile in
+                    ext[2-4]) Swap_File "$input_swap";;
+                        *) err "Swapfile cannot be created." ;;
+                esac 
+            elif testPartition "$input_swap" &>/dev/null ; then
+                Swap_Partition "$input_swap"
+            else
+                skip "create a swap file."; sleep 1
+            fi
+        else
+            skip "create a swap file."; sleep 1
+        fi
+    esac 
 }
 
 # 具体的实现 >> >> >> >> >> >> >> >> 

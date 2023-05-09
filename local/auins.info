@@ -3,23 +3,22 @@
 # Please clean this file immediately after system installation.
 # So as not to reveal privacy !!!
 
-ChrootPatterns = 
-Public_IP = 
-Country = 
-Country_Name = 
-Timezone = 
-Archiso_version = 
+ChrootPatterns =
+Public_IP =
+Country =
+Country_Name =
+Timezone =
+Auins_version =
+Archiso_version =
 
 CPU_Vendor = 
-CPU = 
+CPU =
 GPU = 
 Memory =
-Host_Environment = 
+Host_Environment =
 LinuxKernel =
-Local_Ethernet_Name =
-Local_Ethernet_IP =
-Local_Wifi_Name =
-Local_Wifi_IP =
+Ethernet =
+Wifi =
 Boot_Type = 
 Disk_Type = 
 Disk =
@@ -35,3 +34,4 @@ UsersID =
 #Root_Password =
 Desktop_Environment =
 Desktop_Display_Manager =
+BlackArch =

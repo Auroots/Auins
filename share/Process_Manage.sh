@@ -44,6 +44,7 @@ function Stript_Process_Management(){
                     sleep 0.1; clear
                     warn "\033[1;37m\"$Process_Path\"\033[1;33m has been Stopped.\033[0m"
                     [[ $Output_Info == "" ]] && echo &>/dev/null || err "$Output_Info";
+                    kill "$(pgrep -f "$Process_Path")" &> /dev/null
                 ;;
         *       ) 
                     exit 1

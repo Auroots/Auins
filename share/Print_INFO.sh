@@ -2,7 +2,7 @@
 #!/bin/bash
 # Author: Auroot
 # QQ： 2763833502
-# Description： Print INFO -> auin V4.6 r6
+# Description： Print INFO -> auin V4.6 r8
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
@@ -28,12 +28,13 @@ function Set_Color_Variable(){
     out_WELL="${white}::${green} =>${suffix}"
     out_ERROR="${white}::${red} [ Error ] =>${suffix}"
 }
-
+# Warning message wrapper
+function warn(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 3)[ ! Warning ] => \033[1;33m${*}\033[0m$(tput sgr0)"; }
 # 地址: auins.info(INFO)| script.conf(CONF)
 # 读取: Config_File_Manage [INFO/CONF] [Read] [头部参数]
 # 写入: Config_File_Manage [INFO/CONF] [Write] [头部参数] [修改内容]
 function Config_File_Manage(){ 
-    local format=" = "; parameter="$3"; content="$4";
+    local format=" = "; parameter="$3"; content="$4"; itself=$(echo "$0" | awk -F"/" '{print $NF}')
     case "$1" in
         INFO) local Files="$Auins_Infofile" ;;
         CONF) local Files="$Auins_Profile" ;;
@@ -44,7 +45,7 @@ function Config_File_Manage(){
                 if [ -n "$read_info" ]; then 
                     echo "$read_info" | awk -F "=" '{print $2}' | awk '{sub(/^[\t ]*/,"");print}' | awk '{sub(/[\t ]*$/,"");print}' 
                 else
-                    warn "Read file: $Files, missing value [${white} $parameter  ${yellow}]."
+                    warn "${white}$itself ${yellow}Read file: ${white}$Files${yellow} missing value: [${white} $parameter  ${yellow}]."
                     sleep 3
                 fi
          ;;
@@ -53,15 +54,38 @@ function Config_File_Manage(){
                 if [ -n "$List_row" ]; then
                     sed -i "${List_row}c ${parameter}${format}${content}" "$Files" 2>/dev/null
                 else
-                    warn "Write file: $Files, missing value [${white} $parameter  ${yellow}] + [${white} $content ${yellow}]."
+                    warn "${white}$itself ${yellow}Write file: ${white}$Files${yellow} missing value: [${white} $parameter  ${yellow}] + [${white} $content ${yellow}]."
                     sleep 3
                 fi
     esac 
 }
+# 网络部分
+INFO_Ethernet=$(Config_File_Manage INFO Read Ethernet)
+INFO_Wifi=$(Config_File_Manage INFO Read Wifi)
+NET_LIST(){
+    for ((VARIABLE=1;VARIABLE<=$(echo "$2" | grep -o '|' | wc -l);VARIABLE++)) 
+    do 
+        list=$(echo "$2" | awk -F'|' '{print $test}' test="$VARIABLE" | sed 's/^[ ]*//g')
+        list_ip=$(echo "$list" | awk -F':' '{print $2}')
+        if [[ $list_ip != "" ]]; then 
+            PRINT_NET_NAME=$(echo "$list" | awk -F':' '{print $1}')
+            PRINT_NET_IP=$list_ip
+            case $1 in 
+                Ethernet)   
+                        echo -e "${green} Ethernet_${VARIABLE}: \t\033[1;37m[ \033[1;32m${PRINT_NET_NAME} \033[1;37m] - \033[1;36m${PRINT_NET_IP} \033[1;31m"
+            ;;  Wifi)   
+                        echo -e "${green} Wifi_Net_${VARIABLE}: \t\033[1;37m[ \033[1;32m${PRINT_NET_NAME} \033[1;37m] - \033[1;36m${PRINT_NET_IP} \033[1;31m"
+            ;;  Print_IP)
+                        echo -e "${green} SSH_connect: \t${white}ssh $USER@$PRINT_NET_IP${suffix}" 
+            esac
+        fi 
+    done
+} 
 
-# @Script首页信息, 需要接收: 1=Chroot状态, 2=脚本开启模式
+# @Auins首页信息, 需要接收: 1=Chroot状态, 2=脚本开启模式
 function logos(){
-    Script_Version=$(Config_File_Manage INFO Read Auins_version) 
+    Auins_version=$(Config_File_Manage INFO Read Auins_version) 
+    Archiso_version=$(Config_File_Manage INFO Read Archiso_version)
 
     Chroot_Patterns_Print="$1"
     case "${Chroot_Patterns_Print}" in 
@@ -73,16 +97,13 @@ function logos(){
         LiveCD ) Start_Patterns=$(echo -e "${white}[${green} LiveCD ${white}]${suffix}") ;;
         Normal ) Start_Patterns=$(echo -e "${white}[ Normal ]${suffix}")
     esac
-
-    INFO_Local_Ethernet_Name=$(Config_File_Manage INFO Read Local_Ethernet_Name)
-    INFO_Local_Ethernet_IP=$(Config_File_Manage INFO Read Local_Ethernet_IP)
-    INFO_Local_Wifi_Name=$(Config_File_Manage INFO Read Local_Wifi_Name)
-    INFO_Local_Wifi_IP=$(Config_File_Manage INFO Read Local_Wifi_IP)
-
-    SSH_IP=$(echo -e "${blue}${INFO_Local_Ethernet_IP:-${INFO_Local_Wifi_IP}}${suffix}")
+    
+    Ethernet_IP=$(NET_LIST Print_IP "$INFO_Ethernet")
+    # Ethernet_IP=$(echo "$tmp_Ethernet_IP" | sed 's/or//g')
+    WIFI_IP=$(NET_LIST "Print_IP" "$INFO_Wifi")
+    SSH_IP="${Ethernet_IP:-$WIFI_IP}"
 
     # CPU_Temp="$(($(if [ -e /sys/class/thermal/thermal_zone1/temp ]; then cat /sys/class/thermal/thermal_zone1/temp; else echo '00'; fi)/1000))°C"
-    
     clear; printf "
 ${white}       _             _       _     _                           
 ${green}      / \   _ __ ___| |__   | |   (_)_ __  _%s   
@@ -91,42 +112,39 @@ ${yellow}    / ___ \| | | (__| | | | | |___| | | | | |_| |>  <
 ${red}   /_/   \_\_|  \___|_| |_| |_____|_|_| |_|\__,_/_/\_\ 
 ${bx}-----------------------  Auins Info  -----------------------${suffix}
 ${green} Script_Name:\t%s.
-${green} CPU&Mem:    \t%s
+${green} CPU & Mem:  \t%s
 ${green} GPU_Info:   \t%s
 ${green} Timezone:   \t%s
 ${green} Boot_Type:  \t%s ${red}- %s
 ${green} Patterns:   \t%s ${red}- %s
-${green} Ethernet:   \t%s ${red}- %s
-${green} Wifi_Net:   \t%s ${red}- %s
-${green} SSH:        \t${white}ssh %s@%s
+%s
+%s
+%s
 ${red}--=--*--=--*--=--*--=--*--=--=*=--=--*--=--*--=--*--=--*--=--${suffix}" \
-"$(Config_File_Manage INFO Read Archiso_version)" \
-"$Script_Version" \
+"${Archiso_version:-  _ __  __}" \
+"$Auins_version" \
 "$(echo -e "$(Config_File_Manage INFO Read CPU) ${whites}& ${green}$(Config_File_Manage INFO Read Memory)MB")" \
 "$(Config_File_Manage INFO Read GPU)" \
 "$(Config_File_Manage INFO Read Timezone)" \
 "$(echo -e "${white}[ ${blue}$(Config_File_Manage INFO Read Boot_Type)${white} ]${suffix}")" \
 "$(echo -e "${white}[ ${blue}$(Config_File_Manage INFO Read Disk_Type)${white} ]${suffix}")" \
 "$Chroot_Patterns_Print" "$Start_Patterns" \
-"$(echo -e "${blue}${INFO_Local_Ethernet_IP:-No network.}")" \
-"$(echo -e "${white}[${green} ${INFO_Local_Ethernet_Name:-void} ${white}]${suffix}")" \
-"$(echo -e "${blue}${INFO_Local_Wifi_IP:-No network.}")" \
-"$(echo -e "${white}[${green} ${INFO_Local_Wifi_Name:-void} ${white}]${suffix}")" \
-"$USER" "$SSH_IP"
+"$(NET_LIST "Ethernet" "$INFO_Ethernet")" \
+"$(NET_LIST "Wifi" "$INFO_Wifi")" \
+"$SSH_IP"
 }
-
-    
+  
 # @正常(Normal)环境下，首页会显示的列表
 function normal_home_list(){
     echo -e "
-${outB}\t${white}[${blue}1${white}]${green} Configure Mirrorlist   ${suffix}
-${outB}\t${white}[${blue}2${white}]${green} Configure Network      ${suffix}
-${outG}\t${white}[${blue}3${white}]${green} Configure SSH          ${suffix}
-${outY}\t${white}[${blue}4${white}]${green} Installation Desktop   ${suffix}
-${outY}\t${white}[${blue}5${white}]${green} Installation Drive     ${suffix}
-${outY}\t${white}[${blue}6${white}]${green} Install virtual tools  ${suffix}
-${outY}\t${white}[${red}D${white}]${green} Delete scripts & caches ${suffix}
-${outR}\t${white}[${red}Q${white}]${green} Exit Script             ${suffix}"   
+${outB}\t${white}[${blue}1${white}]${green} Configure Mirrorlist  ${suffix}
+${outB}\t${white}[${blue}2${white}]${green} Configure Network     ${suffix}
+${outG}\t${white}[${blue}3${white}]${green} Configure SSH         ${suffix}
+${outY}\t${white}[${blue}4${white}]${green} Installation Desktop  ${suffix}
+${outY}\t${white}[${blue}5${white}]${green} Installation Drive    ${suffix}
+${outY}\t${white}[${blue}6${white}]${green} Install virtual tools ${suffix}
+${outY}\t${white}[${red}D${white}]${green} Delete auins & caches  ${suffix}
+${outR}\t${white}[${red}Q${white}]${green} Exit Auins             ${suffix}"   
 }
 
 # @LiveCD环境下，首页会显示的列表
@@ -191,9 +209,9 @@ function JetBrainsFira_font_usage() {
 
 # @输出SSH信息
 function ssh_info(){   
+    Ethernet_IP=$(NET_LIST Print_IP "$INFO_Ethernet" | awk -F'@' '{print $2}')
+    WIFI_IP=$(NET_LIST "Print_IP" "$INFO_Wifi" | awk -F'@' '{print $2}')
     CONF_Password_SSH=$(Config_File_Manage CONF Read Password_SSH)
-    INFO_Local_Ethernet_IP=$(Config_File_Manage INFO Read Local_Ethernet_IP)
-    INFO_Local_Wifi_IP=$(Config_File_Manage INFO Read Local_Wifi_IP)
 
     if netcap | grep sshd &>/dev/null ; then
         SSH_Port=$(netcap | grep sshd)
@@ -203,7 +221,7 @@ function ssh_info(){
     fi 
     echo -e "
 ${green} -------------${white} Connection method ${green}------------- ${suffix}
-[$USER@$HOSTNAME ~]$ ssh $USER@${INFO_Local_Ethernet_IP:-${INFO_Local_Wifi_IP}}
+[$USER@$HOSTNAME ~]$ ssh $USER@${Ethernet_IP:-${WIFI_IP}}
 
  Enter username -=> ${white}$USER${suffix}
  Enter password -=> ${white}$CONF_Password_SSH${suffix}
@@ -214,10 +232,11 @@ ${green} --------------------------------------------- ${suffix}"
 }
 
 # @Auins的帮助文档 Auin_help
+# usage: ${0##*/} [-h] [-V] command ...
 function auins_usage() {
     echo -e "
 :: Auins is a script for ArchLinux installation and deployment.
-usage: ${0##*/} [-h] [-V] command ...
+usage: auins [-h] [-V] command ...
 
     Install Commands: (\"-R = uninstall\"):
         font    Install Fonts, Options: [all], [common], [adobe], [code].
@@ -226,7 +245,8 @@ usage: ${0##*/} [-h] [-V] command ...
         axel    Automatic installation 'Axel' (Pacman multi threaded download), Other options: [-R].
         inGpu   Install Video card driver ( \"Nvidia\" \ \"Amdgpu\" ).
         inVmt   Install Vmware/Virtualbox Tools and exit.
-        
+        black   Installing BlackArch on ArchLinux. (https://blackarch.org/strap.sh)
+
     Settings Options:
         -m, --mirror        Automatically configure mirrorlist file and exit.
         -w, --wifi          Connect to a WIFI and exit.

@@ -12,22 +12,34 @@ Auins_record=${2}
 # Auins_Dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd )
 # Share_Dir="${Auins_Dir}"
 
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # 地址: auins.info(INFO)| script.conf(CONF)
 # 读取: Config_File_Manage [INFO/CONF] [Read] [头部参数]
 # 写入: Config_File_Manage [INFO/CONF] [Write] [头部参数] [修改内容]
 function Config_File_Manage(){ 
-    local format=" = "; parameter="$3"; content="$4";
+    local format=" = "; parameter="$3"; content="$4"; itself=$(echo "$0" | awk -F"/" '{print $NF}')
     case "$1" in
-        INFO) local Files="$Auins_record" ;;
-        CONF) local Files="$Auins_Config" ;;
+        INFO) local Files="$Auins_Infofile" ;;
+        CONF) local Files="$Auins_Profile" ;;
     esac
     case "$2" in
-        Read )   grep -w "$parameter" < "$Files" | awk -F "=" '{print $2}' | awk '{sub(/^[\t ]*/,"");print}' | awk '{sub(/[\t ]*$/,"");print}' ;;
+        Read ) 
+                read_info=$(grep -w "$parameter" < "$Files") # 在文件中查找匹配的值
+                if [ -n "$read_info" ]; then 
+                    echo "$read_info" | awk -F "=" '{print $2}' | awk '{sub(/^[\t ]*/,"");print}' | awk '{sub(/[\t ]*$/,"");print}' 
+                else
+                    warn "${white}$itself ${yellow}Read file: ${white}$Files${yellow} missing value: [${white} $parameter  ${yellow}]."
+                    sleep 3
+                fi
+         ;;
         Write) 
-                List_row=$(grep -nw "$parameter" < "$Files" | awk -F ":" '{print $1}';)
-                sed -i "${List_row:-Not}c ${parameter}${format}${content}" "$Files" 2>/dev/null
-    esac
+                List_row=$(grep -nw "$parameter" < "$Files" | awk -F ":" '{print $1}';) # 在文件中查找匹配的值, 并打印行号
+                if [ -n "$List_row" ]; then
+                    sed -i "${List_row}c ${parameter}${format}${content}" "$Files" 2>/dev/null
+                else
+                    warn "${white}$itself ${yellow}Write file: ${white}$Files${yellow} missing value: [${white} $parameter  ${yellow}] + [${white} $content ${yellow}]."
+                    sleep 3
+                fi
+    esac 
 }
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
