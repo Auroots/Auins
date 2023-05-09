@@ -176,7 +176,7 @@ function Config_File_Manage(){
 }
 
 # @install Programs 安装包
-function Install_Progsram() {
+function Install_Program() {
     # arch-chroot ${MNT_DIR} bash -c "$COMMAND"
     set +e
     IFS=' '; PACKAGES=("$@");
