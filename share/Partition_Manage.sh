@@ -1,7 +1,7 @@
 #!/bin/bash
 # Author: Auroot
 # QQ： 2763833502
-# Description： Configure Partition -> auin V4.6 r7
+# Description： Configure Partition -> auin V4.6 r8
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
@@ -53,7 +53,7 @@ function run() { echo -e "\033[1;37m:: $(tput bold; tput setaf 2)[ + Exec ] => \
 # Skip message wrapper
 function skip() { echo -e "\033[1;37m:: $(tput bold; tput setaf 0)[ - Skip ] => ${*}\033[0m$(tput sgr0)"; }
 # @输出磁盘表及UUID
-function showDisk(){ echo; lsblk -o+UUID | grep -E "sd..|vd..|^nvme[0-9]n[0-9]p[1-9]$|^mmcblk[0-9]p[1-9]$"; }
+function showDisk(){ echo; lsblk -o+UUID;}
 
 # @检查磁盘名是否合法
 function testDisk(){ 
@@ -358,7 +358,7 @@ function partition_swap(){
             || err "Create Swap failed." # 创建指定大小的swap虚拟化文件
         chmod 600 /mnt/swapfile # 设置权限
         mkswap /mnt/swapfile    # 格式化swap文件
-        swapon /mnt/swapfile    # 挂载swap文件
+        swapon -cf /mnt/swapfile    # 挂载swap文件
         Config_File_Manage INFO Write Swap "/mnt/swapfile"
         Config_File_Manage INFO Write Swap_size "${1}"
         feed_well "Successfully created Swap."
@@ -366,7 +366,6 @@ function partition_swap(){
     function Swap_Partition(){
         input_swap_device="$1"
         mkswap "/dev/$input_swap_device"
-        # swapon "/dev/$input_swap_device"
         SWAP_UUID=$(blkid -s PARTUUID -o value "/dev/$input_swap_device")
         echo "UUID=$SWAP_UUID none swap defaults 0  0" >> /etc/fstab
         mount -a

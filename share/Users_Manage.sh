@@ -1,31 +1,40 @@
 #!/bin/bash
 # Author: Auroot
 # QQ： 2763833502
-# Description： Configure users -> Auins v4.6 r7
+# Description： Configure users -> Auins v4.6 r8
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
 # set -xe
 # 该死的颜色
 # 红 绿 黄 蓝 白 后缀
-# red='\033[1;31m'; User_Password_INFO
-green='\033[1;32m' yellow='\033[1;33m'; 
+red='\033[1;31m'; green='\033[1;32m' 
+yellow='\033[1;33m'; 
 # blue='\033[1;36m'  
 white='\033[1;37m'; suffix='\033[0m' 
 
 # @获取用户输入，并返回
 function Read_user_input(){ local user_input; read -r user_input; echo "$user_input"; }
 # Tips output colour: white
-function tips_white() { printf "\033[1;37m:: $(tput bold; tput setaf 2)\033[1;37m%s \033[1;32m-+> \033[0m$(tput sgr0)" "${*}"; }
+function tips_white(){ printf "\033[1;37m:: $(tput bold; tput setaf 2)\033[1;37m%s \033[1;32m-+> \033[0m$(tput sgr0)" "${*}"; }
+# Tips output colour: yellow
+function tips_yellow(){ printf "\033[1;37m:: $(tput bold; tput setaf 7)\033[1;33m%s \033[1;32m-+> \033[0m$(tput sgr0)" "${*}"; }
 # Error message wrapper
-# function err(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 1)[ x Error ] => \033[1;31m${*}\033[0m$(tput sgr0)"; exit 255; } 
+function err(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 1)[ x Error ] => \033[1;31m${*}\033[0m$(tput sgr0)"; sleep 1; } 
 # Warning message wrapper
 function warn(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 3)[ ! Warning ] => \033[1;33m${*}\033[0m$(tput sgr0)"; }
 # Run message wrapper
 function run() { echo -e "\033[1;37m:: $(tput bold; tput setaf 2)[ + Exec ] => \033[1;32m${*}\033[0m$(tput sgr0)"; }
 # Skip message wrapper
 function skip() { echo -e "\033[1;37m:: $(tput bold; tput setaf 0)[ - Skip ] => ${*}\033[0m$(tput sgr0)"; }
-
+  # feedback successfully info
+function feed_status(){ 
+    if [ $? = 0 ]; then 
+        echo -e "\033[1;37m:: $(tput bold; tput setaf 2)=> \033[1;32m${1}\033[0m$(tput sgr0)"; 
+    else 
+        err "$2"
+    fi
+}
 # 地址: auins.info(INFO)| script.conf(CONF)
 # 读取: Config_File_Manage [INFO/CONF] [Read] [头部参数]
 # 写入: Config_File_Manage [INFO/CONF] [Write] [头部参数] [修改内容]
@@ -56,127 +65,127 @@ function Config_File_Manage(){
     esac 
 }
 
-function Script_init_Variable(){
-    # 获取sudo关于新用户权限的行
-    WHELL_LINE=$(awk '/%wheel ALL=\(ALL:ALL\) ALL/ {print NR}' /etc/sudoers)
-    NOPASSWD_LINE=$(awk '/NOPASSWD/ {print NR}' /etc/sudoers)
-    # 从信息表文件中获取信息
-    UserName_INFO=$(Config_File_Manage INFO Read "Users")
-    # 从配置文件中获取信息
-    Auto_Config_Users=$(Config_File_Manage CONF Read "Auto_Config_Users")
-    Sudo_Nopasswd=$(Config_File_Manage CONF Read "Sudo_Nopasswd")
-    User_Name_Conf=$(Config_File_Manage CONF Read "User_Name")
-    User_Password_Conf=$(Config_File_Manage CONF Read "User_Password")
-    Root_Password_Conf=$(Config_File_Manage CONF Read "Root_Password")
-}
-
-function Configure_Users(){
-    PASSWORD_TYPED="false"
+function Configure_users_password(){ 
+    local user_name=$1; PASSWORD_TYPED="false"
     while [ "$PASSWORD_TYPED" != "true" ]; do
-        UserPassword=$(whiptail --title "ArchLinux - Password" --passwordbox "Enter User Password and choose Ok to continue." 10 60 3>&1 1>&2 2>&3) # 设置密码
-        UserPassword_retype=$(whiptail --title "ArchLinux - Password" --passwordbox "Again Enter User Password and choose Ok to continue." 10 60 3>&1 1>&2 2>&3) # 设置密码
+        echo; 
+        tips_yellow "New user: [ $user_name ] password"
+        UserPassword=$(Read_user_input) # 设置密码
+
+        tips_yellow "Retype new password"
+        UserPassword_retype=$(Read_user_input) # 设置密码
+
         if [ "$UserPassword" == "$UserPassword_retype" ]; then
-            # Config_File_Manage INFO Write User_Password "${UserPassword_retype}"
-            useradd -m -g users -G wheel -s /bin/bash "${UserName}"  # 新建用户
-            echo "${UserName}:${UserPassword_retype}" | chpasswd &> /dev/null # 设置密码 
-            whiptail --title "Configure User Password." --msgbox "The ${UserName} password configuration is complete. [OK]" 10 60   # 提示配置root密码成功
+            echo "${user_name}:${UserPassword_retype}" | chpasswd &> /dev/null # 设置密码 
+            # 提示密码是否设置成功
+            feed_status "The [ ${white}${user_name} ${green}] password set successfully." "The [ ${white}${user_name} ${red}] password set failed." 
             PASSWORD_TYPED="true"
-            cp /etc/sudoers /etc/sudoers.back
-            chmod 770 /etc/sudoers 
-            sed -i "${WHELL_LINE}i %wheel ALL=\(ALL:ALL\) ALL" /etc/sudoers
-            chmod 440 /etc/sudoers 
             break;
         else
-            whiptail --title "Configure User Password." --msgbox "${UserName} password don't match. Please, type again. [X]" 10 60    # 输入两次错误，返回信息
+            err "[ ${white}${user_name} ${red}] password don't match. Please, type again.";     # 输入两次错误，返回信息
         fi
     done
 }
 
-function Configure_Root_Password(){
-    ROOT_PASSWORD_TYPED="false"
-    while [ "$ROOT_PASSWORD_TYPED" != "true" ]; do
-        RootPassword=$(whiptail --title "ArchLinux - Root Password" --passwordbox "Enter Root Password and choose Ok to continue." 10 60 3>&1 1>&2 2>&3)  # 输入第一次root密码
-        RootPassword_retype=$(whiptail --title "ArchLinux - Root Password" --passwordbox "Again Enter Root Password and choose Ok to continue." 10 60 3>&1 1>&2 2>&3)  # 输入第二次root密码
-        if [ "$RootPassword" == "$RootPassword_retype" ]; then
-            # Config_File_Manage INFO Write "Root_Password" "${RootPassword_retype}"
-            echo "root:${RootPassword_retype}" | chpasswd &> /dev/null   # 输入两次正确，将在这里设置Root密码
-            whiptail --title "Configure Root Password." --msgbox "Root Password setting complete. [OK]" 10 60   # 提示配置root密码成功
-            ROOT_PASSWORD_TYPED="true"
-            break;
-        else
-            whiptail --title "Configure Root Password." --msgbox "Root password don't match. Please, type again. [X]" 10 60    # 输入两次错误，返回信息
-        fi
-    done 
-}
-
-function Configure_Sudo_Nopasswd(){
-    if (whiptail --title "Configure Sudoers. Yes/No" --yesno "Whether to enable [Nopasswd]." 10 60); then
+function Configure_sudo(){
+    default(){
+        cp /etc/sudoers /etc/sudoers.back
         chmod 770 /etc/sudoers 
-        sed -i "${WHELL_LINE}"d /etc/sudoers  
-        sed -i "${NOPASSWD_LINE}i %wheel ALL=\(ALL:ALL\) NOPASSWD: ALL" /etc/sudoers
-        chmod 440 /etc/sudoers
-        whiptail --title "Configure Sudoers." --msgbox "Configure Sudoers succeeded. [Ok]" 10 60   # 设置sudo成功
-    else
-        whiptail --title "Configure Sudoers." --msgbox "Has been skipped. [X]" 10 60   # 跳过设置sudo
-    fi
+        # 获取sudo关于新用户权限的行
+        WHELL_LINE=$(awk '/%wheel ALL=\(ALL:ALL\) ALL/ {print NR}' /etc/sudoers)
+        sed -i "${WHELL_LINE}i %wheel ALL=\(ALL:ALL\) ALL" /etc/sudoers
+        feed_status "Configure sudo succeeded." "Failed to configure sudo."
+        chmod 440 /etc/sudoers 
+    }
+    nopasswd(){
+        echo; 
+        tips_yellow "Whether to enable Nopasswd [Y/n]?"
+        _Nopasswd=$(Read_user_input)
+        case $_Nopasswd in 
+            [Yy]* )
+                chmod 770 /etc/sudoers
+                sed -i "${WHELL_LINE}"d /etc/sudoers  
+                sed -i "${NOPASSWD_LINE}i %wheel ALL=\(ALL:ALL\) NOPASSWD: ALL" /etc/sudoers
+                feed_status "Configure sudo Nopasswd succeeded." "Failed to configure sudo Nopasswd."
+                chmod 440 /etc/sudoers
+            ;;
+            *)
+                skip "[ sudo Nopasswd ] Has been skipped."
+        esac
+    }
+    case "$1" in
+        "default"  ) default ;;
+        "nopasswd" ) nopasswd
+    esac
 }
 
 # Start Script | 从这里开始
 # >> >> >> >> >> >> >> >> >> >> >> >> 
-Auins_Profile=${1}
-Auins_Infofile=${2}
-Script_init_Variable
+Auins_Profile="$1"
+Auins_Infofile="$2"
 
-case "$Auto_Config_Users" in 
+NOPASSWD_LINE=$(awk '/NOPASSWD/ {print NR}' /etc/sudoers)
+# 从配置文件中获取信息
+CONF_Auto_Config_Users=$(Config_File_Manage CONF Read "Auto_Config_Users")
+CONF_Sudo_Nopasswd=$(Config_File_Manage CONF Read "Sudo_Nopasswd")
+CONF_User_Name=$(Config_File_Manage CONF Read "User_Name")
+CONF_User_Password=$(Config_File_Manage CONF Read "User_Password")
+CONF_Root_Password=$(Config_File_Manage CONF Read "Root_Password")
+# 从信息表文件中获取信息
+INFO_Users=$(Config_File_Manage INFO Read "Users")
+echo &>/dev/null
+case "$CONF_Auto_Config_Users" in 
     [Yy]*)
-        # 配置用户 >> >> >> >> >> >> >> >> >> 
-        run "Configuring user [${white} $User_Name_Conf ${suffix}${green}].${suffix}" && sleep 1;
-        useradd -m -g users -G wheel -s /bin/bash "${User_Name_Conf}"  # 新建用户
-
-        run "Configuring user [${white} $User_Name_Conf ${suffix}${green}] password.${suffix}" && sleep 1;
-        echo "${User_Name_Conf}:${User_Password_Conf}" | chpasswd &> /dev/null # 设置密码 
-
-        run "Configuring sudo permission." && sleep 1;
-        cp /etc/sudoers /etc/sudoers.back
-        # chmod 770 /etc/sudoers
-        sed -i "${WHELL_LINE}i %wheel ALL=\(ALL:ALL\) ALL" /etc/sudoers
-        # chmod 440 /etc/sudoers
-
-        UsersID=$(id -u "$UserName_INFO" 2> /dev/null)
-        Config_File_Manage INFO Write Users "${User_Name_Conf}"
-        Config_File_Manage INFO Write UsersID "$UsersID"
-        # Config_File_Manage INFO Write User_Password "${User_Password_Conf}"
-
-        # 配置Root用户 >> >> >> >> >> >> >> >> >> 
-        run "Configuring user [${white} root ${suffix}${green}] password.${suffix}" && sleep 1;
-        echo "root:${Root_Password_Conf}" | chpasswd &> /dev/null   # 输入两次正确，将在这里设置Root密码
-        # Config_File_Manage INFO Write "Root_Password" "${Root_Password_Conf}"
-
-        # 配置Nopasswd用户 >> >> >> >> >> >> >> >> >> 
-        case $Sudo_Nopasswd in
-            [Yy]*)
+        if [ "$INFO_Users" = "" ]; then
+            # 新建用户
+            run "Configuring user [${white} $CONF_User_Name ${suffix}${green}].${suffix}"
+            useradd -m -g users -G wheel -s /bin/bash "${CONF_User_Name}"  # 新建用户
+            feed_status "User [${white} $CONF_User_Name ${green}], created successfully." "User [${white} $CONF_User_Name ${red}], creation failed."
+            # 设置用户密码
+            run "Configuring user [${white} $CONF_User_Name ${suffix}${green}] password.${suffix}" && sleep 1;
+            echo "${CONF_User_Name}:${CONF_User_Password}" | chpasswd &> /dev/null # 设置密码 
+            # 写入用户信息
+            UsersID=$(id -u "$CONF_User_Name" 2> /dev/null)
+            Config_File_Manage INFO Write Users "$CONF_User_Name"
+            Config_File_Manage INFO Write UsersID "$UsersID"
+            # 配置sudo
+            run "Configuring sudo permission." && sleep 1;
+            Configure_sudo default
+            # 配置sudo Nopasswd
+            case $CONF_Sudo_Nopasswd in
+                [Yy]*)
                     warn "Enable Sudo [${white} Nopasswd ${suffix}${yellow}]." && sleep 1;
-                    chmod 770 /etc/sudoers 
-                    sed -i "${WHELL_LINE}"d /etc/sudoers  
-                    sed -i "${NOPASSWD_LINE}i %wheel ALL=\(ALL:ALL\) NOPASSWD: ALL" /etc/sudoers
-                    chmod 440 /etc/sudoers
-            ;;
-            [Nn]*)
-                    skip "Not Sudo Nopasswd." && sleep 1;
-        esac
+                    Configure_sudo nopasswd
+                ;;
+                *)   skip "Not Sudo Nopasswd." && sleep 1;
+            esac
+            
+            # 配置Root用户 
+            run "Configuring user [${white} root ${suffix}${green}] password.${suffix}" && sleep 1;
+            echo "root:${CONF_Root_Password}" | chpasswd &> /dev/null
+
+        else
+            feed_status "The User: [ ${white}${UserName}${green} ] has been set." "Setting failed."
+        fi
     ;;
     [Nn]*)
-        if [ "$UserName_INFO" = "" ]; then
-            UserName=$(whiptail --title "ArchLinux - UserName" --inputbox "Enter UserName:" 10 60  3>&1 1>&2 2>&3)  # 输入用户名
-            UsersID=$(id -u "$UserName_INFO" 2> /dev/null)
+        if [ "$INFO_Users" = "" ]; then
+            echo; 
+            tips_white "Enter new user name"
+            UserName=$(Read_user_input)  # 输入用户名
+            useradd -m -g users -G wheel -s /bin/bash "${UserName}"  # 新建用户 #Configure_Root_Password
+            feed_status "User [${white} $UserName ${green}], created successfully." "User [${white} $UserName ${red}], creation failed."
+
+            Configure_users_password "${UserName}"
+
+            UsersID=$(id -u "$UserName" 2> /dev/null)
             Config_File_Manage INFO Write Users "$UserName"
             Config_File_Manage INFO Write UsersID "$UsersID"
-            
-            Configure_Users
-            Configure_Root_Password
-            Configure_Sudo_Nopasswd
+
+            Configure_sudo default
+            Configure_sudo nopasswd
+            Configure_users_password "root"
         else
-            whiptail --title "ArchLinux - User settings." --msgbox "Users: ${UserName}, Setup has been completed. [Ok]" 10 60
-            feed_well "The User: [ ${white}${UserName}${green} ] has been set. [Ok]${suffix}"
+            feed_status "The User: [ ${white}${UserName}${green} ] has been set." "Setting failed"
         fi
-esac
+esac    

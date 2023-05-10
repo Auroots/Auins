@@ -53,7 +53,7 @@ function Config_File_Manage(){
                     echo "$read_info" | awk -F "=" '{print $2}' | awk '{sub(/^[\t ]*/,"");print}' | awk '{sub(/[\t ]*$/,"");print}' 
                 else
                     warn "${white}$itself ${yellow}Read file: ${white}$Files${yellow} missing value: [${white} $parameter  ${yellow}]."
-                    sleep 3
+                    sleep 1.5
                 fi
          ;;
         Write) 
@@ -62,7 +62,7 @@ function Config_File_Manage(){
                     sed -i "${List_row}c ${parameter}${format}${content}" "$Files" 2>/dev/null
                 else
                     warn "${white}$itself ${yellow}Write file: ${white}$Files${yellow} missing value: [${white} $parameter  ${yellow}] + [${white} $content ${yellow}]."
-                    sleep 3
+                    sleep 1.5
                 fi
     esac 
 }
@@ -154,8 +154,8 @@ function Install_Desktop_Env(){
     local Desktop_Name Desktop_Xinit Desktop_Program CONF_PGK_Xorg CONF_PGK_Gui_Package;
 
     Desktop_Name="${Desktop_Tuple[0]}"
-    Desktop_Xinit="${Desktop_Tuple[1]}"
-    Default_DM="${Desktop_Tuple[2]}"
+    Default_DM="${Desktop_Tuple[1]}"
+    Desktop_Xinit="${Desktop_Tuple[2]}"
     Desktop_Program=$(Config_File_Manage CONF Read "${Desktop_Tuple[3]}")
     CONF_PGK_Xorg=$(Config_File_Manage CONF Read "PGK_Xorg")
     CONF_PGK_Gui_Package=$(Config_File_Manage CONF Read "PGK_Gui_Package")
