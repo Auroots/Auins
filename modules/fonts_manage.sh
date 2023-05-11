@@ -16,6 +16,7 @@ function include(){
     Info_modules="${argu[3]}"
     Process_modules="${argu[4]}"
     option="${argu[5]}"
+    other_option_1="${argu[6]}"
     set -e
 }
 # 信息打印,详细参数看auins
@@ -207,7 +208,7 @@ case ${option} in
     # 根据配置文件安装相应的字体
     "Config_file_install_fonts") Config_file_install_fonts "$CONF_PGK_FONTS" "$CONF_PGK_FONTS_ADOBE" ;;
     # 根据用户选项安装相应的字体
-    "User_options_install_fonts") User_options_install_fonts "$5" "$CONF_PGK_FONTS" "$CONF_PGK_FONTS_ADOBE" ;;
+    "User_options_install_fonts") User_options_install_fonts "$other_option_1" "$CONF_PGK_FONTS" "$CONF_PGK_FONTS_ADOBE" ;;
     # 脚本运行时，由脚本自动判断，自动安装配置文件中的选项，另外询问是否安装其他
     "Script_Runing_install_fonts") Script_Runing_install_fonts "$CONF_PGK_FONTS" "$CONF_PGK_FONTS_ADOBE" ;;
     *) ;;

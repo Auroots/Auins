@@ -76,7 +76,7 @@ function run_configure_fonts(){
     # User_options_install_fonts:  根据用户选项, 安装相应的字体, $2 = 用户的选项有: [all] [common] [adobe] [code]
     # Script_Runing_install_fonts: 脚本运行时, 由脚本自动判断, 自动安装配置文件中的选项, 另外询问是否安装其他
     bash "$Fonts_modules" "$config_File" "$info_File" "$local_Dir" \
-         "$Info_modules" "$Process_modules" "$1"
+         "$Info_modules" "$Process_modules" "$1" "$2"
 }
 # 脚本进程管理
 function run_process_manage(){ 
@@ -277,7 +277,7 @@ function Update_Share(){
             "auroot" ) SOURCE="http://auins.auroot.cn" ;;
             "test"   ) SOURCE="http://test.auroot.cn" 
         esac
-        SOURCE_SHARE="${SOURCE}/share"
+        SOURCE_MODULES="${SOURCE}/modules"
         SOURCE_LOCAL="${SOURCE}/local"
         Auins_source
     }
@@ -901,7 +901,7 @@ function Configure_System(){
         rm -rf "$local_Dir"/Config_System; # 删除这个文件，才能进 Normal_Model  
         if [ "$(Config_File_Manage CONF Read "Archlinucn")" = "yes" ]; then Install_Program archlinuxcn-keyring; fi
         feed_status "archlinuxcn-keyring installation successfully." "archlinuxcn-keyring installation failed."
-        run_configure_fonts Config_file_install_fonts "$SOURCE_LOCAL"
+        run_configure_fonts Config_file_install_fonts 
         
     else
         run_process_manage restart "$0" "${red}The system is not installed. Exec: 4->2 ${suffix}"
@@ -999,7 +999,7 @@ function Auins_Options(){
     case "${1}" in
 # Install Commands: ("-S = install", "-R = uninstall")
         font ) 
-                run_configure_fonts User_options_install_fonts "$SOURCE_LOCAL" "$2" 
+                run_configure_fonts User_options_install_fonts "$2" 
                 exit 0 ;;
         fcitx) 
                 Configure_fcitx "$2" 
