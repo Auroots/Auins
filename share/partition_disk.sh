@@ -1,11 +1,26 @@
 #!/bin/bash
 # Author: Auroot
 # QQ： 2763833502
-# Description： Configure Partition -> auin V4.6 r8
+# Description：Partition Disk -> Auins v4.7
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
 
+# 列出需要包含的配置文件或模块
+function include(){
+    set +e
+    declare -a argu=("$@")
+    # declare -p argu
+    export config_File info_File Process_modules
+    config_File="${argu[0]}"
+    info_File="${argu[0]}"
+    Process_modules="${argu[0]}"
+    set -e
+}
+# 脚本进程管理,详细参数看auins
+function run_process_manage(){
+    bash "$Process_modules" "$1" "$2" "$3"
+}
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # 地址: auins.info(INFO)| script.conf(CONF)
 # 读取: Config_File_Manage [INFO/CONF] [Read] [头部参数]
@@ -13,8 +28,8 @@
 function Config_File_Manage(){ 
     local format=" = "; parameter="$3"; content="$4"; itself=$(echo "$0" | awk -F"/" '{print $NF}')
     case "$1" in
-        INFO) local Files="$Auins_Infofile" ;;
-        CONF) local Files="$Auins_Profile" ;;
+        INFO) local Files="$info_File" ;;
+        CONF) local Files="$config_File" ;;
     esac
     case "$2" in
         Read ) 
@@ -117,18 +132,6 @@ function init(){
     Boot_Dir="${System_Root}/boot/efi"
 }
 
-# @Stript Management; 脚本进程管理 [start]开启 [restart]重新开启 [stop]杀死脚本进程
-function Process_Management(){
-    PM_Enter_1=${1}
-    PM_Enter_2=${2}
-    PM_Enter_3=${3}
-    case ${PM_Enter_1} in
-        start)   bash "$Process_Manage" start "${PM_Enter_2}" "${PM_Enter_3}" ;;
-        restart) bash "$Process_Manage" restart "${PM_Enter_2}" "${PM_Enter_3}" ;;
-        stop)    bash "$Process_Manage" stop "${PM_Enter_2}" "${PM_Enter_3}"
-    esac
-}
-
 # 磁盘分区
 function partition(){
     showDisk
@@ -148,12 +151,12 @@ function partition_facts(){
     case ${Disk_options} in
         _disk_          )   # 检查磁盘名称，错误返回: "ERROR"
                             if [[ $(testDisk "$Input_disk") = "ERROR" ]]; then 
-                                Process_Management stop "$0" "${red} Unable to find the ${white}[ ${Input_disk} ] ${red} disk address, please check if the disk exists! \n${white}:: => Please input: /dev/sdX | sdX !!!${suffix}"
+                                run_process_manage stop "$0" "${red} Unable to find the ${white}[ ${Input_disk} ] ${red} disk address, please check if the disk exists! \n${white}:: => Please input: /dev/sdX | sdX !!!${suffix}"
                                 exit 70
                             fi ;; 
         _partition_root_)   # 检查分区名称，错误返回: "ERROR"
                             if [[ $(testPartition "$Input_partition") = "ERROR" ]]; then 
-                                Process_Management stop "$0" "${white} [ ${Input_partition} ] ${red}Please input: /dev/sdX[0-9] | sdX[0-9] !!! ${suffix}"
+                                run_process_manage stop "$0" "${white} [ ${Input_partition} ] ${red}Please input: /dev/sdX[0-9] | sdX[0-9] !!! ${suffix}"
                                 exit 70
                             fi ;; 
         _Disk_Type_     )   # Detect disk type
@@ -190,7 +193,8 @@ function partition_type(){
                         System_Disk_Type="msdos"   
                     fi
                     parted "/dev/$input_disk_name" mklabel "$System_Disk_Type" -s ;;
-            [Nn]*)  Process_Management stop "$0" "${red}Disklabel type${blue}[ ${disk_type} ] ${red}not match and cannot be install System.${suffix}" ;;
+            [Nn]*)  
+                    run_process_manage stop "$0" "${red}Disklabel type${blue}[ ${disk_type} ] ${red}not match and cannot be install System.${suffix}" ;;
                 *)
                     if [[ "$System_Disk_Type" = "GPT" ]] ; then
                         System_Disk_Type="gpt"
@@ -404,10 +408,8 @@ function partition_swap(){
 
 # 具体的实现 >> >> >> >> >> >> >> >> 
 echo &>/dev/null
-Auins_Profile=${1}
-Auins_Infofile=${2}
-Share_Dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd )
-Process_Manage="${Share_Dir}/Process_Manage.sh"
+
+
 clear; init;
 partition; # 选择磁盘 #parted /dev/sdb mklabel gpt   转换格式 GPT
 partition_root;
@@ -416,4 +418,3 @@ if [ "$Boot_Type" = "UEFI" ]; then partition_booting_UEFI; else partition_bootin
 partition_swap;  #swap file 虚拟文件(类似与win里的虚拟文件) 对于swap分区我更推荐这个，后期灵活更变
 if [ "$Conf_New_Other_Partition" = yes ]; then partition_other; fi
 feed_well "${wg} Partition complete. ${suffix}"
-# bash "${Share_Dir}/Partition_Manage.sh" [profile] [info];

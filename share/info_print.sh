@@ -1,33 +1,26 @@
 #!/bin/bash
-#!/bin/bash
 # Author: Auroot
 # QQ： 2763833502
-# Description： Print INFO -> auin V4.6 r8
+# Description：INFO Print -> Auins v4.7
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
 echo &>/dev/null
 
-# @该死的颜色
-function Set_Color_Variable(){
-    # 红 绿 黄 蓝 白 后缀
-    red='\033[1;31m'; green='\033[1;32m'  
-    yellow='\033[1;33m'; blue='\033[1;36m'  
-    white='\033[1;37m'; suffix='\033[0m'  
-    whites='\033[1;30m';   
-    #-----------------------------#
-    # rw='\033[1;41m'  #--红白
-    wg='\033[1;42m'; ws='\033[1;43m'      #白绿 \ 白褐
-    #wb='\033[1;44m'; wq='\033[1;45m'    #白蓝 \ 白紫
-    # wa='\033[1;46m';  #白青
-    bx='\033[1;4;36m' # 蓝 下划线
-    #-----------------------------#
-    # 提示 蓝 红 绿 黄
-    outB="${white}::${blue} =>${suffix}";  outR="${white}::${red} =>${suffix}"
-    outG="${white}::${green} =>${suffix}"; outY="${white}::${yellow} =>${suffix}"
-    out_WELL="${white}::${green} =>${suffix}"
-    out_ERROR="${white}::${red} [ Error ] =>${suffix}"
+# 列出需要包含的配置文件或模块
+function include(){
+    set +e
+    declare -a argu=("$@")
+    # declare -p argu
+    export config_File info_File option other_option_1 other_option_2 other_option_3
+    config_File="${argu[0]}"
+    info_File="${argu[1]}"
+    option="${argu[2]}"
+    other_option_1="${argu[3]}"
+    other_option_2="${argu[4]}"
+    set -e
 }
+
 # Warning message wrapper
 function warn(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 3)[ ! Warning ] => \033[1;33m${*}\033[0m$(tput sgr0)"; }
 # 地址: auins.info(INFO)| script.conf(CONF)
@@ -36,8 +29,8 @@ function warn(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 3)[ ! Warning
 function Config_File_Manage(){ 
     local format=" = "; parameter="$3"; content="$4"; itself=$(echo "$0" | awk -F"/" '{print $NF}')
     case "$1" in
-        INFO) local Files="$Auins_Infofile" ;;
-        CONF) local Files="$Auins_Profile" ;;
+        INFO) local Files="$info_File" ;;
+        CONF) local Files="$config_File" ;;
     esac
     case "$2" in
         Read ) 
@@ -306,16 +299,36 @@ ${outB} ${white}[*]${green}   default.${suffix}
 ============================"
 }
 
-Auins_Profile=$2
-Auins_Infofile=$3
+# @该死的颜色
+function Set_Color_Variable(){
+    # 红 绿 黄 蓝 白 后缀
+    red='\033[1;31m'; green='\033[1;32m'  
+    yellow='\033[1;33m'; blue='\033[1;36m'  
+    white='\033[1;37m'; suffix='\033[0m'  
+    whites='\033[1;30m';   
+    #-----------------------------#
+    # rw='\033[1;41m'  #--红白
+    wg='\033[1;42m'; ws='\033[1;43m'      #白绿 \ 白褐
+    #wb='\033[1;44m'; wq='\033[1;45m'    #白蓝 \ 白紫
+    # wa='\033[1;46m';  #白青
+    bx='\033[1;4;36m' # 蓝 下划线
+    #-----------------------------#
+    # 提示 蓝 红 绿 黄
+    outB="${white}::${blue} =>${suffix}";  outR="${white}::${red} =>${suffix}"
+    outG="${white}::${green} =>${suffix}"; outY="${white}::${yellow} =>${suffix}"
+    out_WELL="${white}::${green} =>${suffix}"
+    out_ERROR="${white}::${red} [ Error ] =>${suffix}"
+}
+
 # 具体的实现 >> >> >> >> >> >> >> >> 
+include "$@"
 Set_Color_Variable
-case $1 in
-    # Auins版本信息, 需要接收: [Auins_Profile] [Auins_Infofile]
-    "version"   ) version "$2";; 
+case $option in
+    # Auins版本信息
+    "version"   ) version ;; 
     # Script首页信息, 需要接收: 1=Chroot状态(Chroot_Patterns_Print) 2=脚本开启模式(Start_Patterns)
-    "logos" ) logos "$4" "$5";; 
-    # 输出SSH信息, 需要接收: [Auins_Profile] [Auins_Infofile]
+    "logos" ) logos "$other_option_1" "$other_option_2";; 
+    # 输出SSH信息, 需要接收: [config_File] [info_File]
     "ssh_info" ) ssh_info ;; 
      # Auins的帮助文档 Auin_help
     "auins_usage" ) auins_usage ;;

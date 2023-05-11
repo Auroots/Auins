@@ -1,12 +1,37 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Author: Auroot
 # QQ： 2763833502
-# Description： Auto Install Desktop -> auin V4.5
+# Description：Auto Install Desktop -> Auins v4.7
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
 
-# bash "${Share_Dir}/Desktop_Manage.sh" "share" "local";
+function include(){
+    set +e
+    declare -a argu=("$@")
+    # declare -p argu
+    export local_Dir config_File info_File Info_modules Fonts_modules Process_modules
+    config_File="${argu[0]}"
+    info_File="${argu[1]}"
+    local_Dir="${argu[2]}"
+    Info_modules="${argu[3]}"
+    Fonts_modules="${argu[4]}"
+    Process_modules="${argu[5]}"
+    set -e
+}
+# 信息打印,详细参数看auins
+function run_print_info(){
+    bash "$Info_modules" "$config_File" "$info_File" "$1" "$2" "$3"
+}
+# 字体安装,详细参数看auins
+function run_configure_fonts(){
+    bash "$Fonts_modules" "$config_File" "$info_File" "$local_Dir" \
+         "$Info_modules" "$Process_modules" "$1"
+}
+# 脚本进程管理,详细参数看auins
+function run_process_manage(){
+    bash "$Process_modules" "$1" "$2" "$3"
+}
 
 # Error message wrapper
 function err(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 1)[ x Error ] => \033[1;31m${*}\033[0m$(tput sgr0)";} 
@@ -43,8 +68,8 @@ function check_priv()
 function Config_File_Manage(){ 
     local format=" = "; parameter="$3"; content="$4"; itself=$(echo "$0" | awk -F"/" '{print $NF}')
     case "$1" in
-        INFO) local Files="$Auins_Infofile" ;;
-        CONF) local Files="$Auins_Profile" ;;
+        INFO) local Files="$info_File" ;;
+        CONF) local Files="$config_File" ;;
     esac
     case "$2" in
         Read ) 
@@ -65,18 +90,6 @@ function Config_File_Manage(){
                     sleep 1.5
                 fi
     esac 
-}
-
-# @Stript Management; 脚本进程管理 [start]开启 [restart]重新开启 [stop]杀死脚本进程
-function Process_Management(){
-    PM_Enter_1=${1}
-    PM_Enter_2=${2}
-    PM_Enter_3=${3}
-    case ${PM_Enter_1} in
-        start)   bash "$Process_Script" start "${PM_Enter_2}" "${PM_Enter_3}" ;;
-        restart) bash "$Process_Script" restart "${PM_Enter_2}" "${PM_Enter_3}" ;;
-        stop)    bash "$Process_Script" stop "${PM_Enter_2}" "${PM_Enter_3}"
-    esac
 }
 
 # @install Programs 安装包
@@ -118,9 +131,9 @@ function Desktop_Env_ID {
         8)  
             Desktop_Tuple=("mate" "lightdm" "mate" "PGK_Mate") ;;
         # 9)  Desktop_Tuple=("Plasma & Wayland" "sddm" "" "P_plasma_Wayland") ;;
-        # 10)  bash "${Share_Dir}/Install_openbox.sh" ;;
+        # 10)  run_openbox" ;;
         *) 
-            Process_Management stop "$0" "Selection error.";;
+            run_process_manage stop "$0" "Selection error.";;
     esac
 }
 
@@ -137,14 +150,14 @@ function Set_Desktop_Env(){
         Desktop_Env_ID "$DESKTOP_ID"
         Desktop_Tuple[1]="$CONF_Desktop_Display_Manager"
     else # 使用用户输入的设置
-        bash "$Print_Info_Script" desktop_env_list; 
+        run_print_info desktop_env_list; 
         printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}.\n" "${CheckingUsers:-$INFO_UserName}" "${CheckingID:-$INFO_UsersID}"
         tips_white "Please select desktop"
         DESKTOP_ID="0"; ID=$(Read_user_input)
         if [ "$ID" ]; then 
             Desktop_Env_ID "$ID"
         else
-            Process_Management stop "$0" "Selection error."
+            run_process_manage stop "$0" "Selection error."
         fi 
    fi
 }
@@ -170,7 +183,7 @@ function Install_Desktop_Env(){
 
 # @桌面管理器选择列表，选择后，自动安装及配置服务；
 function Desktop_Manager(){
-    bash "$Print_Info_Script" desktop_manager_list
+    run_print_info desktop_manager_list
     tips_white "Please select Desktop Manager"
     case $(Read_user_input) in
         1) 
@@ -186,7 +199,7 @@ function Desktop_Manager(){
     esac
     Config_File_Manage INFO Write Desktop_Display_Manager "$DmS"
     run "Configuring desktop display manager [${white} $DmS ${green}]."; sleep 1;
-    echo "$DmS" > "${Local_Dir}/Desktop_Manager"
+    echo "$DmS" > "${local_Dir}/Desktop_Manager"
     case ${DmS} in
         sddm)
             Install_Program "sddm sddm-kcm" && systemctl enable sddm ;;
@@ -230,35 +243,30 @@ function Installation_Desktop(){
     #  安装桌面环境
         Install_Desktop_Env;
     #  安装字体
-        bash "$Fonts_Script" "${Share_Dir}" "${Local_Dir}";      
+        run_configure_fonts Script_Runing_install_fonts 
         tips_white "Whether to install Common Drivers? [Y/n]?"
         case $(Read_user_input) in
             [Yy]*) Install_Io_Driver ;;
-            [Nn]*) Process_Management stop "$0" ;;
+            [Nn]*) run_process_manage stop "$0" ;;
         esac
     else
         err "User has no settings."
         sleep 2
-        Process_Management restart "$0"
+        run_process_manage restart "$0"
     fi
 }
+function Set_Color_Variable(){
+    # @该死的颜色
+    red='\033[1;31m'; green='\033[1;32m'  
+    yellow='\033[1;33m'; blue='\033[1;36m'  
+    white='\033[1;37m'; suffix='\033[0m'   
+    # 提示 蓝 红 绿 黄
+    outG="${white}::${green} =>${suffix}";
+}
+
 # 具体的实现 >> >> >> >> >> >> >> >> 
 echo &>/dev/null
 check_priv # 检查权限
-Share_Dir=${1}
-Local_Dir=${2}
-Auins_Profile="${Local_Dir}/profile.conf"  
-Auins_Infofile="${Local_Dir}/auins.info"
-# 需要调用的模块
-Process_Script="${Share_Dir}/Process_Manage.sh"
-Print_Info_Script="${Share_Dir}/Print_Info.sh"
-Fonts_Script="${Share_Dir}/Fonts_Manage.sh"
-
-# @该死的颜色
-red='\033[1;31m'; green='\033[1;32m'  
-yellow='\033[1;33m'; blue='\033[1;36m'  
-white='\033[1;37m'; suffix='\033[0m'   
-# 提示 蓝 红 绿 黄
-outG="${white}::${green} =>${suffix}";
-
+include "$@"
+Set_Color_Variable
 Installation_Desktop

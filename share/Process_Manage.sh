@@ -1,7 +1,7 @@
 #!/bin/bash
 # Author: Auroot
 # QQ： 2763833502
-# Description： Process Management. -> auin V4.6 r7
+# Description：Process Manage -> Auins v4.7
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins

@@ -1,18 +1,29 @@
 #!/bin/bash
 # Author: Auroot
 # QQ： 2763833502
-# Description： Configure users -> Auins v4.6 r8
+# Description：Configure users -> Auins v4.7
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
 # set -xe
-# 该死的颜色
-# 红 绿 黄 蓝 白 后缀
-red='\033[1;31m'; green='\033[1;32m' 
-yellow='\033[1;33m'; 
-# blue='\033[1;36m'  
-white='\033[1;37m'; suffix='\033[0m' 
-
+# 列出需要包含的配置文件或模块
+function include(){
+    set +e
+    declare -a argu=("$@")
+    # declare -p argu
+    export config_File info_File
+    config_File="${argu[0]}"
+    info_File="${argu[1]}"
+    set -e
+}
+# check for root privilege
+function check_priv()
+{
+  if [ "$(id -u)" -ne 0 ]; then
+    # err "you must be root"
+    err "Please use command: ${white}\"sudo\"${red} or user: ${white}\"root\"${red} to execute.${suffix}"
+  fi
+}
 # @获取用户输入，并返回
 function Read_user_input(){ local user_input; read -r user_input; echo "$user_input"; }
 # Tips output colour: white
@@ -41,8 +52,8 @@ function feed_status(){
 function Config_File_Manage(){ 
     local format=" = "; parameter="$3"; content="$4"; itself=$(echo "$0" | awk -F"/" '{print $NF}')
     case "$1" in
-        INFO) local Files="$Auins_Infofile" ;;
-        CONF) local Files="$Auins_Profile" ;;
+        INFO) local Files="$info_File" ;;
+        CONF) local Files="$config_File" ;;
     esac
     case "$2" in
         Read ) 
@@ -120,17 +131,23 @@ function Configure_sudo(){
 }
 
 # Start Script | 从这里开始
-# >> >> >> >> >> >> >> >> >> >> >> >> 
-Auins_Profile="$1"
-Auins_Infofile="$2"
+# >> >> >> >> >> >> >> >> >> >> >> >>
+check_priv
+include "$@"
 
-NOPASSWD_LINE=$(awk '/NOPASSWD/ {print NR}' /etc/sudoers)
+# 该死的颜色
+red='\033[1;31m'; green='\033[1;32m' 
+yellow='\033[1;33m';  
+white='\033[1;37m'; suffix='\033[0m' 
+
 # 从配置文件中获取信息
 CONF_Auto_Config_Users=$(Config_File_Manage CONF Read "Auto_Config_Users")
 CONF_Sudo_Nopasswd=$(Config_File_Manage CONF Read "Sudo_Nopasswd")
 CONF_User_Name=$(Config_File_Manage CONF Read "User_Name")
 CONF_User_Password=$(Config_File_Manage CONF Read "User_Password")
 CONF_Root_Password=$(Config_File_Manage CONF Read "Root_Password")
+# sudo相关
+NOPASSWD_LINE=$(awk '/NOPASSWD/ {print NR}' /etc/sudoers)
 # 从信息表文件中获取信息
 INFO_Users=$(Config_File_Manage INFO Read "Users")
 echo &>/dev/null

@@ -1,11 +1,21 @@
 #!/bin/bash
 # Author: Auroot
 # QQ： 2763833502
-# Description： Configure Mirrorlist -> auin V4.6 r8
+# Description：Configure Mirrorlist -> Auins v4.7
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
 # set -xe
+# 列出需要包含的配置文件或模块
+function include(){
+    set +e
+    declare -a argu=("$@")
+    # declare -p argu
+    export config_File info_File
+    config_File="${argu[0]}"
+    info_File="${argu[1]}"
+    set -e
+}
 #==============-------------archlinuxcn----------------==============
 # 南京大学(nju) 北京外国语(bfsu) 阿里云(aliyun) 华为源(huaweicloud) 中科大(ustc) 清华源(tuna) 腾讯云(tencent)
 # 可信的(Optional), 信任所有(TrustAll), 仅受信任(TrustedOnly)
@@ -53,8 +63,8 @@ Server = https://mirrors.bfsu.edu.cn/arch4edu/\$arch
 function Config_File_Manage(){ 
     local Files; format=" = "; parameter="$3"; content="$4"; itself=$(echo "$0" | awk -F"/" '{print $NF}')
     case "$1" in
-        INFO) Files="$Auins_Infofile" ;;
-        CONF) Files="$Auins_Profile" ;;
+        INFO) Files="$info_File" ;;
+        CONF) Files="$config_File" ;;
         *) Files="$1" ;;
     esac
     case "$2" in
@@ -77,18 +87,6 @@ function Config_File_Manage(){
                 fi
     esac 
 }
-
-echo &>/dev/null
-# bash "${Share_Dir}/Partition.sh" "config" "info";
-Auins_Profile=${1}
-Auins_Infofile=${2}
-Pacman_conf_file="/etc/pacman.conf"
-MirrorList_file="/etc/pacman.d/mirrorlist"
-# 备份的文件夹
-Source_Backup_Dir="/etc/pacman.d/backup"
-Exec_Time=$(date +%k:%M-%Y:%m:%d)
-INFO_Country_Name=$(Config_File_Manage INFO Read Country_Name)
-
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # Error message wrapper
 function err(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 1)[ x Error ] => \033[1;31m${*}\033[0m$(tput sgr0)"; sleep 1; exit 255; } 
@@ -111,35 +109,40 @@ function pacman-conf-update(){
         sed -i "${row_number} d" $Pacman_conf_file
         sed -i "${row_number} i\Include = /etc/pacman.d/mirrorlist" $Pacman_conf_file
     }
+    function find_replace() {
+        [[ $2 == "" ]] && replace=$1 || replace=$2
+        case $(Config_File_Manage CONF Read "$1") in 
+            [Yy]*) sed -i "s/#$replace/$replace/g" $Pacman_conf_file ;;
+            [Nn]*) sed -i "s/$replace/#$replace/g" $Pacman_conf_file
+        esac
+    }
     # pacman.conf的设置
-    [[ "$(Config_File_Manage CONF Read VerbosePkgLists)" == 'yes' ]] && sed -i 's/#VerbosePkgLists/VerbosePkgLists/g' $Pacman_conf_file
-    [[ "$(Config_File_Manage CONF Read UseSyslog)" == 'yes' ]] &&  sed -i 's/#UseSyslog/UseSyslog/g' $Pacman_conf_file
-    [[ "$(Config_File_Manage CONF Read Color)" == 'yes' ]] && sed -i 's/#Color/Color/g' $Pacman_conf_file
-    [[ "$(Config_File_Manage CONF Read NoProgressBar)" == 'yes' ]] && sed -i 's/#NoProgressBar/NoProgressBar/g' $Pacman_conf_file
-    [[ "$(Config_File_Manage CONF Read RemoteFileSigLevel)" == 'yes' ]] && sed -i 's/#RemoteFileSigLevel/RemoteFileSigLevel/g' $Pacman_conf_file
+    find_replace VerbosePkgLists
+    find_replace UseSyslog
+    find_replace Color
+    find_replace NoProgressBar
+    find_replace RemoteFileSigLevel
 
-    if [[ "$(Config_File_Manage CONF Read ParallelDownloads)" == 'yes' ]]; then
-        sed -i 's/#ParallelDownloads/ParallelDownloads/g' $Pacman_conf_file
-        Config_File_Manage  $Pacman_conf_file Write ParallelDownloads "$(Config_File_Manage CONF Read ParallelDownloads_quantity)"
-    fi
-    if [[ "$(Config_File_Manage CONF Read multilib)" == 'yes' ]]; then
-        sed -i 's/#\[multilib\]/\[multilib\]/g' $Pacman_conf_file
-        modify_row "\[multilib\]"
+    find_replace ParallelDownloads && \
+    grep -E "^ParallelDownloads" "$Pacman_conf_file" &> /dev/null && \
+    Config_File_Manage  $Pacman_conf_file Write ParallelDownloads "$(Config_File_Manage CONF Read ParallelDownloads_quantity)"
 
-    fi
+    find_replace multilib "\[multilib\]" && modify_row "\[multilib\]"
+
     # 将所需的其他镜像源添加到 /etc/pacman.conf
-    if [[ "$(Config_File_Manage CONF Read "Arch4edu")" = "yes" ]]; then
-        if ! grep -E "^\[arch4edu\]" $Pacman_conf_file &>/dev/null ; then
-            echo  "$arch4edu_source" >> "$Pacman_conf_file"
-        fi
-    fi
-    if [[ "$(Config_File_Manage CONF Read "Archlinucn")" = "yes" ]]; then
-        if ! grep -E "^\[archlinuxcn\]" $Pacman_conf_file &>/dev/null ; then
-            echo "$archlinuxcn_source" >> "$Pacman_conf_file" 
-            pacman -Sy --needed --noconfirm archlinuxcn-keyring
-            pacman-key --populate archlinuxcn
-        fi
-    fi
+    case "$(Config_File_Manage CONF Read "Arch4edu")" in 
+        [Yy]*)  if ! grep -E "^\[arch4edu\]" $Pacman_conf_file &>/dev/null ; then
+                    echo  "$arch4edu_source" >> "$Pacman_conf_file"
+                fi
+    esac
+    case "$(Config_File_Manage CONF Read "Archlinucn")" in 
+        [Yy]*)  if ! grep -E "^\[archlinuxcn\]" $Pacman_conf_file &>/dev/null ; then
+                    echo "$archlinuxcn_source" >> "$Pacman_conf_file" 
+                    pacman -Sy --needed --noconfirm archlinuxcn-keyring
+                    pacman-key --populate archlinuxcn
+                fi
+    esac
+    sed -i 's/##/#/g' "$Pacman_conf_file" # 清理配置后产生的多余符号(#)
 }
 
 # 写入新的镜像源 reflector真他妈慢
@@ -172,6 +175,9 @@ function arch_api_update() {
 
 
 function main(){
+    # 备份的文件夹
+    Source_Backup_Dir="/etc/pacman.d/backup"
+    Exec_Time=$(date +%k:%M-%Y:%m:%d)
     # 备份原本的源
     [ ! -d "$Source_Backup_Dir" ] &&  mkdir "$Source_Backup_Dir" 2> /dev/null 
     cp "$Pacman_conf_file" "$Source_Backup_Dir/pacman.conf.$Exec_Time" 2> /dev/null
@@ -193,4 +199,9 @@ function main(){
     echo "$(date -d "2 second" +"%Y-%m-%d %H:%M:%S")  mirrorlist=yes" >> /tmp/Arch_install.log
 }
 
+echo &>/dev/null
+include "$@"
+Pacman_conf_file="/etc/pacman.conf"
+MirrorList_file="/etc/pacman.d/mirrorlist"
+INFO_Country_Name=$(Config_File_Manage INFO Read Country_Name)
 main
