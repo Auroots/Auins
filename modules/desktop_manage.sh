@@ -151,7 +151,9 @@ function Set_Desktop_Env(){
         Desktop_Tuple[1]="$CONF_Desktop_Display_Manager"
     else # 使用用户输入的设置
         run_print_info desktop_env_list; 
-        printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}.\n" "${CheckingUsers:-$INFO_UserName}" "${CheckingID:-$INFO_UsersID}"
+        printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}.\n" \
+        "$INFO_UserName" "$INFO_UsersID"
+
         tips_white "Please select desktop"
         DESKTOP_ID="0"; ID=$(Read_user_input)
         if [ "$ID" ]; then 
@@ -216,7 +218,7 @@ function Desktop_Manager(){
 
 # @configure desktop environment
 function Desktop_Xorg_Config(){
-    if [ -e /home/"$CheckingUsers"/.xinitrc ];then
+    if [ -e /home/"$INFO_UserName"/.xinitrc ];then
         warn "Repeated execution !";sleep 1; 
     else
         # xinitrc_file="/etc/X11/xinit/xinitrc"
@@ -225,7 +227,7 @@ function Desktop_Xorg_Config(){
         # endLine=$(("$startLine" + "$lineAfter"))
         # sed -i "$startLine"','"$endLine"'d' "$xinitrc_file"
         echo "exec ${2}" >> /etc/X11/xinit/xinitrc 
-        cp -rf /etc/X11/xinit/xinitrc  /home/"$CheckingUsers"/.xinitrc 
+        cp -rf /etc/X11/xinit/xinitrc  /home/"$INFO_UserName"/.xinitrc 
         feed_status "[${white} ${Desktop_Name} ${green}]Desktop environment configuration completed." "xinitrc configuration failed." 
     fi
 }
@@ -235,7 +237,6 @@ function Installation_Desktop(){
     CONF_Desktop_Display_Manager=$(Config_File_Manage CONF Read "Desktop_Display_Manager")
     CONF_Desktop_Environment=$(Config_File_Manage CONF Read "Desktop_Environment")
 
-    INFO_UserName=$(Config_File_Manage INFO Read "Users")
     INFO_UsersID=$(id -u "$INFO_UserName" 2> /dev/null)
     if [ -n "$INFO_UserName" ]; then 
     #  设置桌面环境
@@ -269,4 +270,12 @@ echo &>/dev/null
 check_priv # 检查权限
 include "$@"
 Set_Color_Variable
+INFO_UserName=$(Config_File_Manage INFO Read "Users")
+# 附赠的壁纸
+if [[ -n "${INFO_UserName}" ]]; then
+    wget -P "/home/$INFO_UserName" "$SOURCE_LOCAL/gift_auins_0.png"
+    wget -P "/home/$INFO_UserName" "$SOURCE_LOCAL/gift_auins_1.jpg"
+fi
 Installation_Desktop
+
+

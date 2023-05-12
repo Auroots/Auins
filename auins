@@ -12,7 +12,7 @@ export config_File info_File
 
 # @ script source
 # auroot  |  gitee  |  github  |  test
-SCRIPTS_SOURCE="test"
+SCRIPTS_SOURCE="auroot"
 AUINS_VERSION="ArchLinux User Install Scripts v4.7" 
 # sed -i.bak 's/^aaa=yes/aaa=no/' [file] # 替换并备份
 # @脚本初始化
@@ -20,7 +20,7 @@ function Auins_Variable_init(){
     Auins_Dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd )
     [ "$Auins_Dir" = "/" ] && Auins_Dir=""
     AUINS_SCRIPT_NAME=auins
-    modules_Dir="${Auins_Dir}/share" 
+    modules_Dir="${Auins_Dir}/modules" 
     local_Dir="${Auins_Dir}/local" 
     config_File="${local_Dir}/profile.conf"  
     info_File="${local_Dir}/auins.info"  
@@ -29,7 +29,7 @@ function Auins_Variable_init(){
     Users_modules="${modules_Dir}/users_manage.sh"
     Partition_modules="${modules_Dir}/partition_disk.sh"
     Desktop_modules="${modules_Dir}/desktop_manage.sh"
-    Process_modules="${modules_Dir}/run_process_manage.sh"
+    Process_modules="${modules_Dir}/process_manage.sh"
     Fonts_modules="${modules_Dir}/fonts_manage.sh"
     Info_modules="${modules_Dir}/info_print.sh"
     Blarckarch_modules="${modules_Dir}/blackarch_strap.sh"
@@ -39,7 +39,6 @@ function Auins_Variable_init(){
     [ ! -d "$local_Dir" ] && mkdir -p "$local_Dir"
     [ ! -d "$modules_Dir" ] && mkdir -p "$modules_Dir"
     [ ! -f "$config_File" ] && touch "$config_File"
-
 }
 
 # modules模块使用方法
@@ -54,13 +53,13 @@ function run_configure_users(){
     bash "$Users_modules" "$config_File" "$info_File"
 }
 # 磁盘分区
-function run_run_configure_partition(){
+function run_configure_partition(){
     # 需要引用: 1:配置文件, 2:信息文件, 3:进程管理模块
     bash "$Partition_modules" "$config_File" "$info_File" "$Process_modules" || exit 1; 
     bash "${0}"
 }
 # blackarch配置模块, https://blackarch.org/strap.sh
-function run_run_blarckarch_script(){ 
+function run_blarckarch_script(){ 
     bash "$Blarckarch_modules"
 }
 # 桌面安装与配置
@@ -256,7 +255,7 @@ function Script_init(){
             # Detect Archiso Version 检查 LiveCD 版本 并提醒更新
             # entries_livecd="/run/archiso/airootfs"  # discern: liveCD
             if [ -d /run/archiso/airootfs ]; then 
-                # Home list (LiveCD_Model \ Normal_Model)
+                # Home list (LiveCD_Mode \ Normal_Mode)
                 echo "Yes" > "$local_Dir"/LiveCD 2> /dev/null
             else 
                 Normals="yes"; 
@@ -272,20 +271,21 @@ function Update_Share(){
     # 根据配置文件选择源, 将其作为脚本的下载源 Module URL: Default settings
     function auins_download_url(){
         case ${1} in
-            "gitee"  ) SOURCE="https://gitee.com/auroot/Auins/raw/master" ;;
+            "gitee"  ) SOURCE="https://gitee.com/auroot/Auins/raw/main" ;;
             "github" ) SOURCE="https://raw.githubusercontent.com/Auroots/Auins/main";;
             "auroot" ) SOURCE="http://auins.auroot.cn" ;;
             "test"   ) SOURCE="http://test.auroot.cn" 
         esac
         SOURCE_MODULES="${SOURCE}/modules"
         SOURCE_LOCAL="${SOURCE}/local"
-        Auins_source
+        Config_File_Manage CONF Write modules_source "$SOURCE_MODULES"
+        Config_File_Manage CONF Write local_source "$SOURCE_LOCAL"
     }
     # 检查与审核文件是否存在或为空, 1.如果不存在则下载, 2.如果为空则删除, 3,如果本地与云端不一致将自动更新
     function audit_file() {
         local directory=$1; file_path=$2; file_name=$(echo "$file_path" | awk -F"/" '{print $NF}')
         case $directory in 
-            [Ss]*) SOURCE_URL="${SOURCE}/share";;
+            [Mm]*) SOURCE_URL="${SOURCE}/modules";;
             [Ll]*) SOURCE_URL="${SOURCE}/local"
         esac
         if [ -z "$(cat "$config_File")" ]; then
@@ -316,14 +316,14 @@ function Update_Share(){
     function download_script(){
         audit_file local "$config_File"
         audit_file local "$info_File"
-        audit_file share "$Info_modules"  
-        audit_file share "$Mirrorlist_modules"
-        audit_file share "$Users_modules"
-        audit_file share "$Partition_modules"
-        audit_file share "$Desktop_modules"
-        audit_file share "$Fonts_modules"
-        audit_file share "$Process_modules"
-        audit_file share "$Blarckarch_modules"
+        audit_file modules "$Info_modules"  
+        audit_file modules "$Mirrorlist_modules"
+        audit_file modules "$Users_modules"
+        audit_file modules "$Partition_modules"
+        audit_file modules "$Desktop_modules"
+        audit_file modules "$Fonts_modules"
+        audit_file modules "$Process_modules"
+        audit_file modules "$Blarckarch_modules"
         # 更新auins
         case $(Config_File_Manage CONF Read Now_update_auins) in
         [Yy]*)
@@ -898,7 +898,7 @@ function Configure_System(){
         
         Configure_Language
 
-        rm -rf "$local_Dir"/Config_System; # 删除这个文件，才能进 Normal_Model  
+        rm -rf "$local_Dir"/Config_System; # 删除这个文件，才能进 Normal_Mode
         if [ "$(Config_File_Manage CONF Read "Archlinucn")" = "yes" ]; then Install_Program archlinuxcn-keyring; fi
         feed_status "archlinuxcn-keyring installation successfully." "archlinuxcn-keyring installation failed."
         run_configure_fonts Config_file_install_fonts 
@@ -921,7 +921,7 @@ function Delete_Script(){
 }     
 
 # @ Archiso LiveCD 下自动启用
-function LiveCD_Model(){
+function LiveCD_Mode(){
     run_print_info logos "$CHROOT_PATTERNS_PRINT" "$START_PATTERNS"
     # 检查archiso版本，如果过低，叫提醒更新
     if [[ $ChrootPatterns == "Chroot-OFF" ]]; then
@@ -966,7 +966,7 @@ function LiveCD_Model(){
 }
 
 # @ 安装完Archlinux后 正常可用情况下自动启用
-function Normal_Model(){
+function Normal_Mode(){
     CONF_BlackArch=$(Config_File_Manage CONF Read "BlackArch")
     INFO_BlackArch=$(Config_File_Manage INFO Read "BlackArch")
     [[ $INFO_BlackArch == "" ]] && Config_File_Manage INFO Write BlackArch no
@@ -1050,10 +1050,10 @@ function Auins_Options(){
         -e | --edit-conf  ) 
                             vim "${config_File}" 
                             exit 0 ;;
-        -f | --view-conf  ) 
+        -f | --show-conf  ) 
                             less "${config_File}" 
                             exit 0 ;;
-        -i | --view-info  ) 
+        -i | --show-info  ) 
                             clear; less "${info_File}" 
                             exit 0 ;;
         -c | --clean-cache) 
@@ -1091,20 +1091,20 @@ function exec_mode(){
             fi 
             if [ -e "$local_Dir"/LiveCD ]; then 
                 START_PATTERNS="LiveCD"
-                LiveCD_Model; 
+                LiveCD_Mode
             fi 
-            case $Normals in [Yy]*)  START_PATTERNS="Normal"; Normal_Model; esac
+            case $Normals in [Yy]*)  START_PATTERNS="Normal"; Normal_Mode; esac
         ;;
         Chroot-ON) 
             CHROOT_PATTERNS_PRINT="Chroot-ON"
             Chroot_status="${outG}  ${wg}Successfully start: Chroot.${suffix}"
             if [ -e "$local_Dir"/Config_System ]; then 
                 START_PATTERNS="LiveCD"
-                LiveCD_Model; 
+                LiveCD_Mode
             else 
                 START_PATTERNS="Normal"
                 Normals="yes"
-                Normal_Model
+                Normal_Mode
             fi
     esac
 }
@@ -1141,39 +1141,9 @@ exec_mode $ChrootPatterns
 # >> >> >> >> >> >> >> >> >> >> >> >>
 # @待解决的问题 
 : << EOF
-    - [x] 优化: 部分语法;
-    - [x] 检查: reflector报错的问题(不影响正常使用);
-    - [ ] 新增: (v4.5)快照备份软件(timeshift)，开启方式：配置文件，默认开启;
-    - [x] 修改: (v4.5)配置系统不再自动安装字体,只有安装桌面环境后,才会提示;
-    - [?] 修复: (v4.5)解决不输入Root密码,自动跳过; ?检查代码未发现问题
-    - [x] 修复: (v4.5)解决设置Swap大小不成功或自动跳过的问题,注意: ext[2-4]以外的文件系统不正常swap文件;
-    - [x] 修复: (v4.5)选择磁盘时,无法识别nvme名称;
-    - [x] 修复: (v4.5)非root权限运行脚本时,不会终止;
-    - [x] 修复: (r4)无法正确配置时区;
-    - [x] 新增: (r5)pacman多线程下载(axel)，开启方式：配置文件中或脚本选项;
-    - [x] 新增: (r5)输入法(ibus-rime)，开启方式：配置文件中或脚本选项;
-    - [x] 新增: (r5)脚本选项逻辑,加入set选项,将设置选项归类;
-    - [x] 新增: (r5)独立的字体安装模块;
-    - [x] 新增: (r5)独立的信息输出模块;
-    - [x] 修复: (r5)Process_Manage无法关闭多个进程;
-    - [x] 修复: (r6)首页信息输出不全;
-    - [x] 修改: (r6)archiso第一个月的更新提示,只在脚本结束任务后显示;
-    - [x] 新增：(r7)加入BlackArch setup脚本;
-    - [x] 新增：(r7)随时更新脚本的功能,在 profile.conf 中开启;
-    - [x] 修复：(r7)USB无线网卡无法正常识别;
-    - [x] 修复: (r7)修补桌并完善桌面模块;
-    - [x] 新增: (r8)多网卡时,按顺序显示网卡名与IP;
-    - [x] 新增: reflector自动更新所在国家的镜像站,不再使用固定的
-    - [x] 修复: (r8)修复配置用户时,概率性不显示配置界面的问题;
-    - [x] 修复: (r8)修复swap文件创建后,不会自动挂载;
-    - [x] 修复: (r9)在首页新增"用户配置"和"字体安装"选项,防止在配置系统时未成功,导致无法进行下一步;
-    - [x] 修复: (r9)重构部分代码;
+    - [ ] 💻新增: (v4.5)快照备份软件(timeshift)，开启方式：配置文件，默认开启;
+    - [ ] 💻脚本：[v5.0]Beta s2arch.sh Archlinux can be installed on VPS;
+    - [ ] ⏳  尝试加入Wayland的桌面环境，比如：Sway，Plasma-Wayland等等；
+    - [ ] ⏳  会继续尝试DWM桌面环境；
+    - [ ] ⏳  会尝试维护Openbox桌面环境；
 EOF
-
-# 创建临时目录,脚本退出后自动删除,正常运行时,cd到目录
-# make a temporary directory and cd into
-# function make_tmp_dir(){
-#     tmp="$(mktemp -d /tmp/Auins_strap.XXXXXXXX)"
-#     trap 'rm -rf $tmp' EXIT
-#     cd "$tmp" || err "Could not enter directory $tmp"
-# }

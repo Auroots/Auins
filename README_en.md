@@ -12,7 +12,7 @@
   </a>
 </p>
 <h1 align="center">
-  <a href="https://github.com/Auroots/Auins" alt="logo" ><img src="https://gitee.com/auroot/Auins/raw/master/local/Auins.png" width="1000"/></a>
+  <a href="https://github.com/Auroots/Auins" alt="logo" ><img src="https://gitee.com/auroot/Auins/raw/main/local/Auins.png" width="1000"/></a>
   <br>
 </h1>
 <h3>
@@ -34,7 +34,7 @@
 # auroot.cn 
 curl -fsSL http://auins.auroot.cn > auin.sh  
 #Gitee
-curl -fsSL https://gitee.com/auroot/Auins/raw/master/auin.sh > auin.sh
+curl -fsSL https://gitee.com/auroot/Auins/raw/main/auin.sh > auin.sh
 # Github
 curl -fsSL https://raw.githubusercontent.com/Auroots/Auins/main/auin.sh > auin.sh
 # exec
@@ -68,26 +68,28 @@ usage: auins [-h] [-V] command ...
         fcitx   Automatic installation 'fcitx' input method, Other options: [-R].
         ibus    Automatic installation 'ibus-rime' input method, Other options: [-R].
         axel    Automatic installation 'Axel' (Pacman multi threaded download), Other options: [-R].
-        inGpu   Install Video card driver ( "Nvidia" \ "Amdgpu" ).
-        inVmt   Install Vmware/Virtualbox Tools and exit.
-        
+        inGpu   Install Video card driver: ( "Nvidia" \ "Amdgpu" ).
+        inVmt   Install Virtualization Tools: ( "Vmware" \ "Virtualbox" ).
+        black   Installing BlackArch on ArchLinux. (https://blackarch.org/strap.sh)
+
     Settings Options:
-        -m, --mirror        Automatically configure mirrorlist file and exit.
-        -w, --wifi          Connect to a WIFI and exit.
-        -s, --openssh       Open SSH service (default password: 123456) and exit.
+        -m, --mirror        Automatically configure mirrorlist file.
+        -w, --wifi          Connect to a WIFI.
+        -s, --openssh       Open SSH service (password: 123456).
              
     Global Options:
+            --update        Auins and modules are updated in real time, Options: [enable], [disable].
         -e, --edit-conf     Edit ("local/profile.conf").
-        -f, --view-conf     View ("local/profile.conf").
-        -i, --view-info     View ("local/auins.info").
-        -c, --clean-cache   Delete scripts and other caches.
-        -h, --help          Show this help message and exit.
-        -v, --version       Show the conda version number and exit.
+        -f, --show-conf     Show ("local/profile.conf").
+        -i, --show-info     Show ("local/auins.info").
+        -c, --clean-cache   Delete auins and other caches.
+        -h, --help          Show help message.
+        -v, --version       Show the auins version.
 ```
 
 
 
-## :sparkles: Features  [Desktop renderings](https://gitee.com/auroot/Auins/blob/master/doc/Picture.md)
+## :sparkles: Features  [Desktop renderings](https://gitee.com/auroot/Auins/blob/main/doc/Picture.md)
 
 - ⏳ The script homepage can check whether it is currently in `Chroot` model `[ON] / [OFF]`.
 - 🔗 Script homepage shows `IP address`，Tip: Connect SSH service command.

@@ -133,9 +133,11 @@ function normal_home_list(){
 ${outB}\t${white}[${blue}1${white}]${green} Configure Mirrorlist  ${suffix}
 ${outB}\t${white}[${blue}2${white}]${green} Configure Network     ${suffix}
 ${outG}\t${white}[${blue}3${white}]${green} Configure SSH         ${suffix}
-${outY}\t${white}[${blue}4${white}]${green} Installation Desktop  ${suffix}
-${outY}\t${white}[${blue}5${white}]${green} Installation Drive    ${suffix}
-${outY}\t${white}[${blue}6${white}]${green} Install virtual tools ${suffix}
+${outY}\t${white}[${blue}4${white}]${green} Configure Users       ${suffix}
+${outY}\t${white}[${blue}5${white}]${green} Installation Desktop  ${suffix}
+${outY}\t${white}[${blue}6${white}]${green} Installation Fonts    ${suffix}
+${outY}\t${white}[${blue}11${white}]${green} Installation Drive    ${suffix}
+${outY}\t${white}[${blue}22${white}]${green} Install virtual tools ${suffix}
 ${outY}\t${white}[${red}D${white}]${green} Delete auins & caches  ${suffix}
 ${outR}\t${white}[${red}Q${white}]${green} Exit Auins             ${suffix}"   
 }
@@ -155,12 +157,13 @@ function livecd_system_module_list(){
     echo -e "
 \n\t${white}*** ${red}Install System Module ${white}***${suffix}  
 ---------------------------------------------
-${outY} \t${white}[${blue}1${white}]${green}  Disk Partition         ${red}**${suffix}
-${outY} \t${white}[${blue}2${white}]${green}  Install System Files   ${red}**${suffix}
-${outY} \t${white}[${blue}3${white}]${green}  Configurt System       ${red}**${suffix}
-${outG} \t${white}[${blue}4${white}]${green}  Installation Desktop    ${blue}*${suffix}
-${outG} \t${white}[${blue}11${white}]${green}${green} Installation Drive      ${blue}*${suffix}
-${outY} \t${white}[${blue}22${white}]${green}${green} Install virtual tools   ${blue}*${suffix}" 
+${outY} \t${white}[${blue}1${white}]${green}  Disk Partition        \t${red}**${suffix}
+${outY} \t${white}[${blue}2${white}]${green}  Install System Files  \t${red}**${suffix}
+${outY} \t${white}[${blue}3${white}]${green}  Configurt System      \t${red}**${suffix}
+${outY} \t${white}[${blue}4${white}]${green}  Configure Users       \t${red}**${suffix}
+${outG} \t${white}[${blue}5${white}]${green}  Installation Desktop  \t${blue}*${suffix}
+${outG} \t${white}[${blue}11${white}]${green}${green} Installation Drive    \t${blue}*${suffix}
+${outY} \t${white}[${blue}22${white}]${green}${green} Install virtual tools \t${blue}*${suffix}" 
 }
 
 # @系统安装成功, 直奔加入chroot的提示信息
@@ -236,22 +239,23 @@ usage: auins [-h] [-V] command ...
         fcitx   Automatic installation 'fcitx' input method, Other options: [-R].
         ibus    Automatic installation 'ibus-rime' input method, Other options: [-R].
         axel    Automatic installation 'Axel' (Pacman multi threaded download), Other options: [-R].
-        inGpu   Install Video card driver ( \"Nvidia\" \ \"Amdgpu\" ).
-        inVmt   Install Vmware/Virtualbox Tools and exit.
+        inGpu   Install Video card driver: ( \"Nvidia\" \ \"Amdgpu\" ).
+        inVmt   Install Virtualization Tools: ( \"Vmware\" \ \"Virtualbox\" ).
         black   Installing BlackArch on ArchLinux. (https://blackarch.org/strap.sh)
 
     Settings Options:
-        -m, --mirror        Automatically configure mirrorlist file and exit.
-        -w, --wifi          Connect to a WIFI and exit.
-        -s, --openssh       Open SSH service (default password: 123456) and exit.
+        -m, --mirror        Automatically configure mirrorlist file.
+        -w, --wifi          Connect to a WIFI.
+        -s, --openssh       Open SSH service (password: 123456).
              
     Global Options:
+            --update        Auins and modules are updated in real time, Options: [enable], [disable].
         -e, --edit-conf     Edit (\"local/profile.conf\").
-        -f, --view-conf     View (\"local/profile.conf\").
-        -i, --view-info     View (\"local/auins.info\").
-        -c, --clean-cache   Delete scripts and other caches.
-        -h, --help          Show this help message and exit.
-        -v, --version       Show the conda version number and exit.
+        -f, --show-conf     Show (\"local/profile.conf\").
+        -i, --show-info     Show (\"local/auins.info\").
+        -c, --clean-cache   Delete auins and other caches.
+        -h, --help          Show help message.
+        -v, --version       Show the auins version.
         "
 }
 

@@ -40,6 +40,14 @@ function err(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 1)[ x Error ] 
 function run() { echo -e "\033[1;37m:: $(tput bold; tput setaf 2)[ + Exec ] => \033[1;32m${*}\033[0m$(tput sgr0)"; }
 # Skip message wrapper
 function skip() { echo -e "\033[1;37m:: $(tput bold; tput setaf 0)[ - Skip ] => ${*}\033[0m$(tput sgr0)"; }
+  # feedback successfully info
+function feed_status(){ 
+    if [ $? = 0 ]; then 
+        echo -e "\033[1;37m:: $(tput bold; tput setaf 2)=> \033[1;32m${1}\033[0m$(tput sgr0)"; 
+    else 
+        err "$2"
+    fi
+}
 
 # 地址: auins.info(INFO)| script.conf(CONF)
 # 读取: Config_File_Manage [INFO/CONF] [Read] [头部参数]
@@ -96,7 +104,7 @@ function Install_Program() {
 
 # 安装JetBrainsFira字体(code)
 function InstallJetBrainsFira(){
-    if wget -P "$local_Dir" "${_source}/JetBrains_Fira_Fonts.zip"; then
+    if wget -P "$local_Dir" "${CONF_local_source}/JetBrains_Fira_Fonts.zip"; then
         mkdir -p /usr/share/fonts
         unzip -d /usr/share/fonts "${local_Dir}/JetBrains_Fira_Fonts.zip"
         fc-cache
@@ -192,8 +200,11 @@ function Script_Runing_install_fonts(){
 echo &>/dev/null
 check_priv
 include "$@"
-_source=$(Config_File_Manage CONF Read "Auins_source")
+CONF_local_source=$(Config_File_Manage CONF Read local_source)
+[[ $CONF_local_source == "" ]] && auins &>/dev/null
+feed_status "" "Please update mirror." 
 
+# feed_status
 # @该死的颜色
 red='\033[1;31m'; green='\033[1;32m'  
 yellow='\033[1;33m'; #blue='\033[1;36m'  
