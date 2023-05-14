@@ -1,102 +1,43 @@
 #!/bin/bash
 # Author: Auroot
 # QQ： 2763833502
-# Description：Install Fonts -> Auins v4.7
+# Description：Install Fonts -> Auins v4.7.1
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins   
+set -xe
+
 function include(){
-    set +e
     declare -a argu=("$@")
     # declare -p argu
-    export local_Dir config_File info_File print_info fonts_install process option
+    export local_Dir config_File info_File 
+    export Tools_modules Info_modules  
+    export option other_option_1
     config_File="${argu[0]}"
     info_File="${argu[1]}"
     local_Dir="${argu[2]}"
-    Info_modules="${argu[3]}"
-    Process_modules="${argu[4]}"
+    Tools_modules="${argu[3]}"
+    Info_modules="${argu[4]}"
     option="${argu[5]}"
     other_option_1="${argu[6]}"
-    set -e
+}
+# 小型重复性高的模块调用管理器
+function run_tools(){
+    bash "$Tools_modules" "$config_File" "$info_File" "$1" "$2" "$3" "$4" "$5"
 }
 # 信息打印,详细参数看auins
 function run_print_info(){
-    bash "$Info_modules" "$config_File" "$info_File" "$1" "$2" "$3"
-}
-# 脚本进程管理,详细参数看auins
-function run_process_manage(){
-    bash "$Process_modules" "$1" "$2" "$3"
-}
-
-# @获取用户输入，并返回
-function Read_user_input(){ local user_input; read -r user_input; echo "$user_input"; }
-# Tips output colour: white
-function tips_white() { printf "\033[1;37m:: $(tput bold; tput setaf 2)\033[1;37m%s \033[1;32m-+> \033[0m$(tput sgr0)" "${*}"; }
-# Error message wrapper
-function err(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 1)[ x Error ] => \033[1;31m${*}\033[0m$(tput sgr0)"; exit 255; } 
-# Warning message wrapper
-# function warn(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 3)[ ! Warning ] => \033[1;33m${*}\033[0m$(tput sgr0)"; }
-# Run message wrapper
-function run() { echo -e "\033[1;37m:: $(tput bold; tput setaf 2)[ + Exec ] => \033[1;32m${*}\033[0m$(tput sgr0)"; }
-# Skip message wrapper
-function skip() { echo -e "\033[1;37m:: $(tput bold; tput setaf 0)[ - Skip ] => ${*}\033[0m$(tput sgr0)"; }
-  # feedback successfully info
-function feed_status(){ 
-    if [ $? = 0 ]; then 
-        echo -e "\033[1;37m:: $(tput bold; tput setaf 2)=> \033[1;32m${1}\033[0m$(tput sgr0)"; 
-    else 
-        err "$2"
-    fi
-}
-
-# 地址: auins.info(INFO)| script.conf(CONF)
-# 读取: Config_File_Manage [INFO/CONF] [Read] [头部参数]
-# 写入: Config_File_Manage [INFO/CONF] [Write] [头部参数] [修改内容]
-function Config_File_Manage(){ 
-    local format=" = "; parameter="$3"; content="$4"; itself=$(echo "$0" | awk -F"/" '{print $NF}')
-    case "$1" in
-        CONF) local Files="$config_File" ;;
-        INFO) local Files="$info_File" ;;
-    esac
-    case "$2" in
-        Read ) 
-                read_info=$(grep -w "$parameter" < "$Files") # 在文件中查找匹配的值
-                if [ -n "$read_info" ]; then 
-                    echo "$read_info" | awk -F "=" '{print $2}' | awk '{sub(/^[\t ]*/,"");print}' | awk '{sub(/[\t ]*$/,"");print}' 
-                else
-                    warn "${white}$itself ${yellow}Read file: ${white}$Files${yellow} missing value: [${white} $parameter  ${yellow}]."
-                    sleep 3
-                fi
-         ;;
-        Write) 
-                List_row=$(grep -nw "$parameter" < "$Files" | awk -F ":" '{print $1}';) # 在文件中查找匹配的值, 并打印行号
-                if [ -n "$List_row" ]; then
-                    sed -i "${List_row}c ${parameter}${format}${content}" "$Files" 2>/dev/null
-                else
-                    warn "${white}$itself ${yellow}Write file: ${white}$Files${yellow} missing value: [${white} $parameter  ${yellow}] + [${white} $content ${yellow}]."
-                    sleep 3
-                fi
-    esac 
-}
-
-# check for root privilege
-function check_priv()
-{
-  if [ "$(id -u)" -ne 0 ]; then
-    # err "you must be root"
-    err "Please use command: ${white}\"sudo\"${red} or user: ${white}\"root\"${red} to execute.${suffix}"
-  fi
+    bash "$Info_modules" "$config_File" "$info_File" "$Tools_modules" "$1" "$2" "$3"
 }
 
 # @install Programs 安装包
 function Install_Program() {
-    # arch-chroot ${MNT_DIR} bash -c "$COMMAND"
     set +e
     IFS=' '; PACKAGES=("$@");
     for VARIABLE in {1..3}
     do
         local COMMAND="pacman -Syu --noconfirm --needed ${PACKAGES[@]}"
-        if ! bash -c "$COMMAND" ; then break; else sleep 3; break; fi
+        if ! bash -c "$COMMAND" ; then break; else sleep 1.5; break; fi
     done
     echo "$VARIABLE" &> /dev/null
     set -e
@@ -114,114 +55,117 @@ function InstallJetBrainsFira(){
 }
 # 根据配置文件安装相应的字体
 function Config_file_install_fonts(){
+    export Common_status Adobe_status JetBrainsFira_status
     Common_status="false" 
     Adobe_status="false" 
     JetBrainsFira_status="false"
     
-    CONF_Install_Font_Common=$(Config_File_Manage CONF Read "Install_Font_Common")
-    CONF_Install_Font_Adobe=$(Config_File_Manage CONF Read "Install_Font_Adobe")
-    CONF_Install_Font_JetBrains_Fira=$(Config_File_Manage CONF Read "Install_Font_JetBrains_Fira")
-
-    CONF_PGK_FONTS=$1
-    CONF_PGK_FONTS_ADOBE=$2
-
     case $CONF_Install_Font_Common in
-        [Yy]* )  run "Installing [ ${white}Common fonts${green} ]."; sleep 2s 
-                Install_Program "$CONF_PGK_FONTS"; Common_status="true" ;; 
-            * )  skip "[ Common fonts ]."
+        [Yy]* )  
+                run_tools "run" "Installing [ ${white}Common fonts${green} ]."
+                sleep 0.5
+                Install_Program "$CONF_PGK_FONTS"
+                Common_status="true" ;; 
+        [Nn]* )  
+                run_tools "skip" "[ Common fonts ]."
     esac   
     case $CONF_Install_Font_Adobe in
-        [Yy]* )  run "Installing [ ${white}Adobe fonts${green} ]."; sleep 2s
-                Install_Program "$CONF_PGK_FONTS_ADOBE"; Adobe_status="true" ;;
-            * )  skip "[ Adobe fonts ]."
+        [Yy]* )  
+                run_tools "run" "Installing [ ${white}Adobe fonts${green} ]."
+                sleep 0.5
+                Install_Program "$CONF_PGK_FONTS_ADOBE"
+                Adobe_status="true" ;;
+        [Nn]* )  
+                run_tools "skip" "[ Adobe fonts ]."
     esac
     case $CONF_Install_Font_JetBrains_Fira in
-        [Yy]* )  run "Installing [ ${white}JetBrains / Fira fonts${green} ]."; sleep 2s 
-                InstallJetBrainsFira; JetBrainsFira_status="true" ;;
-            * )  skip "[ JetBrains / Fira fonts ]."
+        [Yy]* )  
+                run_tools "run" "Installing [ ${white}JetBrains / Fira fonts${green} ]."
+                sleep 0.5
+                InstallJetBrainsFira
+                JetBrainsFira_status="true" ;;
+        [Nn]* )  
+                run_tools "skip" "[ JetBrains / Fira fonts ]."
     esac 
 }
 # 根据用户选项安装相应的字体
 function User_options_install_fonts(){
     local option=$1
-    CONF_PGK_FONTS=$2
-    CONF_PGK_FONTS_ADOBE=$3
     case ${option} in
         all)
-            run "Installing [ All fonts ]."; sleep 1s
+            run_tools "run" "Installing [ All fonts ]."; sleep 1s
             Install_Program "$CONF_PGK_FONTS"
             Install_Program "$CONF_PGK_FONTS_ADOBE"
-            InstallJetBrainsFira
-            ;;
+            InstallJetBrainsFira ;;
         common)
-            run "Installing [ Common fonts ]."; sleep 1s
-            Install_Program "$CONF_PGK_FONTS"
-            ;;
+            run_tools "run" "Installing [ Common fonts ]."; sleep 1s
+            Install_Program "$CONF_PGK_FONTS" ;;
         adobe)
-            run "Installing [ Adobe fonts ]."; sleep 1s
-            Install_Program "$CONF_PGK_FONTS_ADOBE"
-            ;;
+            run_tools "run" "Installing [ Adobe fonts ]."; sleep 1s
+            Install_Program "$CONF_PGK_FONTS_ADOBE" ;;
         code)
-            run "Installing [ JetBrains / Fira fonts ]."; sleep 1s 
-            InstallJetBrainsFira 
-            ;;
+            run_tools "run" "Installing [ JetBrains / Fira fonts ]."; sleep 1s 
+            InstallJetBrainsFira ;;
         *)
             echo -e "${white}::${yellow} [ Usage ] =>${suffix} ${green}${0##*/} font [all] ${white}or ${green}[commin] ${white}or ${green}[adobe]${white} or ${green}[code]${white}.${suffix}"
-            err "Input error or the option does not exist."
-        ;;
+            run_tools "err" "Input error or the option does not exist."
     esac 
 }
 # 脚本运行时，由脚本自动判断，自动安装配置文件中的选项，另外询问是否安装其他
 # 'Droid Sans Mono', 'monospace', monospace
 function Script_Runing_install_fonts(){
-    CONF_PGK_FONTS=$1
-    CONF_PGK_FONTS_ADOBE=$2
+    Config_file_install_fonts
 
-    Config_file_install_fonts "$CONF_PGK_FONTS" "$CONF_PGK_FONTS_ADOBE"
     if [[ $Common_status == "false" ]]; then
-        tips_white "Whether to install the [ Common fonts ] [Y/n]?"
-        case $(Read_user_input) in
-            [Yy]* ) Install_Program "$CONF_PGK_FONTS";;
-        esac 
-    elif [[ $Adobe_status == "false" ]]; then
-        ptips_white "Whether to install the [ Adobe fonts ] [Y/n]?"
-        case $(Read_user_input) in
-            [Yy]* ) Install_Program "$CONF_PGK_FONTS_ADOBE";;
+        run_tools "tips_w" "Whether to install the [ Common fonts ] [Y/n]?"
+        case $(run_tools read) in
+            [Yy]* ) 
+                Install_Program "$CONF_PGK_FONTS"
         esac
-    elif [[ $JetBrainsFira_status == "false" ]]; then
-        ptips_white "Whether to install the [ JetBrainsFira fonts (code) ] [Y/n]?"
-        case $(Read_user_input) in
-            [Yy]* ) InstallJetBrainsFira;;
+    fi
+    if [[ $Adobe_status == "false" ]]; then
+        run_tools "tips_w" "Whether to install the [ Adobe fonts ] [Y/n]?"
+        case $(run_tools read) in
+            [Yy]* ) 
+                Install_Program "$CONF_PGK_FONTS_ADOBE"
+        esac
+    fi
+    if [[ $JetBrainsFira_status == "false" ]]; then
+        run_tools "tips_w" "Whether to install the [ JetBrainsFira fonts (code) ] [Y/n]?"
+        case $(run_tools read) in
+            [Yy]* ) 
+                InstallJetBrainsFira
         esac
     fi 
 }
 
 # 具体的实现 >> >> >> >> >> >> >> >> 
 echo &>/dev/null
-check_priv
 include "$@"
-CONF_local_source=$(Config_File_Manage CONF Read local_source)
-[[ $CONF_local_source == "" ]] && auins &>/dev/null
-feed_status "" "Please update mirror." 
+run_tools "ck_p"
+CONF_local_source=$(run_tools file_rw CONF Read local_source)
+run_tools "feed" "local_source: $CONF_local_source" "Please update mirror." 
 
-# feed_status
+# 获取配置文件中的软件包名
+export CONF_PGK_FONTS CONF_PGK_FONTS_ADOBE CONF_Install_Font_Common CONF_Install_Font_Adobe CONF_Install_Font_JetBrains_Fira
+CONF_PGK_FONTS=$(run_tools file_rw  CONF Read "PGK_Fonts")
+CONF_PGK_FONTS_ADOBE=$(run_tools file_rw  CONF Read "PGK_Fonts_Adobe")
+CONF_Install_Font_Common=$(run_tools file_rw  CONF Read "Install_Font_Common")
+CONF_Install_Font_Adobe=$(run_tools file_rw  CONF Read "Install_Font_Adobe")
+CONF_Install_Font_JetBrains_Fira=$(run_tools file_rw  CONF Read "Install_Font_JetBrains_Fira")
 # @该死的颜色
-red='\033[1;31m'; green='\033[1;32m'  
+# red='\033[1;31m'; 
+green='\033[1;32m'  
 yellow='\033[1;33m'; #blue='\033[1;36m'  
 white='\033[1;37m'; suffix='\033[0m'  
 
-# 获取配置文件中的软件包名
-# CONF_PGK_FONTS=$(Config_File_Manage CONF Read "PGK_Fonts")
-# CONF_PGK_FONTS_ADOBE=$(Config_File_Manage CONF Read "PGK_Fonts_Adobe")
-# # 获取配置文件中的用户设置
-
-case ${option} in
+case $option in
     # 根据配置文件安装相应的字体
-    "Config_file_install_fonts") Config_file_install_fonts "$CONF_PGK_FONTS" "$CONF_PGK_FONTS_ADOBE" ;;
+    "Config_file_install_fonts") Config_file_install_fonts ;;
     # 根据用户选项安装相应的字体
-    "User_options_install_fonts") User_options_install_fonts "$other_option_1" "$CONF_PGK_FONTS" "$CONF_PGK_FONTS_ADOBE" ;;
+    "User_options_install_fonts") User_options_install_fonts "$other_option_1" ;;
     # 脚本运行时，由脚本自动判断，自动安装配置文件中的选项，另外询问是否安装其他
-    "Script_Runing_install_fonts") Script_Runing_install_fonts "$CONF_PGK_FONTS" "$CONF_PGK_FONTS_ADOBE" ;;
+    "Script_Runing_install_fonts") Script_Runing_install_fonts ;;
     *) ;;
 esac 
 

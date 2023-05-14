@@ -1,7 +1,32 @@
 ## Auins Script update log
 
-- [**2022.12.1**]  v4.5.3 Update Notes New additions and improvements：
+-   [**2023.5.12**]  v4.7 Update Notes New additions and improvements：
+    -   [x] Modify: Configure the system to no longer automatically install fonts, and only prompt after installing the desktop environment;
+    -   [x] Fix: Resolve not entering Root password and automatically skip? No issues found during code inspection
+    -   [x] Fix: Resolve the issue of unsuccessful or automatic skip setting of swap size. Note: file systems other than ext[2-4] may not swap files properly;
+    -   [x] Fix: Unable to recognize nvme name when selecting disk;
+    -   [x] Fix: When running a script with non root privileges, it will not terminate;
+    -   [x] Fix: Unable to configure time zone correctly;
+    -   [x] New: pacman multithreaded download (axel), opening method: configuration file or script option;
+    -   [x] New: Input method (ibus time), enable method: configuration file or script option;
+    -   [x] Add: Script option logic, add set option, and classify the set options;
+    -   [x] New: Independent font installation module;
+    -   [x] New: Independent information output module;
+    -   [x] Fix: Process_ Manage cannot shut down multiple processes;
+    -   [x] Fix: Incomplete homepage information output;
+    -   [x] Modify: The update prompt for the first month of archiso will only be displayed after the script ends the task;
+    -   [x] New: Add BlackArch setup script;
+    -   [x] New: The function of updating scripts at any time can be enabled in profile. conf;
+    -   [x] Repair: USB wireless network card cannot be recognized properly;
+    -   [x] Repair: Repair the table and improve the desktop module;
+    -   [x] New: When there are multiple network cards, display the network card name and IP in order;
+    -   [x] New: Reflector automatically updates the mirror station in the country where it is located, no longer using fixed
+    -   [x] Fix: Fixed the issue of probability not displaying the configuration interface when configuring users;
+    -   [x] Fix: Fix that after creating the swap file, it will not automatically mount;
+    -   [x] Fix: New “Set user” and“Font installation” options on the home page, prevents the system from being unable to be configured next;
+    -   [x] Fix: Refactoring part of the code;
 
+-   [**2022.12.1**]  v4.5.3 Update Notes New additions and improvements：
   - [x] Solve the problem that the script cannot be started for the system under BOIS boot;
   - [x] Solve sudoer configuration problems;
   - [x] Solve the problem that no information is recorded after setting users;

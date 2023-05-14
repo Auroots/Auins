@@ -1,7 +1,7 @@
 #!/bin/bash
 # Author: Auroot
 # QQ： 2763833502
-# Description：INFO Print -> Auins v4.7
+# Description：INFO Print -> Auins v4.7.1
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
@@ -15,46 +15,18 @@ function include(){
     export config_File info_File option other_option_1 other_option_2 other_option_3
     config_File="${argu[0]}"
     info_File="${argu[1]}"
-    option="${argu[2]}"
-    other_option_1="${argu[3]}"
-    other_option_2="${argu[4]}"
+    Tools_modules="${argu[2]}"
+    option="${argu[3]}"
+    other_option_1="${argu[4]}"
+    other_option_2="${argu[5]}"
     set -e
 }
-
-# Warning message wrapper
-function warn(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 3)[ ! Warning ] => \033[1;33m${*}\033[0m$(tput sgr0)"; }
-# 地址: auins.info(INFO)| script.conf(CONF)
-# 读取: Config_File_Manage [INFO/CONF] [Read] [头部参数]
-# 写入: Config_File_Manage [INFO/CONF] [Write] [头部参数] [修改内容]
-function Config_File_Manage(){ 
-    local format=" = "; parameter="$3"; content="$4"; itself=$(echo "$0" | awk -F"/" '{print $NF}')
-    case "$1" in
-        INFO) local Files="$info_File" ;;
-        CONF) local Files="$config_File" ;;
-    esac
-    case "$2" in
-        Read ) 
-                read_info=$(grep -w "$parameter" < "$Files") # 在文件中查找匹配的值
-                if [ -n "$read_info" ]; then 
-                    echo "$read_info" | awk -F "=" '{print $2}' | awk '{sub(/^[\t ]*/,"");print}' | awk '{sub(/[\t ]*$/,"");print}' 
-                else
-                    warn "${white}$itself ${yellow}Read file: ${white}$Files${yellow} missing value: [${white} $parameter  ${yellow}]."
-                    sleep 3
-                fi
-         ;;
-        Write) 
-                List_row=$(grep -nw "$parameter" < "$Files" | awk -F ":" '{print $1}';) # 在文件中查找匹配的值, 并打印行号
-                if [ -n "$List_row" ]; then
-                    sed -i "${List_row}c ${parameter}${format}${content}" "$Files" 2>/dev/null
-                else
-                    warn "${white}$itself ${yellow}Write file: ${white}$Files${yellow} missing value: [${white} $parameter  ${yellow}] + [${white} $content ${yellow}]."
-                    sleep 3
-                fi
-    esac 
+# 小型重复性高的模块调用管理器
+function run_tools(){
+    bash "$Tools_modules" "$config_File" "$info_File" "$1" "$2" "$3" "$4" "$5"
 }
+
 # 网络部分
-INFO_Ethernet=$(Config_File_Manage INFO Read Ethernet)
-INFO_Wifi=$(Config_File_Manage INFO Read Wifi)
 NET_LIST(){
     for ((VARIABLE=1;VARIABLE<=$(echo "$2" | grep -o '|' | wc -l);VARIABLE++)) 
     do 
@@ -77,8 +49,8 @@ NET_LIST(){
 
 # @Auins首页信息, 需要接收: 1=Chroot状态, 2=脚本开启模式
 function logos(){
-    Auins_version=$(Config_File_Manage INFO Read Auins_version) 
-    Archiso_version=$(Config_File_Manage INFO Read Archiso_version)
+    Auins_version=$(run_tools file_rw INFO Read Auins_version) 
+    Archiso_version=$(run_tools file_rw INFO Read Archiso_version)
 
     Chroot_Patterns_Print="$1"
     case "${Chroot_Patterns_Print}" in 
@@ -97,14 +69,14 @@ function logos(){
     SSH_IP="${Ethernet_IP:-$WIFI_IP}"
 
     # CPU_Temp="$(($(if [ -e /sys/class/thermal/thermal_zone1/temp ]; then cat /sys/class/thermal/thermal_zone1/temp; else echo '00'; fi)/1000))°C"
-    clear; printf "
-${white}       _             _       _     _                           
-${green}      / \   _ __ ___| |__   | |   (_)_ __  _%s   
-${blue}     / _ \ | '__/ __| '_ \  | |   | | '_ \| | | \ \/ /    
-${yellow}    / ___ \| | | (__| | | | | |___| | | | | |_| |>  <   
-${red}   /_/   \_\_|  \___|_| |_| |_____|_|_| |_|\__,_/_/\_\ 
-${bx}-----------------------  Auins Info  -----------------------${suffix}
-${green} Script_Name:\t%s.
+    printf "
+${white}         _             _       _     _                           
+${green}        / \   _ __ ___| |__   | |   (_)_ __  _%s   
+${blue}       / _ \ | '__/ __| '_ \  | |   | | '_ \| | | \ \/ /    
+${yellow}      / ___ \| | | (__| | | | | |___| | | | | |_| |>  <   
+${red}     /_/   \_\_|  \___|_| |_| |_____|_|_| |_|\__,_/_/\_\ 
+${bx}-----------------------  Auins Info  ------------------------${suffix}
+${green} Script_Name:\t%s
 ${green} CPU & Mem:  \t%s
 ${green} GPU_Info:   \t%s
 ${green} Timezone:   \t%s
@@ -116,11 +88,11 @@ ${green} Patterns:   \t%s ${red}- %s
 ${red}--=--*--=--*--=--*--=--*--=--=*=--=--*--=--*--=--*--=--*--=--${suffix}" \
 "${Archiso_version:-  _ __  __}" \
 "$Auins_version" \
-"$(echo -e "$(Config_File_Manage INFO Read CPU) ${whites}& ${green}$(Config_File_Manage INFO Read Memory)MB")" \
-"$(Config_File_Manage INFO Read GPU)" \
-"$(Config_File_Manage INFO Read Timezone)" \
-"$(echo -e "${white}[ ${blue}$(Config_File_Manage INFO Read Boot_Type)${white} ]${suffix}")" \
-"$(echo -e "${white}[ ${blue}$(Config_File_Manage INFO Read Disk_Type)${white} ]${suffix}")" \
+"$(echo -e "$(run_tools file_rw INFO Read CPU) ${whites}& ${green}$(run_tools file_rw INFO Read Memory)MB")" \
+"$(run_tools file_rw INFO Read GPU)" \
+"$(run_tools file_rw INFO Read Timezone)" \
+"$(echo -e "${white}[ ${blue}$(run_tools file_rw INFO Read Boot_Type)${white} ]${suffix}")" \
+"$(echo -e "${white}[ ${blue}$(run_tools file_rw INFO Read Disk_Type)${white} ]${suffix}")" \
 "$Chroot_Patterns_Print" "$Start_Patterns" \
 "$(NET_LIST "Ethernet" "$INFO_Ethernet")" \
 "$(NET_LIST "Wifi" "$INFO_Wifi")" \
@@ -129,63 +101,63 @@ ${red}--=--*--=--*--=--*--=--*--=--=*=--=--*--=--*--=--*--=--*--=--${suffix}" \
   
 # @正常(Normal)环境下，首页会显示的列表
 function normal_home_list(){
-    echo -e "
-${outB}\t${white}[${blue}1${white}]${green} Configure Mirrorlist  ${suffix}
-${outB}\t${white}[${blue}2${white}]${green} Configure Network     ${suffix}
-${outG}\t${white}[${blue}3${white}]${green} Configure SSH         ${suffix}
-${outY}\t${white}[${blue}4${white}]${green} Configure Users       ${suffix}
-${outY}\t${white}[${blue}5${white}]${green} Installation Desktop  ${suffix}
-${outY}\t${white}[${blue}6${white}]${green} Installation Fonts    ${suffix}
+    echo -e "\n
+${outB}\t${white}[${blue}1${white}]${green}  Configure Mirrorlist  ${suffix}
+${outB}\t${white}[${blue}2${white}]${green}  Configure Network     ${suffix}
+${outG}\t${white}[${blue}3${white}]${green}  Configure SSH         ${suffix}
+${outY}\t${white}[${blue}4${white}]${green}  Configure Users       ${suffix}
+${outY}\t${white}[${blue}5${white}]${green}  Installation Desktop  ${suffix}
+${outY}\t${white}[${blue}6${white}]${green}  Installation Fonts    ${suffix}
 ${outY}\t${white}[${blue}11${white}]${green} Installation Drive    ${suffix}
-${outY}\t${white}[${blue}22${white}]${green} Install virtual tools ${suffix}
-${outY}\t${white}[${red}D${white}]${green} Delete auins & caches  ${suffix}
-${outR}\t${white}[${red}Q${white}]${green} Exit Auins             ${suffix}"   
+${outY}\t${white}[${blue}22${white}]${green} Install virtualization tools ${suffix}
+${outY}\t${white}[${red}D${white}]${green}  Delete auins & caches  ${suffix}
+${outR}\t${white}[${red}Q${white}]${green}  Exit Auins             ${suffix}"   
 }
 
 # @LiveCD环境下，首页会显示的列表
 function livecd_home_list(){ 
     echo -e "
-${outB}\t${white}[${blue}1${white}]${green} Configure Mirrorlist${suffix}
-${outB}\t${white}[${blue}2${white}]${green} Configure Network   ${suffix}
-${outG}\t${white}[${blue}3${white}]${green} Configure SSH       ${suffix}
-${outY}\t${white}[${blue}4${white}]${green} Install System      ${suffix}
-${outR}\t${white}[${red}Q${white}]${green} Exit Script          ${suffix}"   
-}
+${outB}\t${white}[${blue}1${white}]${green} Configure Mirrorlist ${suffix}
+${outB}\t${white}[${blue}2${white}]${green} Configure Network    ${suffix}
+${outG}\t${white}[${blue}3${white}]${green} Configure SSH        ${suffix}
+${outY}\t${white}[${blue}4${white}]${green} Installation System  ${suffix}
+${outR}\t${white}[${red}Q${white}]${green} Exit Script           ${suffix}"
+} 
 
 # @首选项 [4] 的列表
 function livecd_system_module_list(){
     echo -e "
 \n\t${white}*** ${red}Install System Module ${white}***${suffix}  
 ---------------------------------------------
-${outY} \t${white}[${blue}1${white}]${green}  Disk Partition        \t${red}**${suffix}
-${outY} \t${white}[${blue}2${white}]${green}  Install System Files  \t${red}**${suffix}
-${outY} \t${white}[${blue}3${white}]${green}  Configurt System      \t${red}**${suffix}
-${outY} \t${white}[${blue}4${white}]${green}  Configure Users       \t${red}**${suffix}
-${outG} \t${white}[${blue}5${white}]${green}  Installation Desktop  \t${blue}*${suffix}
-${outG} \t${white}[${blue}11${white}]${green}${green} Installation Drive    \t${blue}*${suffix}
-${outY} \t${white}[${blue}22${white}]${green}${green} Install virtual tools \t${blue}*${suffix}" 
+${outY} \t${white}[${blue}1${white}]${green}  Disk Partition                \t${red}**${suffix}
+${outY} \t${white}[${blue}2${white}]${green}  Installation Base System      \t${red}**${suffix}
+${outY} \t${white}[${blue}3${white}]${green}  Configurt System              \t${red}**${suffix}
+${outY} \t${white}[${blue}4${white}]${green}  Configure Users               \t${red}**${suffix}
+${outG} \t${white}[${blue}5${white}]${green}  Installation Desktop          \t${blue}*${suffix}
+${outG} \t${white}[${blue}11${white}]${green} Installation Drive            \t${blue}*${suffix}
+${outY} \t${white}[${blue}22${white}]${green} Install virtualization tools  \t${blue}*${suffix}" 
 }
 
 # @系统安装成功, 直奔加入chroot的提示信息
 function install_system_info(){
     sleep 1; echo -e "\n
 ${wg}+-====================================================-+${suffix}
-${wg}|::  System components installation completed.         |${suffix}
-${wg}|::  Entering chroot mode.                             |${suffix}
-${wg}|::  Execute in 3 seconds.                             |${suffix}
-${wg}|::  Later operations are oriented to the new system.  |${suffix}
-${wg}+-====================================================-+${suffix}"
+${wg}|  System components installation completed.           |${suffix}
+${wg}|  Entering chroot mode.                               |${suffix}
+${wg}|  Execute in 3 seconds.                               |${suffix}
+${wg}|  Later operations are oriented to the new system.    |${suffix}
+${wg}+-====================================================-+${suffix}\n"
 }
 
 # @完成系统配置成功, 可重启的提示信息
 function config_system_info(){
     printf "
 ${ws}+-====================================================-+${suffix}
-${ws}|::                 Exit in 3/s                        |${suffix}
-${ws}|:: When finished, restart the computer.               |${suffix}
-${ws}|:: If there is a problem during the installation      |${suffix}
-${ws}|:: Please contact me. QQ:%s or Group:%s|${suffix}
-${ws}+-====================================================-+${suffix}" "2763833502" "346952836"
+${ws}|                  Exit in 3/s                         |${suffix}
+${ws}|  When finished, restart the computer.                |${suffix}
+${ws}|  If there is a problem during the installation       |${suffix}
+${ws}|  Please contact me. QQ:%s or Group:%s |${suffix}
+${ws}+-====================================================-+${suffix}\n" "2763833502" "346952836"
 }
 
 # @JetBrainsFira字体安装完成后的使用说明
@@ -207,7 +179,7 @@ function JetBrainsFira_font_usage() {
 function ssh_info(){   
     Ethernet_IP=$(NET_LIST Print_IP "$INFO_Ethernet" | awk -F'@' '{print $2}')
     WIFI_IP=$(NET_LIST "Print_IP" "$INFO_Wifi" | awk -F'@' '{print $2}')
-    CONF_Password_SSH=$(Config_File_Manage CONF Read Password_SSH)
+    CONF_Password_SSH=$(run_tools file_rw CONF Read Password_SSH)
 
     if netcap | grep sshd &>/dev/null ; then
         SSH_Port=$(netcap | grep sshd)
@@ -250,6 +222,7 @@ usage: auins [-h] [-V] command ...
              
     Global Options:
             --update        Auins and modules are updated in real time, Options: [enable], [disable].
+            --iso-check     Switch for auins version check, Options: [enable], [disable].
         -e, --edit-conf     Edit (\"local/profile.conf\").
         -f, --show-conf     Show (\"local/profile.conf\").
         -i, --show-info     Show (\"local/auins.info\").
@@ -261,7 +234,7 @@ usage: auins [-h] [-V] command ...
 
 # @Auins版本信息
 function version(){    
-    echo -e "${wg} $(Config_File_Manage INFO Read Auins_version) ${suffix}
+    echo -e "${wg} $(run_tools file_rw INFO Read Auins_version) ${suffix}
 Copyright (C) 2020 - 2023 Auroot.                   
 URL GitHub: https://github.com/Auroots/Auins 
 URL Gitee : https://gitee.com/auroot/Auins   
@@ -326,6 +299,8 @@ function Set_Color_Variable(){
 
 # 具体的实现 >> >> >> >> >> >> >> >> 
 include "$@"
+INFO_Ethernet=$(run_tools file_rw INFO Read Ethernet)
+INFO_Wifi=$(run_tools file_rw INFO Read Wifi)
 Set_Color_Variable
 case $option in
     # Auins版本信息
@@ -355,5 +330,4 @@ case $option in
 esac
 
 
-# Print_INFO [想要输出的信息] [附加输入的信息]...... 
-
+# Print_INFO [想要输出的信息] [附加输入的信息]......

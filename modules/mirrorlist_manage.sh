@@ -1,7 +1,7 @@
 #!/bin/bash
 # Author: Auroot
 # QQ： 2763833502
-# Description：Configure Mirrorlist -> Auins v4.7
+# Description：Configure Mirrorlist -> Auins v4.7.1
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
@@ -14,6 +14,7 @@ function include(){
     export config_File info_File
     config_File="${argu[0]}"
     info_File="${argu[1]}"
+    Tools_modules="${argu[2]}"
     set -e
 }
 #==============-------------archlinuxcn----------------==============
@@ -31,8 +32,6 @@ Server = https://mirrors.bfsu.edu.cn/archlinuxcn/\$arch
 # Server = https://mirrors.tuna.tsinghua.edu.cn/archlinuxcn/\$arch
 # Server = https://mirrors.cloud.tencent.com/archlinuxcn/\$arch
 "
-
-
 # #==============-------------blackarch----------------==============
 # blackarch_source="
 # [blackarch]
@@ -44,7 +43,6 @@ Server = https://mirrors.bfsu.edu.cn/archlinuxcn/\$arch
 # # Server = https://mirrors.cloud.tencent.com/blackarch/$repo/os/$arch
 # # Server = https://mirrors.tuna.tsinghua.edu.cn/blackarch/$repo/os/$arch
 # "
-
 #==============-------------arch4edu----------------==============
 arch4edu_source="
 [arch4edu] 
@@ -55,48 +53,10 @@ Server = https://mirrors.bfsu.edu.cn/arch4edu/\$arch
 # Server = http://mirrors.aliyun.com/arch4edu/\$arch
 # Server = https://mirrors.cloud.tencent.com/arch4edu/\$arch
 "
-
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-# 地址: auins.info(INFO)| script.conf(CONF)
-# 读取: Config_File_Manage [INFO/CONF] [Read] [头部参数]
-# 写入: Config_File_Manage [INFO/CONF] [Write] [头部参数] [修改内容]
-function Config_File_Manage(){ 
-    local Files; format=" = "; parameter="$3"; content="$4"; itself=$(echo "$0" | awk -F"/" '{print $NF}')
-    case "$1" in
-        INFO) Files="$info_File" ;;
-        CONF) Files="$config_File" ;;
-        *) Files="$1" ;;
-    esac
-    case "$2" in
-        Read ) 
-                read_info=$(grep -wE "^$parameter" < "$Files") # 在文件中查找匹配的值
-                if [ -n "$read_info" ]; then 
-                    echo "$read_info" | awk -F "=" '{print $2}' | awk '{sub(/^[\t ]*/,"");print}' | awk '{sub(/[\t ]*$/,"");print}' 
-                else
-                    warn "\033[1;37m$itself \033[1;33mRead file: \033[1;37m$Files\033[1;33m missing value: [\033[1;37m $parameter  \033[1;33m]."
-                    sleep 1
-                fi
-         ;;
-        Write) 
-                List_row=$(grep -nw "$parameter" < "$Files" | awk -F ":" '{print $1}';) # 在文件中查找匹配的值, 并打印行号
-                if [ -n "$List_row" ]; then
-                    sed -i "${List_row}c ${parameter}${format}${content}" "$Files" 2>/dev/null
-                else
-                    warn "\033[1;37m$itself \033[1;33mWrite file: \033[1;37m$Files\033[1;33m missing value: [\033[1;37m $parameter  \033[1;33m] + [\033[1;37m $content \033[1;33m]."
-                    sleep 1
-                fi
-    esac 
-}
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-# Error message wrapper
-function err(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 1)[ x Error ] => \033[1;31m${*}\033[0m$(tput sgr0)"; sleep 1; exit 255; } 
-function feed_status(){ 
-    if [ $? = 0 ]; then 
-        echo -e "\033[1;37m:: $(tput bold; tput setaf 2)=> \033[1;32m${1}\033[0m$(tput sgr0)"; 
-        sleep 1;
-    else 
-        err "$2"
-    fi
+# 小型重复性高的模块调用管理器
+function run_tools(){
+    bash "$Tools_modules" "$config_File" "$info_File" "$1" "$2" "$3" "$4" "$5"
 }
 
 # 根据profile.conf设置pacman.conf
@@ -111,7 +71,7 @@ function pacman-conf-update(){
     }
     function find_replace() {
         [[ $2 == "" ]] && replace=$1 || replace=$2
-        case $(Config_File_Manage CONF Read "$1") in 
+        case $(run_tools file_rw CONF Read "$1") in 
             [Yy]*) sed -i "s/#$replace/$replace/g" $Pacman_conf_file ;;
             [Nn]*) sed -i "s/$replace/#$replace/g" $Pacman_conf_file
         esac
@@ -125,17 +85,17 @@ function pacman-conf-update(){
 
     find_replace ParallelDownloads && \
     grep -E "^ParallelDownloads" "$Pacman_conf_file" &> /dev/null && \
-    Config_File_Manage  $Pacman_conf_file Write ParallelDownloads "$(Config_File_Manage CONF Read ParallelDownloads_quantity)"
+    run_tools file_rw  $Pacman_conf_file Write ParallelDownloads "$(run_tools file_rw CONF Read ParallelDownloads_quantity)"
 
     find_replace multilib "\[multilib\]" && modify_row "\[multilib\]"
 
     # 将所需的其他镜像源添加到 /etc/pacman.conf
-    case "$(Config_File_Manage CONF Read "Arch4edu")" in 
+    case "$(run_tools file_rw CONF Read "Arch4edu")" in 
         [Yy]*)  if ! grep -E "^\[arch4edu\]" $Pacman_conf_file &>/dev/null ; then
                     echo  "$arch4edu_source" >> "$Pacman_conf_file"
                 fi
     esac
-    case "$(Config_File_Manage CONF Read "Archlinucn")" in 
+    case "$(run_tools file_rw CONF Read "Archlinucn")" in 
         [Yy]*)  if ! grep -E "^\[archlinuxcn\]" $Pacman_conf_file &>/dev/null ; then
                     echo "$archlinuxcn_source" >> "$Pacman_conf_file" 
                     pacman -Sy --needed --noconfirm archlinuxcn-keyring
@@ -150,40 +110,40 @@ function reflector_update(){
     # reflector --country "$INFO_Country_Name"  --protocol http --protocol https
     [ ! -e /usr/bin/reflector ] && pacman -Sy --needed --noconfirm reflector
     reflector --country "$INFO_Country_Name" > $MirrorList_file
-    feed_status "Mirrorlist write successful." "Mirrorlist write failed."
+    run_tools feed "Mirrorlist write successful." "Mirrorlist write failed."
     cat $MirrorList_file | grep "$INFO_Country_Name" &> /dev/null
-    feed_status "$INFO_Country_Name...." "Mirrorlist write failed."
+    run_tools feed "$INFO_Country_Name...." "Mirrorlist write failed."
 }
 
 # 使用arch官方的api获取mirrorlist, 速度快,[推荐]
 function arch_api_update() {
     # 读取auins.info中的国家简称[CN] [US] ...
-    country="country=$(Config_File_Manage INFO Read Country)"
+    country="country=$(run_tools file_rw INFO Read Country)"
     # 读取profile.conf中的设置，可以选择性的开启 
-    [[ "$(Config_File_Manage CONF Read mirrorlist_http)" == 'yes' ]] && http='&protocol=http' 
-    [[ "$(Config_File_Manage CONF Read mirrorlist_https)" == 'yes' ]] && https='&protocol=https'
-    [[ "$(Config_File_Manage CONF Read mirrorlist_ip_v4)" == 'yes' ]] && ip_version_4='&ip_version=4'
-    [[ "$(Config_File_Manage CONF Read mirrorlist_ip_v6)" == 'yes' ]] && ip_version_6='&ip_version=6'
+    [[ "$(run_tools file_rw CONF Read mirrorlist_http)" == 'yes' ]] && http='&protocol=http' 
+    [[ "$(run_tools file_rw CONF Read mirrorlist_https)" == 'yes' ]] && https='&protocol=https'
+    [[ "$(run_tools file_rw CONF Read mirrorlist_ip_v4)" == 'yes' ]] && ip_version_4='&ip_version=4'
+    [[ "$(run_tools file_rw CONF Read mirrorlist_ip_v6)" == 'yes' ]] && ip_version_6='&ip_version=6'
     _mirrorlist_curl="https://archlinux.org/mirrorlist/?${country}${http}${https}${ip_version_4}${ip_version_6}"
 
     curl -fsSL "$_mirrorlist_curl" > $MirrorList_file
-    feed_status "Mirrorlist write successful." "Mirrorlist write failed."
+    run_tools feed "Mirrorlist write successful." "Mirrorlist write failed."
     sed -i 's/#S/S/g'  $MirrorList_file
     cat $MirrorList_file | grep "$INFO_Country_Name" &> /dev/null
-    feed_status "$INFO_Country_Name...." "Mirrorlist write failed."
+    run_tools feed "$INFO_Country_Name...." "Mirrorlist write failed."
+    sed -i "$(grep -n 'aliyun.com' < $MirrorList_file | awk -F':' '{print $1}') d" $MirrorList_file
 }
-
 
 function main(){
     # 备份的文件夹
     Source_Backup_Dir="/etc/pacman.d/backup"
-    Exec_Time=$(date +%k:%M-%Y:%m:%d)
+    Exec_Time=$(date "+%Y:%m:%d-%k:%M")
     # 备份原本的源
     [ ! -d "$Source_Backup_Dir" ] &&  mkdir "$Source_Backup_Dir" 2> /dev/null 
     cp "$Pacman_conf_file" "$Source_Backup_Dir/pacman.conf.$Exec_Time" 2> /dev/null
     cp "$MirrorList_file" "$Source_Backup_Dir/mirrorlist.$Exec_Time" 2> /dev/null
     # 根据profile.con中的设置，获取mirrorlist
-    case "$(Config_File_Manage CONF Read update_method)" in 
+    case "$(run_tools file_rw CONF Read update_method)" in 
          api)
             arch_api_update
     ;;
@@ -203,5 +163,5 @@ echo &>/dev/null
 include "$@"
 Pacman_conf_file="/etc/pacman.conf"
 MirrorList_file="/etc/pacman.d/mirrorlist"
-INFO_Country_Name=$(Config_File_Manage INFO Read Country_Name)
+INFO_Country_Name=$(run_tools file_rw INFO Read Country_Name)
 main

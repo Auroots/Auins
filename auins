@@ -7,14 +7,15 @@
 # set -eu
 echo &>/dev/null
 export AUINS_SCRIPT_NAME SOURCE_MODULES SOURCE_LOCAL TIME_ARCHISO SCRIPTS_SOURCE
-export BOOT_TYPE DISK_TYPE CHROOT_PATTERNS_PRINT START_PATTERNS AUINS_VERSION
-export config_File info_File
+export BOOT_TYPE DISK_TYPE CHROOT_PATTERNS_PRINT START_MODE AUINS_VERSION
+export CONFIGURE_SYSTEM config_File info_File 
 
 # @ script source
 # auroot  |  gitee  |  github  |  test
 SCRIPTS_SOURCE="auroot"
-AUINS_VERSION="ArchLinux User Install Scripts v4.7" 
+AUINS_VERSION="ArchLinux User Install Scripts v4.7.1" 
 # sed -i.bak 's/^aaa=yes/aaa=no/' [file] # 替换并备份
+
 # @脚本初始化
 function Auins_Variable_init(){
     Auins_Dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd )
@@ -29,33 +30,43 @@ function Auins_Variable_init(){
     Users_modules="${modules_Dir}/users_manage.sh"
     Partition_modules="${modules_Dir}/partition_disk.sh"
     Desktop_modules="${modules_Dir}/desktop_manage.sh"
-    Process_modules="${modules_Dir}/process_manage.sh"
+    Drive_modules="${modules_Dir}/drive_manage.sh"
     Fonts_modules="${modules_Dir}/fonts_manage.sh"
     Info_modules="${modules_Dir}/info_print.sh"
+    Tools_modules="${modules_Dir}/tools_module.sh"
     Blarckarch_modules="${modules_Dir}/blackarch_strap.sh"
     System_Root="/mnt"
     Livecd_Version_Route="/run/archiso/airootfs/version"
     # entries_Boot="/sys/firmware/efi/efivars"  # discern: UEFI
+    set +e
     [ ! -d "$local_Dir" ] && mkdir -p "$local_Dir"
     [ ! -d "$modules_Dir" ] && mkdir -p "$modules_Dir"
-    [ ! -f "$config_File" ] && touch "$config_File"
+    [ ! -e "$config_File" ] && touch "$config_File"
+    set -e
 }
 
+# check for root privilege
+function check_priv(){
+  if [ "$(id -u)" -ne 0 ]; then
+    # err "you must be root"
+    err "Please use command: \033[1;33m\"sudo\"\033[1;31m or user: \033[1;33m\"root\"\033[1;31m to execute.\033[0m"
+  fi
+}
 # modules模块使用方法
 # 镜像源配置
 function run_update_mirrors(){ 
     # 需要引用: 1:配置文件, 2:信息文件
-    bash "$Mirrorlist_modules" "$config_File" "$info_File"; 
+    bash "$Mirrorlist_modules" "$config_File" "$info_File" "$Tools_modules"
 }
 # 用户配置
 function run_configure_users(){ 
     # 需要引用: 1:配置文件, 2:信息文件
-    bash "$Users_modules" "$config_File" "$info_File"
+    bash "$Users_modules" "$config_File" "$info_File" "$Tools_modules"
 }
 # 磁盘分区
 function run_configure_partition(){
     # 需要引用: 1:配置文件, 2:信息文件, 3:进程管理模块
-    bash "$Partition_modules" "$config_File" "$info_File" "$Process_modules" || exit 1; 
+    bash "$Partition_modules" "$config_File" "$info_File" "$Tools_modules" || exit 1; 
     bash "${0}"
 }
 # blackarch配置模块, https://blackarch.org/strap.sh
@@ -66,7 +77,17 @@ function run_blarckarch_script(){
 function run_configure_desktop(){ 
     # 需要引用: 1:配置文件, 2:信息文件, 3:local目录地址, 4:信息打印模块,  5:字体安装与配置模块, 6:进程管理模块
     bash "$Desktop_modules" "$config_File" "$info_File" "$local_Dir" \
-         "$Info_modules" "$Fonts_modules" "$Process_modules"
+         "$Tools_modules" "$Info_modules" "$Fonts_modules"
+    run_tools "tips_w" "Whether to install Common Drivers? [Y/n]?"
+    case $(run_tools read) in
+        [Yy]*) run_configure_drive ;;
+        [Nn]*) run_tools process stop "$0" ;;
+    esac
+}
+# 桌面安装与配置
+function run_configure_drive(){
+    # 需要引用: 1:配置文件, 2:信息文件
+    bash "$Drive_modules" "$config_File" "$info_File" "$Tools_modules"
 }
 # 字体安装与配置
 function run_configure_fonts(){
@@ -75,20 +96,34 @@ function run_configure_fonts(){
     # User_options_install_fonts:  根据用户选项, 安装相应的字体, $2 = 用户的选项有: [all] [common] [adobe] [code]
     # Script_Runing_install_fonts: 脚本运行时, 由脚本自动判断, 自动安装配置文件中的选项, 另外询问是否安装其他
     bash "$Fonts_modules" "$config_File" "$info_File" "$local_Dir" \
-         "$Info_modules" "$Process_modules" "$1" "$2"
+         "$Tools_modules" "$Info_modules" "$1" "$2"
 }
-# 脚本进程管理
-function run_process_manage(){ 
-    # 1={[start]开启 [restart]重新开启 [stop]杀死脚本进程}
-    # 2=[进程名]
-    # 3=[需要返回的错误信息]
-    bash "$Process_modules" "$1" "$2" "$3"
+# 小型重复性高的模块调用管理器
+function run_tools(){
+    # 需要引用: 1:配置文件, 2:信息文件, 主选项, 其他选项1, 其他选项3, 其他选项4, 其他选项5
+        # 主选项:
+            # warn  警告
+            # run   开始运行     
+            # skip  跳过
+            # err   错误
+            # feed  结果提示, 1:正常结束要显示的信息, 2:非正常结束要显示的信息
+            # read  获取用户输入
+            # ck_p  检查权限,如果非root,则退出
+            # tips_w    提示输入-白
+            # tips_y    提示输入-黄
+            # file_rw   读写文件 [INFO / CONF] [Read / Write] [头部参数] [修改内容(Write)]
+            # mt_dir    创建临时目录
+            # show_Disk 输出磁盘表及UUID
+            # test_Disk 检查磁盘名是否合法
+            # test_Part 检查分区名是否合法
+            # process   进程管理 1:{start|restart|stop}, 2[进程名], 3:[需要输出的错误信息]
+    bash "$Tools_modules" "$config_File" "$info_File" "$1" "$2" "$3" "$4" "$5"
 }
 # 信息打印
 function run_print_info(){
     # 需要引用: 1:配置文件, 2:信息文件, 3:用户选项(以下), 4:logos所需1, 5:logos所需2
     # version:    Auins版本信息, 需要接收: auinus版本信息
-    # logos:      Script首页信息, 需要接收: 1=Chroot状态(CHROOT_PATTERNS_PRINT) 2=脚本开启模式(START_PATTERNS) 
+    # logos:      Script首页信息, 需要接收: 1=Chroot状态(CHROOT_PATTERNS_PRINT) 2=脚本开启模式(START_MODE) 
     # ssh_info:   输出SSH信息
     # auins_usage:      Auins的帮助文档 Auin_help, (无需任何参数)
     # livecd_home_list: LiveCD环境下, 首页会显示的列表, (无需任何参数)
@@ -99,67 +134,7 @@ function run_print_info(){
     # install_system_info:        系统安装成功, 直奔加入chroot的提示信息, (无需任何参数)
     # config_system_info:         完成系统配置成功, 可重启的提示信息, (无需任何参数)
     # JetBrainsFira_font_usage:   JetBrainsFira字体安装完成后的使用说明, (无需任何参数)
-    bash "$Info_modules" "$config_File" "$info_File" "$1" "$2" "$3"
-}
-
-# Error message wrapper
-function err(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 1)[ x Error ] => \033[1;31m${*}\033[0m$(tput sgr0)"; exit 255; } 
-# Warning message wrapper
-function warn(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 3)[ ! Warning ] => \033[1;33m${*}\033[0m$(tput sgr0)"; }
-# Run message wrapper
-function run(){ echo -e "\033[1;37m:: $(tput bold; tput setaf 2)[ + Exec ] => \033[1;32m${*}\033[0m$(tput sgr0)"; }
-# Skip message wrapper
-function skip(){ echo -e "\033[1;37m:: $(tput bold; tput setaf 0)[ - Skip ] => ${*}\033[0m$(tput sgr0)"; }
-# @获取用户输入，并返回
-function Read_user_input(){ local user_input; read -r user_input; echo "$user_input"; }
-# Tips output colour: white
-function tips_white(){ printf "\033[1;37m:: $(tput bold; tput setaf 2)\033[1;37m%s \033[1;32m-+> \033[0m$(tput sgr0)" "${*}"; }
-  # feedback successfully info
-function feed_status(){ 
-    if [ $? = 0 ]; then 
-        echo -e "\033[1;37m:: $(tput bold; tput setaf 2)=> \033[1;32m${1}\033[0m$(tput sgr0)"; 
-    else 
-        err "$2"
-    fi
-}
-
-# check for root privilege
-function check_priv()
-{
-  if [ "$(id -u)" -ne 0 ]; then
-    # err "you must be root"
-    err "Please use command: ${white}\"sudo\"${red} or user: ${white}\"root\"${red} to execute.${suffix}"
-  fi
-}
-
-# 地址: auins.info(INFO)| script.conf(CONF)
-# 读取: Config_File_Manage [INFO/CONF] [Read] [头部参数]
-# 写入: Config_File_Manage [INFO/CONF] [Write] [头部参数] [修改内容]
-function Config_File_Manage(){ 
-    local format=" = "; parameter="$3"; content="$4"; itself=$(echo "$0" | awk -F"/" '{print $NF}')
-    case "$1" in
-        INFO) local Files="$info_File" ;;
-        CONF) local Files="$config_File" ;;
-    esac
-    case "$2" in
-        Read ) 
-                read_info=$(grep -w "$parameter" < "$Files") # 在文件中查找匹配的值
-                if [ -n "$read_info" ]; then 
-                    echo "$read_info" | awk -F "=" '{print $2}' | awk '{sub(/^[\t ]*/,"");print}' | awk '{sub(/[\t ]*$/,"");print}' 
-                else
-                    warn "${white}$itself ${yellow}Read file: ${white}$Files${yellow} missing value: [${white} $parameter  ${yellow}]."
-                    sleep 1.5
-                fi
-         ;;
-        Write) 
-                List_row=$(grep -nw "$parameter" < "$Files" | awk -F ":" '{print $1}';) # 在文件中查找匹配的值, 并打印行号
-                if [ -n "$List_row" ]; then
-                    sed -i "${List_row}c ${parameter}${format}${content}" "$Files" 2>/dev/null
-                else
-                    warn "${white}$itself ${yellow}Write file: ${white}$Files${yellow} missing value: [${white} $parameter  ${yellow}] + [${white} $content ${yellow}]."
-                    sleep 1.5
-                fi
-    esac 
+    bash "$Info_modules" "$config_File" "$info_File" "$Tools_modules" "$1" "$2" "$3"
 }
 
 # @install Programs 安装包
@@ -173,7 +148,7 @@ function Install_Program() {
         if ! bash -c "$COMMAND" ; then
             break;
         else
-            sleep 2; break;
+            sleep 1.5; break;
         fi
     done
     echo "$VARIABLE" &> /dev/null
@@ -183,40 +158,38 @@ function Install_Program() {
 # @脚本自检
 function Script_init(){
     # Read Profile.conf
-    CONF_Hostname=$(Config_File_Manage CONF Read Hostname)
-    CONF_Password_SSH=$(Config_File_Manage CONF Read Password_SSH)
-    CONF_Service_SSH=$(Config_File_Manage CONF Read Service_SSH)
+    CONF_Hostname=$(run_tools file_rw CONF Read Hostname)
+    CONF_Password_SSH=$(run_tools file_rw CONF Read Password_SSH)
+    CONF_Service_SSH=$(run_tools file_rw CONF Read Service_SSH)
 
     # 写入Auins版本
-    Config_File_Manage INFO Write Auins_version "$AUINS_VERSION"
+    run_tools file_rw INFO Write Auins_version "$AUINS_VERSION"
 
     # 查询并写入CPU信息
     CPU=$(head -n 5 /proc/cpuinfo | grep "model name" | awk -F ": " '{print $2}')
     lscpu | grep GenuineIntel &>/dev/null && CPU_Vendor="intel";
     lscpu | grep AuthenticAMD &>/dev/null && CPU_Vendor="amd";
-    Config_File_Manage INFO Write CPU "$CPU"
-    Config_File_Manage INFO Write CPU_Vendor "$CPU_Vendor"
+    run_tools file_rw INFO Write CPU "$CPU"
+    run_tools file_rw INFO Write CPU_Vendor "$CPU_Vendor"
 
     # 查询并写入GPU信息
+    set +e
     not_intercept_gpu_info=$(lspci | grep -i VGA | awk -F ":" '{print $3}' | sed 's/^[ ]*//g')
     intercept_gpu_info=$(lspci  | grep -i VGA | awk -F ":" '{print $3}' | grep -o '\[.*\]')
     Unrecognized=$(echo -e "${white}Unrecognized${suffix}")
     GPU_Info_0="${intercept_gpu_info:-$not_intercept_gpu_info}"
     GPU="${GPU_Info_0:-$Unrecognized}"
-    Config_File_Manage INFO Write GPU "$GPU"
+    run_tools file_rw INFO Write GPU "$GPU"
+    set -e
 
     Memory=$(($(sed -n '1,1p' /proc/meminfo | awk '{print $2}')/1000))
-    Config_File_Manage INFO Write Memory "$Memory"
+    run_tools file_rw INFO Write Memory "$Memory"
 
     # 查询并写入主机环境信息
     lspci | grep -i "virtualbox" &>/dev/null && Host_Environment="VirtualBox";
     lspci | grep -i "vmware" &>/dev/null     && Host_Environment="Vmware"; 
     [[ $Host_Environment == "" ]] && Host_Environment="Computer"
-    Config_File_Manage INFO Write Host_Environment "$Host_Environment";
-
-    # 查询并写入Chroot模式
-    if [ -e /local/Chroot ]; then  ChrootPatterns="Chroot-ON"; else ChrootPatterns="Chroot-OFF"; fi
-    Config_File_Manage INFO Write ChrootPatterns "$ChrootPatterns";
+    run_tools file_rw INFO Write Host_Environment "$Host_Environment";
     
     # 查询并写入Boot类型
     if [ -d /sys/firmware/efi ]; then
@@ -224,50 +197,64 @@ function Script_init(){
     else
         BOOT_TYPE="BIOS" DISK_TYPE="MBR"
     fi
-    Config_File_Manage INFO Write Boot_Type ${BOOT_TYPE}
-    Config_File_Manage INFO Write Disk_Type ${DISK_TYPE}
-    INFO_Boot_way=$(Config_File_Manage INFO Read "Boot_Type")
-    
+    run_tools file_rw INFO Write Boot_Type ${BOOT_TYPE}
+    run_tools file_rw INFO Write Disk_Type ${DISK_TYPE}
+    INFO_Boot_way=$(run_tools file_rw INFO Read "Boot_Type")
+
     # 查询并写入地区 IP 国家
-    Country_Name=$(Config_File_Manage INFO Read "Country_Name")
+    Country_Name=$(run_tools file_rw INFO Read "Country_Name")
     if [ -z  "$Country_Name" ] ; then
+        # http://ip-api.com/json
+        # https://ipdata.co/flags/cn.png
         # https://api.ip.sb/geoip
         curl -fsSL --fail https://ipapi.co/json > "$Auins_api_file"
-        CONF_Timezone=$(Config_File_Manage CONF Read Timezone)
+        CONF_Timezone=$(run_tools file_rw CONF Read Timezone)
         if [[ "$CONF_Timezone" == "" ]]; then
             API_Timezone=$(grep -w "timezone" "$Auins_api_file" | awk '{print $2}' | sed 's#",##' | sed 's#"##')
-            Config_File_Manage INFO Write Timezone "$API_Timezone"
+            run_tools file_rw INFO Write Timezone "$API_Timezone"
         else
-            Config_File_Manage INFO Write Timezone "$CONF_Timezone";
+            run_tools file_rw INFO Write Timezone "$CONF_Timezone";
         fi
         # 从api中获取ip，国家，时区信息，写入到info文件，暂时无其他作用
-        API_Public_IP=$(grep -w "ip" "$Auins_api_file" | awk '{print $2}' | sed 's#",##' | sed 's#"##')      && Config_File_Manage INFO Write Public_IP "$API_Public_IP";
-        API_Country=$(grep -w "country" "$Auins_api_file" | awk '{print $2}' | sed 's#",##' | sed 's#"##')   && Config_File_Manage INFO Write Country "$API_Country";
-        API_Country_Name=$(grep -w "country_name" "$Auins_api_file" | awk '{print $2}' | sed 's#",##' | sed 's#"##')  && Config_File_Manage INFO Write Country_Name "$API_Country_Name";
+        API_Public_IP=$(grep -w "ip" "$Auins_api_file" | awk '{print $2}' | sed 's#",##' | sed 's#"##')      && run_tools file_rw INFO Write Public_IP "$API_Public_IP";
+        API_Country=$(grep -w "country" "$Auins_api_file" | awk '{print $2}' | sed 's#",##' | sed 's#"##')   && run_tools file_rw INFO Write Country "$API_Country";
+        API_Country_Name=$(grep -w "country_name" "$Auins_api_file" | awk '{print $2}' | sed 's#",##' | sed 's#"##')  && run_tools file_rw INFO Write Country_Name "$API_Country_Name";
     fi
-
     # 校准live环境的时间
-    ln -sf "/usr/share/zoneinfo/$(Config_File_Manage INFO Read Timezone)" /etc/localtime &>/dev/null && hwclock --systohc --utc
-    case "$ChrootPatterns" in  
+    ln -sf "/usr/share/zoneinfo/$(run_tools file_rw INFO Read Timezone)" /etc/localtime &>/dev/null && hwclock --systohc --utc
+     
+     # 查询并写入Chroot模式
+    if [ -d /run/archiso/airootfs ]; then 
+        rm -rf "$local_Dir/Chroot_ON" &> /dev/null 
+        rm -rf "$local_Dir/Not_Configure_System" &> /dev/null  
+    else 
+        touch "$local_Dir/Chroot_ON" &> /dev/null
+    fi
+    [ -e "$local_Dir/Chroot_ON" ] && CHROOT_PATTERNS_PRINT="Chroot-ON" || CHROOT_PATTERNS_PRINT="Chroot-OFF"; 
+
+    [ -e "$local_Dir/Not_Configure_System" ] && CONFIGURE_SYSTEM="no" || CONFIGURE_SYSTEM="yes"; 
+    run_tools file_rw INFO Write ChrootPatterns "$CHROOT_PATTERNS_PRINT";
+    # Chroot-OFF下，才会自动干的事情
+    case "$CHROOT_PATTERNS_PRINT" in  
         Chroot-OFF) 
             # 根据配置文件, 判断是否开启SSH远程服务, Chroot下不执行
             case $CONF_Service_SSH in [Yy]*) Open_SSH; esac
-            # Detect Archiso Version 检查 LiveCD 版本 并提醒更新
-            # entries_livecd="/run/archiso/airootfs"  # discern: liveCD
-            if [ -d /run/archiso/airootfs ]; then 
-                # Home list (LiveCD_Mode \ Normal_Mode)
-                echo "Yes" > "$local_Dir"/LiveCD 2> /dev/null
-            else 
-                Normals="yes"; 
-            fi
     esac
     # 确认当前运行环境
-    INFO_Host_Env=$(Config_File_Manage INFO Read Host_Environment)
+    INFO_Host_Env=$(run_tools file_rw INFO Read Host_Environment)
     [[ "$INFO_Host_Env" == "Computer" ]] && INFO_Host_Env="" || INFO_Host_Env=" $INFO_Host_Env"
 }
 
 # @下载所需的脚本模块
 function Update_Share(){     
+    # feedback successfully info
+    function feed_status(){ 
+        if [ $? = 0 ]; then 
+            echo -e "\033[1;37m:: $(tput bold; tput setaf 2)=> \033[1;32m${1}\033[0m$(tput sgr0)"; 
+        else 
+            err "$2"
+        fi
+    }
     # 根据配置文件选择源, 将其作为脚本的下载源 Module URL: Default settings
     function auins_download_url(){
         case ${1} in
@@ -278,8 +265,6 @@ function Update_Share(){
         esac
         SOURCE_MODULES="${SOURCE}/modules"
         SOURCE_LOCAL="${SOURCE}/local"
-        Config_File_Manage CONF Write modules_source "$SOURCE_MODULES"
-        Config_File_Manage CONF Write local_source "$SOURCE_LOCAL"
     }
     # 检查与审核文件是否存在或为空, 1.如果不存在则下载, 2.如果为空则删除, 3,如果本地与云端不一致将自动更新
     function audit_file() {
@@ -300,7 +285,7 @@ function Update_Share(){
                 sh) chmod +x "$file_path" || if [ -z "$(cat "$file_path")" ]; then rm -f "$file_path"; fi
             esac      
         fi
-        case $(Config_File_Manage CONF Read Now_update_auins) in
+        case $(run_tools file_rw CONF Read Now_update_auins 2>/dev/null) in
             [Yy]*)
                     if [[ $file_name != "$(echo "$info_File" | awk -F"/" '{print $NF}')" ]] \
                     && [[ $file_name != "$(echo "$config_File" | awk -F"/" '{print $NF}')" ]]; then
@@ -316,16 +301,19 @@ function Update_Share(){
     function download_script(){
         audit_file local "$config_File"
         audit_file local "$info_File"
+        audit_file modules "$Tools_modules"
         audit_file modules "$Info_modules"  
         audit_file modules "$Mirrorlist_modules"
         audit_file modules "$Users_modules"
         audit_file modules "$Partition_modules"
         audit_file modules "$Desktop_modules"
         audit_file modules "$Fonts_modules"
-        audit_file modules "$Process_modules"
         audit_file modules "$Blarckarch_modules"
+        audit_file modules "$Drive_modules"
+        run_tools file_rw CONF Write modules_source "$SOURCE_MODULES"
+        run_tools file_rw CONF Write local_source "$SOURCE_LOCAL"
         # 更新auins
-        case $(Config_File_Manage CONF Read Now_update_auins) in
+        case $(run_tools file_rw CONF Read Now_update_auins) in
         [Yy]*)
             if [[ "$(cat "$0")" != "$(curl -fsSL "${SOURCE}/${AUINS_SCRIPT_NAME}")" ]]; then 
                 curl -fsSL "${SOURCE}/${AUINS_SCRIPT_NAME}" > "$0"
@@ -404,8 +392,8 @@ function Network(){
             done
         }
         
-        Config_File_Manage INFO Write Wifi "$(Show_Network WIFI)"
-        Config_File_Manage INFO Write Ethernet "$(Show_Network ETHERNET)"
+        run_tools file_rw INFO Write Wifi "$(Show_Network WIFI)"
+        run_tools file_rw INFO Write Ethernet "$(Show_Network ETHERNET)"
 
         case $1 in 
             WIFI )  
@@ -419,17 +407,17 @@ function Network(){
     # https://wiki.archlinuxcn.org/wiki/%E7%BD%91%E7%BB%9C%E9%85%8D%E7%BD%AE/%E6%97%A0%E7%BA%BF%E7%BD%91%E7%BB%9C%E9%85%8D%E7%BD%AE
     function configure_wifi() {
         # 显示网卡信息: 1: wlan0 - void(ip)
-        run "Checking the currently available network..."
+        run_tools run "Checking the currently available network..."
         echo; Network ethernet_info WIFI; echo;
         # 用户选择网卡
-        tips_white "Please select WiFi interface [1,2,3...]?"
-        WIFI_user_number=$(Read_user_input)
+        run_tools tips_w "Please select WiFi interface [1,2,3...]?"
+        WIFI_user_number=$(run_tools read)
         Show_Network WIFI &>/dev/null
         WIFI_Interface=${NET_Interface[$WIFI_user_number]}
-        [[ $WIFI_Interface == "" ]] && err "This interface was not found."
+        [[ $WIFI_Interface == "" ]] && run_tools err "This interface was not found."
         # 打印WIFI列表
         WIFI_INFO=$(iwlist "$WIFI_Interface" scan)
-        feed_status "[ $WIFI_Interface ] Interface scan successful." 
+        run_tools feed "[ $WIFI_Interface ] Interface scan successful." 
         # 比较详细的wifi列表
         echo -e "${white}:: ${blue}A detailed WiFi list:${suffix}"
         echo -e "${white}$(echo "$WIFI_INFO" | sed 's/^[ ]*//g' | grep -Ew "^ESSID*|^Frequency*|^Quality*" | \
@@ -438,43 +426,43 @@ function Network(){
         echo -e "${white}:: ${blue}A simple WiFi list:${suffix}\n"
         echo -e "${white}$(echo "$WIFI_INFO" | sed 's/^[ ]*//g' | grep -Ew "^ESSID*" | sed -e 's/^E/   E/g' )${suffix}\n"
         # 用户输入WIFI名称
-        tips_white "Enter wifi name(SSID)?"
-        WIFI_ESSID=$(Read_user_input)
+        run_tools tips_w "Enter wifi name(SSID)?"
+        WIFI_ESSID=$(run_tools read)
         # 用户输入WIFI密码
-        tips_white "Wifi Password"
-        WIFI_PASSWD=$(Read_user_input)
+        run_tools tips_w "Wifi Password"
+        WIFI_PASSWD=$(run_tools read)
         # 根据用户输入, 尝试连接网络
         iwctl --passphrase "$WIFI_PASSWD" station "$WIFI_Interface" connect "$WIFI_ESSID"
-        feed_status "Successfully connected to WiFi: [${white} $WIFI_ESSID ${green}]" \
+        run_tools feed "Successfully connected to WiFi: [${white} $WIFI_ESSID ${green}]" \
         "Please check if the input is correct: SSID(${white}$WIFI_ESSID${red}) and password (${white}$WIFI_PASSWD${red})."
 
         ip address show "${WIFI_Interface}"
         if ! ping -c 3 61.166.150.123; then
-            run_process_manage stop "$0" "Network ping check failed. Cannot continue."
+            run_tools process stop "$0" "Network ping check failed. Cannot continue."
         fi
     }
     # @配置有线网络，Configure Ethernet.
     function configure_ethernet(){
         # 显示网卡信息: 1: enp5s0 - 192.168.101.3(ip)
-        run "Checking the currently available network..."
+        run_tools run "Checking the currently available network..."
         Network ethernet_info ETHERNET
 
-        tips_white "Please select Ethernet interface [1,2,3...]?"
-        Ethernet_user_number=$(Read_user_input)
+        run_tools tips_w "Please select Ethernet interface [1,2,3...]?"
+        Ethernet_user_number=$(run_tools read)
         Show_Network ETHERNET &> /dev/null 
         Ethernet_Interface=${NET_Interface[$Ethernet_user_number]}
 
-        feed_status ":: One moment please..."
+        run_tools feed ":: One moment please..."
         ip link set "${Ethernet_Interface}" up
         ip address show "${Ethernet_Interface}"
         if ! ping -c 3 61.166.150.123; then
-            run_process_manage stop "$0" "Network ping check failed. Cannot continue."
+            run_tools process stop "$0" "Network ping check failed. Cannot continue."
         fi
     }
     # @配置网络
     function configure_all(){
-        tips_white "Query Network: Ethernet[1] Wifi[2] Exit[q]?"
-        case $(Read_user_input) in
+        run_tools tips_w "Query Network: Ethernet[1] Wifi[2] Exit[q]?"
+        case $(run_tools read) in
             1 ) configure_ethernet ;;
             2 ) configure_wifi ;;
             [Qq]* ) bash "${0}"
@@ -492,7 +480,7 @@ function Network(){
 # @开启SSH服务， Start ssh service 
 function Open_SSH(){
     clear;
-    run "Checking the currently available network..."
+    run_tools run "Checking the currently available network..."
     Network ethernet_info WIFI 
     Network ethernet_info ETHERNET
     echo; echo "${USER}:${CONF_Password_SSH}" | chpasswd &>/dev/null 
@@ -502,78 +490,83 @@ function Open_SSH(){
 
 # @设置root密码 用户 
 function Configure_users2passwd(){
-    local PasswdFile Number
+    local raw_number
     export INFO_UserName UsersID CheckingID CheckingUsers
-    INFO_UserName=$(Config_File_Manage INFO Read "Users")
+    INFO_UserName=$(run_tools file_rw INFO Read "Users")
+    INFO_UsersID=$(run_tools file_rw INFO Read "UsersID")
     CheckingUsers=""
     if [ -z "$INFO_UserName" ]; then
-        PasswdFile="/etc/passwd"
-        for Number in {1..30}; do  
-            Query=$(tail -n "${Number}" "${PasswdFile}" | head -n 1 | cut -d":" -f3)
-            if [ "$Query" -gt 999 ] && [ "$Query" -lt 1050 ]; then
-                CheckingID=$(grep "$Query" < ${PasswdFile} | cut -d":" -f3)
+        for raw_number in {1..25}; do  
+            Query=$(tail -n "${raw_number}" /etc/passwd | head -n 1 | cut -d":" -f3)
+            if [ "$Query" -gt 999 ] && [ "$Query" -lt 1020 ]; then
+                CheckingID=$(grep "$Query" < /etc/passwd | cut -d":" -f3)
                 CheckingUsers=$(id -un "$CheckingID" 2> /dev/null)
-                # Config_File_Manage INFO Write Users "$CheckingUsers"
-                # Config_File_Manage INFO Write UsersID "$CheckingID"
                 break;
             fi
         done
-
-        INFO_UserName=$(Config_File_Manage INFO Read "Users")
-        INFO_UsersID=$(id -u "$INFO_UserName" 2> /dev/null)
-        if [ -z "$CheckingUsers" ] ; then
+        if [[ -z "$CheckingUsers" ]] ; then
             run_configure_users
-            printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}.\n" \
-            "${CheckingUsers:-$INFO_UserName}" "${CheckingID:-$INFO_UsersID}"
-        else
-            printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}.\n" \
-            "${CheckingUsers:-$INFO_UserName}" "${CheckingID:-$INFO_UsersID}"
-            sleep 1.5
+            INFO_UserName=$(run_tools file_rw INFO Read "Users")
+            INFO_UsersID=$(run_tools file_rw INFO Read "UsersID")
+            printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}.\n"  "${INFO_UserName:-$CheckingUsers}" "${INFO_UsersID:-$CheckingID}"
         fi
     fi
+    printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}.\n"  "${INFO_UserName:-$CheckingUsers}" "${INFO_UsersID:-$CheckingID}"
+    sleep 1.5
 }
 
 # @安装系统、内核、基础包等，Install system kernel / base...
 function Install_Archlinux(){    
-    CONF_Linux_kernel=$(Config_File_Manage CONF Read "Linux_kernel")
-    run Update the system clock.  # update time
+    CONF_Linux_kernel=$(run_tools file_rw CONF Read "Linux_kernel")
+    run_tools run Update the system clock.  # update time
     timedatectl set-ntp true
-    run Install the Kernel base packages.
+    run_tools run Install the Kernel base packages.
     case "$CONF_Linux_kernel" in 
         linux    ) pacstrap "$System_Root" base base-devel reflector linux-firmware linux linux-headers linux-api-headers vim unzip  ;;
         linux-lts) pacstrap "$System_Root" base base-devel reflector linux-firmware linux-lts linux-lts-headers vim unzip ;; 
         linux-zen) pacstrap "$System_Root" base base-devel reflector linux-firmware linux-zen linux-zen-headers vim unzip
     esac
-    feed_status "The installation of the kernel basic package was successful." \
+    run_tools feed "The installation of the kernel basic package was successful." \
     "The installation of the kernel basic package failed. \n${white}:: Suggest remount the disk or restart the system.${suffix}"
 
-    run Configure fstab.
+    run_tools run Configure fstab.
     genfstab -U $System_Root >> $System_Root/etc/fstab
+    run_tools feed "Fstab configuration successful." "Fstab configuration failed."
     LinuxKernel=$(arch-chroot $System_Root /usr/bin/uname -a | /usr/bin/cut -d"#" -f1  | awk -F " " '{print $3}')
-    Config_File_Manage INFO Write LinuxKernel "$LinuxKernel";
-    touch $System_Root/local/Chroot && echo "Chroot=ON" > $System_Root/local/Chroot
+    run_tools file_rw INFO Write LinuxKernel "$LinuxKernel";
+    cp -rf "$local_Dir" $System_Root/root/ 
+    run_tools feed "$local_Dir directory copy successful." "$local_Dir directory copy failed."
+    touch $System_Root/root/local/Chroot_ON
+    run_tools feed "Chroot_ON file creation successful." "Chroot_ON file creation failed."
+    touch $System_Root/root/local/Not_Configure_System 
+    run_tools feed "Not_Configure_System file creation successful." "Not_Configure_System file creation failed."
 }
 
 # @Chroot -> $System_Root
-function Auin_chroot(){    
-    cat "$0" > $System_Root/$AUINS_SCRIPT_NAME  && chmod +x $System_Root/$AUINS_SCRIPT_NAME 
-    cp -rf "$modules_Dir" $System_Root 2> /dev/null
-    cp -rf "$local_Dir" $System_Root 2> /dev/null
-    rm -rf $System_Root/local/LiveCD 2> /dev/null
-    echo "No" > $System_Root/local/LiveCD_OFF 2> /dev/null
-    arch-chroot $System_Root /bin/bash -c "/$AUINS_SCRIPT_NAME"
+function Auins_chroot(){    
+    cat "$0" > $System_Root/root/$AUINS_SCRIPT_NAME 
+    run_tools feed "$0 copy successful." "$0 copy failed."
+    chmod +x $System_Root/root/$AUINS_SCRIPT_NAME 
+
+    cp -f "$local_Dir/profile.conf"  $System_Root/root/local/
+    run_tools feed "$local_Dir/profile.conf file copy successful." "$local_Dir/profile.conf file copy failed."
+
+    cp -rf "$modules_Dir" $System_Root/root/ 2> /dev/null
+    run_tools feed "$modules_Dir directory copy successful." "$modules_Dir directory copy failed."
+
+    arch-chroot $System_Root /bin/bash -c "/root/$AUINS_SCRIPT_NAME"
 }
 
 # @安装 fcitx 输入法
 function Configure_fcitx(){
-    CONF_PKG_Fcitx=$(Config_File_Manage CONF Read "PKG_Fcitx")
+    CONF_PKG_Fcitx=$(run_tools file_rw CONF Read "PKG_Fcitx")
     function install(){
-        CONF_Install_Fcitx=$(Config_File_Manage CONF Read "Install_Fcitx")
+        CONF_Install_Fcitx=$(run_tools file_rw CONF Read "Install_Fcitx")
         function install_fcitx(){
-            run "Installing [ Fcitx ]."
+            run_tools run "Installing [ Fcitx ]."
             pacman -Rsc --noconfirm fcitx
             Install_Program "$CONF_PKG_Fcitx" 
-            feed_status "fcitx installation successfully." "fcitx installation failed."
+            run_tools feed "fcitx installation successfully." "fcitx installation failed."
             Fcitx_Config="
 GTK_IM_MODULE=fcitx
 QT_IM_MODULE=fcitx
@@ -583,10 +576,10 @@ XMODIFIERS=@im=fcitx"
 
         case $CONF_Install_Fcitx in
             [Yy]* ) install_fcitx;; 
-                * ) tips_white "Whether to install fcitx [Y/n]?"
-                    case $(Read_user_input) in
+                * ) run_tools tips_w "Whether to install fcitx [Y/n]?"
+                    case $(run_tools read) in
                         [Yy]*)  install_fcitx ;;
-                            *)  skip Install [ Fcitx ].
+                            *)  run_tools skip "Install [ Fcitx ]".
                     esac
         esac 
     }
@@ -598,7 +591,7 @@ XMODIFIERS=@im=fcitx"
     case $1 in 
         -R) remove; 
             status="flase" ;;
-         *) warn "Input error or the option does not exist."; 
+         *) run_tools warn "Input error or the option does not exist."; 
             status="true"
     esac
     [[ ${status} != "true" ]] && install; 
@@ -606,9 +599,9 @@ XMODIFIERS=@im=fcitx"
 
 # @安装 ibus-rime 输入法
 function Configure_ibus_rime() {
-    CONF_PKG_Ibus=$(Config_File_Manage CONF Read "PKG_Ibus")
+    CONF_PKG_Ibus=$(run_tools file_rw CONF Read "PKG_Ibus")
     function install(){
-        CONF_Install_Ibus=$(Config_File_Manage CONF Read "Install_Ibus")
+        CONF_Install_Ibus=$(run_tools file_rw CONF Read "Install_Ibus")
         function configure_ibus() {
             if wget -P "$local_Dir" "${SOURCE_LOCAL}/oh-my-rime.zip" ; then
                 mkdir -p /home/"$INFO_UserName"/.config/ibus 
@@ -624,17 +617,17 @@ ibus-daemon -d -x"
         }
         
         case $CONF_Install_Ibus in
-            [Yy]*)  run "Installing [ ibus-rime ]."
+            [Yy]*)  run_tools run "Installing [ ibus-rime ]."
                     Install_Program "$CONF_PKG_Ibus" 
-                    feed_status "ibus-rime installation successfully." "ibus-rime installation failed."
+                    run_tools feed "ibus-rime installation successfully." "ibus-rime installation failed."
                     configure_ibus;;
-                *)  tips_white "Whether to install ibus-rime. [Y/n]?"
-                    case $(Read_user_input) in
-                        [Yy]*)  run "Installing [ ibus-rime ]."
+                *)  run_tools tips_w "Whether to install ibus-rime. [Y/n]?"
+                    case $(run_tools read) in
+                        [Yy]*)  run_tools run "Installing [ ibus-rime ]."
                                 Install_Program "$CONF_PKG_Ibus" 
-                                feed_status "ibus-rime installation successfully." "ibus-rime installation failed."
+                                run_tools feed "ibus-rime installation successfully." "ibus-rime installation failed."
                                 configure_ibus;;
-                            *) skip "[ ibus-rime ]."
+                            *) run_tools skip "Install [ ibus-rime ]."
                     esac
         esac 
     }
@@ -647,14 +640,14 @@ ibus-daemon -d -x"
     }
     case $1 in 
         -R) remove && status="flase" ;;
-        * ) warn "Input error or the option does not exist." && status="true"
+        * ) run_tools warn "Input error or the option does not exist." && status="true"
     esac
     [[ ${status} != "true" ]] && install; 
 }
 
 # @Pacman multi threaded download [Axel]
 function Axel_Configure() {
-    Read_Axel_Thread=$(Config_File_Manage CONF Read "Axel_Thread")
+    Read_Axel_Thread=$(run_tools file_rw CONF Read "Axel_Thread")
     Axel="XferCommand = \/usr\/bin\/axel -n $Read_Axel_Thread -a -o %o %u"
     case $1 in 
         -R) rm -rf /etc/axelrc
@@ -662,113 +655,50 @@ function Axel_Configure() {
             pacman -R axel
             status="flase"
     ;;
-        * ) #warn "Input error or the option does not exist."
+        * ) #run_tools warn "Input error or the option does not exist."
             status="true"
     esac
     if [[ ${status} == true ]]; then
         pacman -S --noconfirm --needed axel
-        feed_status "axel installation successfully." "axel installation failed."
+        run_tools feed "axel installation successfully." "axel installation failed."
         echo "alternate_output = 1" > /etc/axelrc
         sed -i "/XferCommand = \/usr\/bin\/curl/i ${Axel}" /etc/pacman.conf
     fi
 }
 
-# @Install I/O Driver 安装驱动
-function Install_Io_Driver(){
-    # 读取配置 
-    CONF_Driver_Audio=$(Config_File_Manage CONF Read "Install_Driver_Audio")
-    CONF_Driver_input=$(Config_File_Manage CONF Read "Install_Driver_Input")
-    CONF_Driver_Bluez=$(Config_File_Manage CONF Read "Install_Driver_Bluetooth")
-    # 读取包名
-    CONF_PKG_INTEL=$(Config_File_Manage CONF Read "PGK_Intel")
-    CONF_PKG_AMD=$(Config_File_Manage CONF Read "PGK_Amd")
-    CONF_PGK_Audio_Driver="$(Config_File_Manage CONF Read "PGK_Audio_Driver")"
-    CONF_PGK_Input_Driver="$(Config_File_Manage CONF Read "PGK_Input_Driver")"
-    CONF_PGK_Bluez_Driver="$(Config_File_Manage CONF Read "PGK_Bluetooth_Driver")"
-    # CPU
-    function install_intel(){
-        run "Install the Intel driver."
-        Install_Program "$CONF_PKG_INTEL"
-        feed_status "Intel driver installation successfully." "Intel driver installation failed."
-    }
-    function install_amd(){
-        run "Install the Amd driver."
-        Install_Program "$CONF_PKG_AMD"
-        feed_status "Amd driver installation successfully." "Amd driver installation failed."
-    }
-    case $CPU_Vendor in
-    intel)  install_intel ;;
-      amd)  install_amd ;;
-        *)  tips_white "Please select: Intel[1] AMD[2]"
-            case $(Read_user_input) in
-                1)  install_intel;;
-                2)  install_amd
-            esac
-    esac
-    # 安装音频驱动 
-    case $CONF_Driver_Audio in 
-        yes) 
-            run "Installing Audio driver."
-            Install_Program "$CONF_PGK_Audio_Driver"
-            feed_status "Audio driver installation successfully." "Audio driver installation failed."
-            systemctl enable alsa-state.service
-            feed_status "alsa-state.service enable successfully." "alsa-state.service enable failed."
-        ;;
-        *)  skip "Installing Audio driver..."
-    esac
-    # 安装 I/O 驱动 
-    case $CONF_Driver_input in 
-        yes) 
-            run "Installing input driver."
-            Install_Program "$CONF_PGK_Input_Driver"
-            feed_status "Input driver installation successfully." "Input driver installation failed."
-        ;;
-        *)   skip "Installing input driver..."
-    esac 
-    # 安装蓝牙驱动
-    case $CONF_Driver_Bluez in 
-        yes) run "Installing Bluetooth driver."
-             Install_Program "$CONF_PGK_Bluez_Driver"
-             feed_status "Bluetooth driver installation successfully." "Bluetooth driver installation failed."
-             echo "load-module module-bluetooth-policy" >> /etc/pulse/system.pa
-             echo "load-module module-bluetooth-discover" >> /etc/pulse/system.pa;;
-        *)   skip "Installing bluetooth driver..."
-    esac 
-}
-
 # @Install/Configure Grub, 安装并配置Grub
 function Configure_Grub(){
-    run "Install grub tools."
-    run "Your startup mode has been detected as ${green}$INFO_Boot_way${suffix}."   
-    CONF_PKG_GRUB_UEFI="$(Config_File_Manage CONF Read "PGK_GRUB_UEFI")"
-    CONF_PKG_GRUB_BOOT="$(Config_File_Manage CONF Read "PGK_GRUB_BOOT")"
+    run_tools run "Install grub tools."
+    run_tools run "Your startup mode has been detected as ${green}$INFO_Boot_way${suffix}."   
+    CONF_PKG_GRUB_UEFI="$(run_tools file_rw CONF Read "PGK_GRUB_UEFI")"
+    CONF_PKG_GRUB_BOOT="$(run_tools file_rw CONF Read "PGK_GRUB_BOOT")"
 
     case "$INFO_Boot_way" in 
         UEFI)
             Install_Program "$CONF_PKG_GRUB_UEFI"
-            feed_status "Grub uefi base package installation successfully." "Grub uefi base package installation failed."
+            run_tools feed "Grub uefi base package installation successfully." "Grub uefi base package installation failed."
             grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$CONF_Hostname" --recheck
             echo "GRUB_DISABLE_OS_PROBER=false" >> /etc/default/grub
             grub-mkconfig -o /boot/grub/grub.cfg
             if efibootmgr | grep "$CONF_Hostname" &>/dev/null ; then
-                run "Grub installed successfully -=> [${white} $CONF_Hostname ${green}]"  
+                run_tools run "Grub installed successfully -=> [${white} $CONF_Hostname ${green}]"  
                 echo -e "${white}     $(efibootmgr | grep "$CONF_Hostname")  ${suffix}\n"  
             else
                 echo -e "${yellow}     $(efibootmgr)  ${suffix}\n"
-                err "Grub installed failed."
+                run_tools err "Grub installed failed."
             fi
         ;;
         BIOS)
             Install_Program "$CONF_PKG_GRUB_BOOT"
-            feed_status "Grub boot base package installation successfully." "Grub boot base package installation failed."
+            run_tools feed "Grub boot base package installation successfully." "Grub boot base package installation failed."
             local INFO_Boot_partition
-            INFO_Boot_partition=$(Config_File_Manage INFO Read "Boot_partition") 
+            INFO_Boot_partition=$(run_tools file_rw INFO Read "Boot_partition") 
             grub-install --target=i386-pc --recheck --force "$INFO_Boot_partition"
             grub-mkconfig -o /boot/grub/grub.cfg
             if echo $? &>/dev/null ; then
-                run "Grub installed successfully -=> [${white} $CONF_Hostname ${green}]" 
+                run_tools run "Grub installed successfully -=> [${white} $CONF_Hostname ${green}]" 
             else
-                err "Grub installed failed."
+                run_tools err "Grub installed failed."
             fi
     esac  
 }
@@ -776,165 +706,167 @@ function Configure_Grub(){
 # @配置本地化 时区 主机名 语音等  
 function Configure_Language(){
     language="LANG=en_US.UTF-8"
-        run "Configure enable Network."
-    systemctl enable NetworkManager
-    feed_status "NetworkManager.service enable successfully." "NetworkManager.service enable failed."
-        run "Time zone changed to 'Shanghai'."
-    ln -sf /usr/share/zoneinfo/"$(Config_File_Manage INFO Read "Timezone")" /etc/localtime &>/dev/null && hwclock --systohc --utc # 将时区更改为"上海" / 生成 /etc/adjtime
-        run "Set the hostname \"$CONF_Hostname\"." 
+        run_tools run "Time zone changed to 'Shanghai'."
+    ln -sf /usr/share/zoneinfo/"$(run_tools file_rw INFO Read "Timezone")" /etc/localtime &>/dev/null && hwclock --systohc --utc # 将时区更改为"上海" / 生成 /etc/adjtime
+        run_tools run "Set the hostname \"$CONF_Hostname\"." 
     echo "$CONF_Hostname" > /etc/hostname
-        run "Localization language settings."
+        run_tools run "Localization language settings."
     sed -i 's/#.*en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
-        run "Write 'en_US.UTF-8 UTF-8' To /etc/locale.gen."
+        run_tools run "Write 'en_US.UTF-8 UTF-8' To /etc/locale.gen."
     sed -i 's/#.*zh_CN.UTF-8 UTF-8/zh_CN.UTF-8 UTF-8/' /etc/locale.gen
-        run "Write 'zh_CN.UTF-8 UTF-8' To /etc/locale.gen."
+        run_tools run "Write 'zh_CN.UTF-8 UTF-8' To /etc/locale.gen."
     locale-gen
-        run "Configure local language defaults 'en_US.UTF-8'."; sleep 0.2
+        run_tools run "Configure local language defaults 'en_US.UTF-8'."; sleep 0.2
     echo "$language" > /etc/locale.conf       # 系统语言 "英文" 默认为英文   
 }
 
 # @Install/Configure virtualbox-guest-utils / open-vm-tools, 安装虚拟化插件
 function install_virtualization_service(){
-    CONF_PKG_VMWARE="$(Config_File_Manage CONF Read "PGK_Vmware")"
-    CONF_PKG_VIRTUALBOX="$(Config_File_Manage CONF Read "PGK_VirtualBox")"
+    CONF_PKG_VMWARE="$(run_tools file_rw CONF Read "PGK_Vmware")"
+    CONF_PKG_VIRTUALBOX="$(run_tools file_rw CONF Read "PGK_VirtualBox")"
     case "$1" in
         Vmware)
-            run "Install VMware workstation pro tools."
+            run_tools run "Install VMware workstation pro tools."
             Install_Program "$CONF_PKG_VMWARE"
-            feed_status "vmware-tools installation successfully." "vmware-tools installation failed."
+            run_tools feed "vmware-tools installation successfully." "vmware-tools installation failed."
 
             systemctl enable vmtoolsd.service
-            feed_status "vmtoolsd.service enable successfully." "vmtoolsd.service enable failed."
+            run_tools feed "vmtoolsd.service enable successfully." "vmtoolsd.service enable failed."
 
             systemctl enable vmware-vmblock-fuse.service
-            feed_status "vmware-vmblock-fuse.service enable successfully." "vmware-vmblock-fuse.service enable failed."
+            run_tools feed "vmware-vmblock-fuse.service enable successfully." "vmware-vmblock-fuse.service enable failed."
             
             systemctl start vmtoolsd.service
-            feed_status "vmtoolsd.service started successfully." "vmtoolsd.service started failed."
+            run_tools feed "vmtoolsd.service started successfully." "vmtoolsd.service started failed."
             
             systemctl start vmware-vmblock-fuse.service
-            feed_status "vmware-vmblock-fuse.service started successfully." "vmware-vmblock-fuse.service started failed."
+            run_tools feed "vmware-vmblock-fuse.service started successfully." "vmware-vmblock-fuse.service started failed."
         ;;
         VirtualBox)
-            run "Install VirtualBox tools."
+            run_tools run "Install VirtualBox tools."
             Install_Program "$CONF_PKG_VIRTUALBOX"
-            feed_status "VirtualBox tools installation successfully." "VirtualBox tools installation failed."
+            run_tools feed "VirtualBox tools installation successfully." "VirtualBox tools installation failed."
             
             systemctl enable vboxservice.service
-            feed_status "vboxservice.service enable successfully." "vboxservice.service enable failed."
+            run_tools feed "vboxservice.service enable successfully." "vboxservice.service enable failed."
             
             systemctl start vboxservice.service
-            feed_status "vboxservice.service started successfully." "vboxservice.service started failed."
+            run_tools feed "vboxservice.service started successfully." "vboxservice.service started failed."
         ;;
-        *) err "This computer is not virtualized."
+        *) run_tools err "This computer is not virtualized."
     esac
 }
 
 # @Archlive update tips 
-function Archiso_Version_Testing(){
+function Archiso_version_check(){
     Version_Route="${1}"
-    TIME_ARCHISO=$(sed 's/\./-/g' "$Version_Route")
+    TIME_ARCHISO=$(sed 's/\./-/g' "$Version_Route" 2> /dev/null)
     Time_interval=$((($(date +%s) - $(date -d "$TIME_ARCHISO 00:00:00" +%s)) / 2605391 ))
-    Config_File_Manage INFO Write Archiso_version "${TIME_ARCHISO:- }";
+    run_tools file_rw INFO Write Archiso_version "${TIME_ARCHISO:- }";
     case $Time_interval in
         [0])    ;;
-        [1])    echo; warn "Please update as soon as possible archiso ! "
-                warn "Archiso Version: ${white}[ ${TIME_ARCHISO} ]${suffix}"
+        [1])    echo; run_tools warn "Please update as soon as possible archiso ! "
+                run_tools warn "Archiso Version: ${white}[ ${TIME_ARCHISO} ]${suffix}"
                 ;;
-        [2])    echo; warn "You haven't updated in more than 2 month archiso !" 
-                warn "Archiso Version: ${white}[ ${TIME_ARCHISO} ]${suffix}"
+        [2])    echo; run_tools warn "You haven't updated in more than 2 month archiso !" 
+                run_tools warn "Archiso Version: ${white}[ ${TIME_ARCHISO} ]${suffix}"
                 sleep 3
                 ;;
-        [3])    echo; warn "You haven't updated in more than 3 month archiso !"
-                warn "Archiso Version: ${white}[ ${TIME_ARCHISO} ]${suffix}"
-                tips_white "Whether to start the script [Y/n]?"
-                    case $(Read_user_input) in
+        [3])    echo; run_tools warn "You haven't updated in more than 3 month archiso !"
+                run_tools warn "Archiso Version: ${white}[ ${TIME_ARCHISO} ]${suffix}"
+                run_tools tips_w "Whether to start the script [Y/n]?"
+                    case $(run_tools read) in
                         [Yy]*)  sleep 1 ;;
                             *)  clear; warn "Please update archiso."; exit 30
                     esac ;;
-        *)      echo; warn "Archiso Version: ${white}[ ${TIME_ARCHISO} ]${suffix}"
-                warn "You haven't updated for a long time, Please update your archisoarchiso!!!"
+        *)      echo; run_tools warn "Archiso Version: ${white}[ ${TIME_ARCHISO} ]${suffix}"
+                run_tools warn "You haven't updated for a long time, Please update your archisoarchiso!!!"
                 exit 30
     esac
 }
 
 # @安装系统
 function Installation_System(){
-    INFO_Root_partition=$(Config_File_Manage INFO Read "Root_partition")  
+    INFO_Root_partition=$(run_tools file_rw INFO Read "Root_partition")  
     if [ -n "$INFO_Root_partition" ]; then  # 后续待修改部分
         Install_Archlinux
     else
-        run_process_manage restart "$0" "${white}The partition is not mounted.${suffix}"
+        run_tools process restart "$0" "${white}The partition is not mounted.${suffix}"
     fi
     run_print_info install_system_info 
-    echo;    # Chroot到新系统中完成基础配置
+    # Chroot到新系统中完成基础配置
     cp -f /etc/pacman.conf $System_Root/etc/pacman.conf 
     cp -f /etc/pacman.d/mirrorlist $System_Root/etc/pacman.d/mirrorlist
-    echo "No" > $System_Root/local/Config_System
-    Auin_chroot
+    Auins_chroot
 }
 
 # @配置系统
 function Configure_System(){
+    set +e
     Disk_Kernel=$(cat /usr/src/linux/version)
-    INFO_Install_Kernel=$(Config_File_Manage INFO Read "LinuxKernel")
-    CONF_PGK_Terminal_Tools=$(Config_File_Manage CONF Read "PGK_Terminal_Tools")
-    CONF_PKG_SystemctlFile=$(Config_File_Manage CONF Read "PKG_SystemctlFile")
-    CONF_PGK_Common_Package=$(Config_File_Manage CONF Read "PGK_Common_Package")
+    INFO_Install_Kernel=$(run_tools file_rw INFO Read "LinuxKernel")
+    CONF_PGK_Terminal_Tools=$(run_tools file_rw CONF Read "PGK_Terminal_Tools")
+    CONF_PKG_SystemctlFile=$(run_tools file_rw CONF Read "PKG_SystemctlFile")
+    CONF_PGK_Common_Package=$(run_tools file_rw CONF Read "PGK_Common_Package")
     if [ -n "$INFO_Install_Kernel" ] || [ -n "$Disk_Kernel" ] ; then 
         Configure_Grub
-        #---------------------------------------------------------------------------#
-        run "Install the Terminal tools packages."
-        Install_Program "$CONF_PGK_Terminal_Tools"
-        feed_status "Terminal tools packages installation successfully." "Terminal tools packages installation failed."
-        
-        run "Install the System file package."
-        Install_Program "$CONF_PKG_SystemctlFile"
-        feed_status "System file package installation successfully." "System file package installation failed."
-        
-        run "Install the Other common package."
-        Install_Program "$CONF_PGK_Common_Package"
-        feed_status "Other common package installation successfully." "Other common package installation failed."
-        
+        Configure_users2passwd
+        echo;
         Configure_Language
-
-        rm -rf "$local_Dir"/Config_System; # 删除这个文件，才能进 Normal_Mode
-        if [ "$(Config_File_Manage CONF Read "Archlinucn")" = "yes" ]; then Install_Program archlinuxcn-keyring; fi
-        feed_status "archlinuxcn-keyring installation successfully." "archlinuxcn-keyring installation failed."
-        run_configure_fonts Config_file_install_fonts 
+        #---------------------------------------------------------------------------#
+        run_tools run "Install the Terminal tools packages."
+        Install_Program "$CONF_PGK_Terminal_Tools"
+        run_tools feed "Terminal tools packages installation successfully." "Terminal tools packages installation failed."
         
+        run_tools run "Install the System file package."
+        Install_Program "$CONF_PKG_SystemctlFile"
+        run_tools feed "System file package installation successfully." "System file package installation failed."
+        
+        run_tools run "Install the Other common package."
+        Install_Program "$CONF_PGK_Common_Package"
+        run_tools feed "Other common package installation successfully." "Other common package installation failed."
+
+        run_tools run "Configure enable Network."
+        systemctl enable NetworkManager
+        run_tools feed "NetworkManager.service enable successfully." "NetworkManager.service enable failed."
+        
+        # 删除这个文件，才能进 Normal_Mode
+        rm -rf "$local_Dir"/Not_Configure_System 2> /dev/null   
+        run_configure_fonts Config_file_install_fonts 
+
+        if [ "$(run_tools file_rw CONF Read "Archlinucn")" = "yes" ]; then Install_Program archlinuxcn-keyring; fi
+        run_tools feed "archlinuxcn-keyring installation successfully." "archlinuxcn-keyring installation failed."
     else
-        run_process_manage restart "$0" "${red}The system is not installed. Exec: 4->2 ${suffix}"
-    fi
-    rm -rf "$local_Dir"/Config_System 2> /dev/null
+        run_tools process restart "$0" "${red}The system is not installed. Exec: 4->2 ${suffix}"
+    fi 
+    set -e
 }
 
 # @删除脚本和缓存
 function Delete_Script(){
-    warn "Deleting scripts and cache!"
+    run_tools warn "Deleting scripts and cache!"
     sudo pacman -Scc
     rm -rf "$modules_Dir"
     rm -rf "$local_Dir"
-    warn "  "
+    run_tools warn "  "
     echo -e "\033[1;37m:: $(tput bold; tput setaf 2) ʕ ᵔᴥᵔ ʔ  =>$(tput sgr0) Bye-bye~"
     rm -rf "$0" && sleep 5;
 }     
 
 # @ Archiso LiveCD 下自动启用
 function LiveCD_Mode(){
-    run_print_info logos "$CHROOT_PATTERNS_PRINT" "$START_PATTERNS"
+    run_print_info logos "$CHROOT_PATTERNS_PRINT" "$START_MODE"
     # 检查archiso版本，如果过低，叫提醒更新
-    if [[ $ChrootPatterns == "Chroot-OFF" ]]; then
-        CONF_Archiso_Version_check=$(Config_File_Manage CONF Read "Archiso_Version_check");
-        case $CONF_Archiso_Version_check in [Yy]*) Archiso_Version_Testing "$Livecd_Version_Route"; esac
+    if [[ $CHROOT_PATTERNS_PRINT == "Chroot-OFF" ]]; then
+        CONF_Archiso_Version_check=$(run_tools file_rw CONF Read "Archiso_Version_check");
+        case $CONF_Archiso_Version_check in [Yy]*) Archiso_version_check "$Livecd_Version_Route"; esac
     fi
     # 输出首页选项列表
-    echo
     run_print_info livecd_home_list;   
     echo -e "\n${Chroot_status:- }"
     # printf "${outG} ${yellow} Please enter${white}[1,2,3..]${yellow} Exit${white}[${red}Q${white}]${suffix} %s" "$inB"
-    tips_white "Please enter[1,2,3..] Exit[Q]"
-    case $(Read_user_input) in
+    run_tools tips_w "Please enter[1,2,3..] Exit[Q]"
+    case $(run_tools read) in
         1)  run_update_mirrors ;; # 配置源
         2)  Network Conf_all;; # 配置网络
         3)  Open_SSH ;; # 配置SSH
@@ -942,42 +874,41 @@ function LiveCD_Mode(){
             run_print_info livecd_system_module_list;
             echo -e "${input_System_Module_Chroot:- \n}"
             # printf "${outG} ${yellow} Please enter${white}[1,2,3,22..]${yellow} Exit${white}[${red}Q${white}]${suffix} %s" "$inB"
-            tips_white "Please enter[1,2,3,22..] Exit[Q]"
-            case $(Read_user_input) in
-                0)  Auin_chroot ;;
+            run_tools tips_w "Please enter[1,2,3,22..] Exit[Q]"
+            case $(run_tools read) in
+                0)  Auins_chroot ;;
                 1)  run_configure_partition ;; # 磁盘分区 隐
                 2)  Installation_System ;; # 安装系统 隐 
                 3)  # 配置系统 隐
                     # run_update_mirrors
                     Configure_System 
-                    Configure_users2passwd
                     sleep 1.5;
                     run_print_info config_system_info ;; 
                 4)  Configure_users2passwd ;;
                 5)  # 安装桌面
                     Configure_users2passwd
                     run_configure_desktop ;; 
-                11) Install_Io_Driver ;;  # 安装I/O驱动
+                11) run_configure_drive ;;  # 安装I/O驱动
                 22) install_virtualization_service "$Host_Environment"; bash "$0" ;; # 安装Vm tools
             esac ;;
         [Ss]*) bash ;;
-        [Qq]* | *) run_process_manage stop "$0" 
+        [Qq]* | *) run_tools process stop "$0" 
     esac
 }
 
 # @ 安装完Archlinux后 正常可用情况下自动启用
 function Normal_Mode(){
-    CONF_BlackArch=$(Config_File_Manage CONF Read "BlackArch")
-    INFO_BlackArch=$(Config_File_Manage INFO Read "BlackArch")
-    [[ $INFO_BlackArch == "" ]] && Config_File_Manage INFO Write BlackArch no
+    CONF_BlackArch=$(run_tools file_rw CONF Read "BlackArch")
+    INFO_BlackArch=$(run_tools file_rw INFO Read "BlackArch")
+    [[ $INFO_BlackArch == "" ]] && run_tools file_rw INFO Write BlackArch no
     [[ $CONF_BlackArch == "yes" &&  $INFO_BlackArch == "no" ]] && run_blarckarch_script
 
-    run_print_info logos "$CHROOT_PATTERNS_PRINT" "$START_PATTERNS"
+    run_print_info logos "$CHROOT_PATTERNS_PRINT" "$START_MODE"
     run_print_info normal_home_list;   
     echo -e "\n${Chroot_status:- }"
     # printf "${outG} ${yellow} Please enter${white}[1,2,3,22..]${yellow} Exit${white}[${red}Q${white}]${suffix} %s" "$inB"
-    tips_white "Please enter[1,2,3,22..] Exit[Q]"
-    case $(Read_user_input) in
+    run_tools tips_w "Please enter[1,2,3,22..] Exit[Q]"
+    case $(run_tools read) in
         1)  run_update_mirrors ;; # 配置源
         2)  Network Conf_all;; # 配置网络
         3)  Open_SSH ;; # 配置SSH
@@ -986,16 +917,40 @@ function Normal_Mode(){
             Configure_users2passwd
             run_configure_desktop ;;
         6)  run_configure_fonts "Script_Runing_install_fonts" ;;
-        11)  Install_Io_Driver;; # 安装I/O驱动
-        22)  install_virtualization_service "$Host_Environment"; bash "$0" ;; # 安装Vm tools
+        11) run_configure_drive;; # 安装I/O驱动
+        22) install_virtualization_service "$Host_Environment"; bash "$0" ;; # 安装Vm tools
         [Dd]) Delete_Script ;;
         [Ss]*) bash ;;
-        [Qq]* | *) run_process_manage stop "$0" 
+        [Qq]* | *) run_tools process stop "$0" 
     esac
 }
 
 # @Auins的其他选项功能
 function Auins_Options(){
+    function archiso_version_check_warn(){
+        case $1 in 
+            enable ) 
+                    run_tools file_rw CONF Write Archiso_Version_check "yes" 
+                    run_tools feed "Enable: Always check the archiso version." "enable failed." ;;
+            disable) 
+                    run_tools file_rw CONF Write Archiso_Version_check "no"
+                    run_tools feed "Disable: Do not check archiso version." "disable failed." ;;
+                    *) 
+                    run_tools err "This option was not found $1"
+        esac
+    }
+    function auins_update(){
+        case $1 in 
+            enable ) 
+                    run_tools file_rw CONF Write Now_update_auins "yes" 
+                    run_tools feed "Enable: Always Auins update." "enable failed." ;;
+            disable) 
+                    run_tools file_rw CONF Write Now_update_auins "no"
+                    run_tools feed "Disable: Always turn off Auins update." "disable failed." ;;
+                    *) 
+                    run_tools err "This option was not found $1"
+        esac
+    }
     case "${1}" in
 # Install Commands: ("-S = install", "-R = uninstall")
         font ) 
@@ -1011,7 +966,7 @@ function Auins_Options(){
                 Axel_Configure "$2" 
                 exit 0 ;;
         inGpu) 
-                warn "Functional improvement in progress..." 
+                run_tools warn "Functional improvement in progress..." 
                 exit 0 ;;
         inVmt) 
                 install_virtualization_service "$Host_Environment"
@@ -1029,84 +984,47 @@ function Auins_Options(){
         -s | --openssh) 
                         case "$CONF_Service_SSH" in
                             yes) 
-                                skip "activate." ;;
+                                run_tools skip "activate." ;;
                             *  )  
                                 Open_SSH
                         esac
                         exit 0  ;;
 # Global Options:
-        update) 
-                            case $2 in 
-                                enable ) 
-                                        Config_File_Manage CONF Write Now_update_auins "yes" 
-                                        feed_status "Enable: Always Update Auins." "enable failed." ;;
-                                disable) 
-                                        Config_File_Manage CONF Write Now_update_auins "no"
-                                        feed_status "Disable: Always Update Auins." "disable failed." ;;
-                                      *) 
-                                        err "This option was not found $2"
-                            esac 
+            --update    )   
+                            auins_update "$2"
                             exit 0  ;;
-        -e | --edit-conf  ) 
+            --iso-check )   
+                            archiso_version_check_warn "$2"
+                            exit 0  ;;
+        -e | --edit-conf) 
                             vim "${config_File}" 
                             exit 0 ;;
-        -f | --show-conf  ) 
+        -f | --show-conf) 
                             less "${config_File}" 
                             exit 0 ;;
-        -i | --show-info  ) 
+        -i | --show-info) 
                             clear; less "${info_File}" 
                             exit 0 ;;
         -c | --clean-cache) 
                             Delete_Script 
                             exit 0 ;;
-        -h | --help       ) 
+        -h | --help     ) 
                             run_print_info auins_usage 
                             exit 0 ;;
-        -v | --version    ) 
+        -v | --version  ) 
                             run_print_info version 
                             exit 0 ;;
-        [Aa]uins          ) 
+        [Aa]uins        ) 
                             clear 
                             echo -e "${white}${0##*/}: Thank you for your use. I look forward to not letting you down.${suffix}"; 
                             exit 0 ;;
-                         *) 
+                        *) 
                             case_return=10 ;;
         # --versions        ) echo "$AUINS_VERSION" | awk -F "v" '{print $NF}' | sed 's/\.//g' | sed 's/-\([a-z][a-z]\+\)//g';
     esac
     if [ "$case_return" = 10 ] && [[ "$1" != "" ]] ; then
-        run_print_info auins_usage; err "This option was not found: $*"
+        run_print_info auins_usage; run_tools err "This option was not found: $*"
     fi
-}
-
-# Auins执行模式
-function exec_mode(){
-    case "$1" in 
-        Chroot-OFF)
-            CHROOT_PATTERNS_PRINT="Chroot-OFF";
-            
-            Chroot_status="${white}::${INFO_Host_Env} ${green}=> ${yellow}Not Chroot.${suffix}"
-            input_System_Module_Chroot="${outY} \t${white}[${yellow} 0${white}]${yellow} arch-chroot ${System_Root}           ${red}**${suffix}\n"
-            if [ -e "$System_Root/local/LiveCD_OFF" ]; then # 如果LiveCD_OFF存在于新系统，将自动chroot
-                Auin_chroot 2> /dev/null; 
-            fi 
-            if [ -e "$local_Dir"/LiveCD ]; then 
-                START_PATTERNS="LiveCD"
-                LiveCD_Mode
-            fi 
-            case $Normals in [Yy]*)  START_PATTERNS="Normal"; Normal_Mode; esac
-        ;;
-        Chroot-ON) 
-            CHROOT_PATTERNS_PRINT="Chroot-ON"
-            Chroot_status="${outG}  ${wg}Successfully start: Chroot.${suffix}"
-            if [ -e "$local_Dir"/Config_System ]; then 
-                START_PATTERNS="LiveCD"
-                LiveCD_Mode
-            else 
-                START_PATTERNS="Normal"
-                Normals="yes"
-                Normal_Mode
-            fi
-    esac
 }
 
 # @该死的颜色
@@ -1128,16 +1046,34 @@ function Set_Color_Variable(){
 
 # Start Script | 从这里开始
 # >> >> >> >> >> >> >> >> >> >> >> >> 
+Auins_Variable_init
 check_priv
 Set_Color_Variable
-Auins_Variable_init
 Update_Share auins_download_url "$SCRIPTS_SOURCE"  # 锁定脚本下载源
 Update_Share download_script        # 下载脚本需要的脚本
 Network ethernet_info
 Script_init
 Auins_Options "$1" "$2" 
 # 具体的实现ChrootPatterns
-exec_mode $ChrootPatterns
+# exec_mode $CHROOT_PATTERNS_PRINT
+case "$CHROOT_PATTERNS_PRINT" in 
+        Chroot-OFF)
+            Chroot_status="${white}::${INFO_Host_Env} ${green}=> ${yellow}Not Chroot.${suffix}"
+            input_System_Module_Chroot="${outY} \t${white}[${yellow}0${white}]${yellow}  arch-chroot ${System_Root}     \t\t${red}**${suffix}\n"
+            [ -e $System_Root/root/local/Chroot_ON ] && Auins_chroot 2> /dev/null; 
+            START_MODE="LiveCD"
+            LiveCD_Mode
+        ;;
+        Chroot-ON) 
+            Chroot_status="${outG}  ${wg}Successfully start: Chroot.${suffix}"
+            if [ -e "$local_Dir"/Not_Configure_System ]; then 
+                START_MODE="LiveCD"
+                LiveCD_Mode
+            else 
+                START_MODE="Normal"
+                Normal_Mode
+            fi
+    esac
 # >> >> >> >> >> >> >> >> >> >> >> >>
 # @待解决的问题 
 : << EOF
@@ -1146,4 +1082,6 @@ exec_mode $ChrootPatterns
     - [ ] ⏳  尝试加入Wayland的桌面环境，比如：Sway，Plasma-Wayland等等；
     - [ ] ⏳  会继续尝试DWM桌面环境；
     - [ ] ⏳  会尝试维护Openbox桌面环境；
+    - [ ] ⏳  删除aliyun源；
+    - [ ] ⏳  优化部分代码
 EOF

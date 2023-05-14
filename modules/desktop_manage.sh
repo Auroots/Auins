@@ -1,115 +1,49 @@
 #!/bin/bash
 # Author: Auroot
 # QQ： 2763833502
-# Description：Auto Install Desktop -> Auins v4.7
+# Description：Auto Install Desktop -> Auins v4.7.1
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
-
+# set -x
 function include(){
     set +e
     declare -a argu=("$@")
     # declare -p argu
-    export local_Dir config_File info_File Info_modules Fonts_modules Process_modules
+    export local_Dir config_File info_File Info_modules Fonts_modules 
     config_File="${argu[0]}"
     info_File="${argu[1]}"
     local_Dir="${argu[2]}"
-    Info_modules="${argu[3]}"
-    Fonts_modules="${argu[4]}"
-    Process_modules="${argu[5]}"
+    Tools_modules="${argu[3]}"
+    Info_modules="${argu[4]}"
+    Fonts_modules="${argu[5]}"
     set -e
+}
+# 小型重复性高的模块调用管理器
+function run_tools(){
+    bash "$Tools_modules" "$config_File" "$info_File" "$1" "$2" "$3" "$4" "$5"
 }
 # 信息打印,详细参数看auins
 function run_print_info(){
-    bash "$Info_modules" "$config_File" "$info_File" "$1" "$2" "$3"
+    bash "$Info_modules" "$config_File" "$info_File" "$Tools_modules" "$1" "$2" "$3"
 }
 # 字体安装,详细参数看auins
 function run_configure_fonts(){
     bash "$Fonts_modules" "$config_File" "$info_File" "$local_Dir" \
-         "$Info_modules" "$Process_modules" "$1"
+         "$Tools_modules" "$Info_modules" "$1" "$2"
 }
-# 脚本进程管理,详细参数看auins
-function run_process_manage(){
-    bash "$Process_modules" "$1" "$2" "$3"
-}
-
-# Error message wrapper
-function err(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 1)[ x Error ] => \033[1;31m${*}\033[0m$(tput sgr0)";} 
-# Warning message wrapper
-function warn(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 3)[ ! Warning ] => \033[1;33m${*}\033[0m$(tput sgr0)"; }
-# Run message wrapper
-function run() { echo -e "\033[1;37m:: $(tput bold; tput setaf 2)[ + Exec ] => \033[1;32m${*}\033[0m$(tput sgr0)"; }
-# Skip message wrapper
-function skip() { echo -e "\033[1;37m:: $(tput bold; tput setaf 0)[ - Skip ] => ${*}\033[0m$(tput sgr0)"; }
-# @获取用户输入，并返回
-function Read_user_input(){ local user_input; read -r user_input; echo "$user_input"; }
-# Tips output colour: white
-function tips_white() { printf "\033[1;37m:: $(tput bold; tput setaf 2)\033[1;37m%s \033[1;32m-+> \033[0m$(tput sgr0)" "${*}"; }
-  # feedback successfully info
-function feed_status(){ 
-    if [ $? = 0 ]; then 
-        echo -e "\033[1;37m:: $(tput bold; tput setaf 2)=> \033[1;32m${1}\033[0m$(tput sgr0)"; 
-    else 
-        err "$2"
-    fi
-}
-# check for root privilege
-function check_priv()
-{
-  if [ "$(id -u)" -ne 0 ]; then
-    err "Please use command: ${white}\"sudo\"${red} or user: ${white}\"root\"${red} to execute.${suffix}"
-    exit 99;
-  fi
-}
-
-# 地址: auins.info(INFO)| script.conf(CONF)
-# 读取: Config_File_Manage [INFO/CONF] [Read] [头部参数]
-# 写入: Config_File_Manage [INFO/CONF] [Write] [头部参数] [修改内容]
-function Config_File_Manage(){ 
-    local format=" = "; parameter="$3"; content="$4"; itself=$(echo "$0" | awk -F"/" '{print $NF}')
-    case "$1" in
-        INFO) local Files="$info_File" ;;
-        CONF) local Files="$config_File" ;;
-    esac
-    case "$2" in
-        Read ) 
-                read_info=$(grep -w "$parameter" < "$Files") # 在文件中查找匹配的值
-                if [ -n "$read_info" ]; then 
-                    echo "$read_info" | awk -F "=" '{print $2}' | awk '{sub(/^[\t ]*/,"");print}' | awk '{sub(/[\t ]*$/,"");print}' 
-                else
-                    warn "${white}$itself ${yellow}Read file: ${white}$Files${yellow} missing value: [${white} $parameter  ${yellow}]."
-                    sleep 1.5
-                fi
-         ;;
-        Write) 
-                List_row=$(grep -nw "$parameter" < "$Files" | awk -F ":" '{print $1}';) # 在文件中查找匹配的值, 并打印行号
-                if [ -n "$List_row" ]; then
-                    sed -i "${List_row}c ${parameter}${format}${content}" "$Files" 2>/dev/null
-                else
-                    warn "${white}$itself ${yellow}Write file: ${white}$Files${yellow} missing value: [${white} $parameter  ${yellow}] + [${white} $content ${yellow}]."
-                    sleep 1.5
-                fi
-    esac 
-}
-
 # @install Programs 安装包
 function Install_Program() {
-    # arch-chroot ${MNT_DIR} bash -c "$COMMAND"
     set +e
     IFS=' '; PACKAGES=("$@");
     for VARIABLE in {1..3}
     do
         local COMMAND="pacman -Syu --noconfirm --needed ${PACKAGES[@]}"
-        if ! bash -c "$COMMAND" ; then
-            break;
-        else
-            sleep 3; break;
-        fi
+        if ! bash -c "$COMMAND" ; then break; else sleep 1.5; break; fi
     done
     echo "$VARIABLE" &> /dev/null
     set -e
 }
-
 
 export Desktop_Tuple
 function Desktop_Env_ID {
@@ -133,7 +67,7 @@ function Desktop_Env_ID {
         # 9)  Desktop_Tuple=("Plasma & Wayland" "sddm" "" "P_plasma_Wayland") ;;
         # 10)  run_openbox" ;;
         *) 
-            run_process_manage stop "$0" "Selection error.";;
+            run_tools process stop "$0" "Selection error.";;
     esac
 }
 
@@ -154,12 +88,12 @@ function Set_Desktop_Env(){
         printf "${outG} ${green}A normal user already exists, The UserName:${suffix} ${blue}%s${suffix} ${green}ID: ${blue}%s${suffix}.\n" \
         "$INFO_UserName" "$INFO_UsersID"
 
-        tips_white "Please select desktop"
-        DESKTOP_ID="0"; ID=$(Read_user_input)
+        run_tools "tips_w" "Please select desktop"
+        DESKTOP_ID="0"; ID=$(run_tools read)
         if [ "$ID" ]; then 
             Desktop_Env_ID "$ID"
         else
-            run_process_manage stop "$0" "Selection error."
+            run_tools process stop "$0" "Selection error."
         fi 
    fi
 }
@@ -171,11 +105,11 @@ function Install_Desktop_Env(){
     Desktop_Name="${Desktop_Tuple[0]}"
     Default_DM="${Desktop_Tuple[1]}"
     Desktop_Xinit="${Desktop_Tuple[2]}"
-    Desktop_Program=$(Config_File_Manage CONF Read "${Desktop_Tuple[3]}")
-    CONF_PGK_Xorg=$(Config_File_Manage CONF Read "PGK_Xorg")
-    CONF_PGK_Gui_Package=$(Config_File_Manage CONF Read "PGK_Gui_Package")
+    Desktop_Program=$(run_tools file_rw CONF Read "${Desktop_Tuple[3]}")
+    CONF_PGK_Xorg=$(run_tools file_rw CONF Read "PGK_Xorg")
+    CONF_PGK_Gui_Package=$(run_tools file_rw CONF Read "PGK_Gui_Package")
     
-    run "Configuring desktop environment [${white} $Desktop_Name ${green}]."; sleep 1;
+    run_tools run "Configuring desktop environment [${white} $Desktop_Name ${green}]."; sleep 1;
     Install_Program "$CONF_PGK_Xorg"
     Install_Program "$Desktop_Program"
     Install_Program "$CONF_PGK_Gui_Package"
@@ -186,8 +120,8 @@ function Install_Desktop_Env(){
 # @桌面管理器选择列表，选择后，自动安装及配置服务；
 function Desktop_Manager(){
     run_print_info desktop_manager_list
-    tips_white "Please select Desktop Manager"
-    case $(Read_user_input) in
+    run_tools "tips_w" "Please select Desktop Manager"
+    case $(run_tools read) in
         1) 
             DmS="sddm" ;;
         2) 
@@ -199,8 +133,8 @@ function Desktop_Manager(){
         *) 
             DmS="$1" ;;
     esac
-    Config_File_Manage INFO Write Desktop_Display_Manager "$DmS"
-    run "Configuring desktop display manager [${white} $DmS ${green}]."; sleep 1;
+    run_tools file_rw INFO Write Desktop_Display_Manager "$DmS"
+    run_tools run "Configuring desktop display manager [${white} $DmS ${green}]."; sleep 1;
     echo "$DmS" > "${local_Dir}/Desktop_Manager"
     case ${DmS} in
         sddm)
@@ -212,14 +146,14 @@ function Desktop_Manager(){
         lxdm)
             Install_Program "lxdm" && systemctl enable lxdm ;;
     esac
-    feed_status "Desktop manager installed successfully -=> [${white} $DmS ${green}]."
+    run_tools feed "Desktop manager installed successfully -=> [${white} $DmS ${green}]."
     sleep 3;
 }
 
 # @configure desktop environment
 function Desktop_Xorg_Config(){
     if [ -e /home/"$INFO_UserName"/.xinitrc ];then
-        warn "Repeated execution !";sleep 1; 
+        run_tools warn "Repeated execution !";sleep 1; 
     else
         # xinitrc_file="/etc/X11/xinit/xinitrc"
         # startLine=$(sed -n '/twm &/=' $xinitrc_file) 
@@ -228,14 +162,14 @@ function Desktop_Xorg_Config(){
         # sed -i "$startLine"','"$endLine"'d' "$xinitrc_file"
         echo "exec ${2}" >> /etc/X11/xinit/xinitrc 
         cp -rf /etc/X11/xinit/xinitrc  /home/"$INFO_UserName"/.xinitrc 
-        feed_status "[${white} ${Desktop_Name} ${green}]Desktop environment configuration completed." "xinitrc configuration failed." 
+        run_tools feed "[${white} ${Desktop_Name} ${green}]Desktop environment configuration completed." "xinitrc configuration failed." 
     fi
 }
 
 # @安装桌面具体的实现
 function Installation_Desktop(){
-    CONF_Desktop_Display_Manager=$(Config_File_Manage CONF Read "Desktop_Display_Manager")
-    CONF_Desktop_Environment=$(Config_File_Manage CONF Read "Desktop_Environment")
+    CONF_Desktop_Display_Manager=$(run_tools file_rw CONF Read "Desktop_Display_Manager")
+    CONF_Desktop_Environment=$(run_tools file_rw CONF Read "Desktop_Environment")
 
     INFO_UsersID=$(id -u "$INFO_UserName" 2> /dev/null)
     if [ -n "$INFO_UserName" ]; then 
@@ -245,21 +179,18 @@ function Installation_Desktop(){
         Install_Desktop_Env;
     #  安装字体
         run_configure_fonts Script_Runing_install_fonts 
-        tips_white "Whether to install Common Drivers? [Y/n]?"
-        case $(Read_user_input) in
-            [Yy]*) Install_Io_Driver ;;
-            [Nn]*) run_process_manage stop "$0" ;;
-        esac
     else
-        err "User has no settings."
+        run_tools err "User has no settings."
         sleep 2
-        run_process_manage restart "$0"
+        run_tools process restart "$0"
     fi
 }
 function Set_Color_Variable(){
     # @该死的颜色
-    red='\033[1;31m'; green='\033[1;32m'  
-    yellow='\033[1;33m'; blue='\033[1;36m'  
+    # red='\033[1;31m'; 
+    green='\033[1;32m'  
+    # yellow='\033[1;33m'; 
+    blue='\033[1;36m'  
     white='\033[1;37m'; suffix='\033[0m'   
     # 提示 蓝 红 绿 黄
     outG="${white}::${green} =>${suffix}";
@@ -267,15 +198,13 @@ function Set_Color_Variable(){
 
 # 具体的实现 >> >> >> >> >> >> >> >> 
 echo &>/dev/null
-check_priv # 检查权限
 include "$@"
+run_tools ck_p
 Set_Color_Variable
-INFO_UserName=$(Config_File_Manage INFO Read "Users")
+INFO_UserName=$(run_tools file_rw INFO Read "Users")
 # 附赠的壁纸
 if [[ -n "${INFO_UserName}" ]]; then
     wget -P "/home/$INFO_UserName" "$SOURCE_LOCAL/gift_auins_0.png"
     wget -P "/home/$INFO_UserName" "$SOURCE_LOCAL/gift_auins_1.jpg"
 fi
 Installation_Desktop
-
-

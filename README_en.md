@@ -5,10 +5,10 @@
   <br>
 </h1>
 <p align="center">
-    <img src="https://img.shields.io/badge/Type-bash-important?style=flat-square&logo=appveyor">
-<img src="https://img.shields.io/badge/environment-Linux%20%7C%20VPS-blue?style=flat-square&logo=appveyor">
+<img src="https://img.shields.io/badge/Bash-red?style=flat-square&logo=shell">
+<img src="https://img.shields.io/badge/OS-ArchLinux-blue?style=flat-square&logo=arch-linux">
      <a href="https://jq.qq.com/?_wv=1027&k=yASMQyjM">
-      <img src="https://img.shields.io/badge/QQ%E7%BE%A4 @auroot -204097403-success?style=flat-square&logo=appveyor">
+      <img src="https://img.shields.io/badge/QQ%E7%BE%A4 @auroot -346952836-success?style=flat-square&logo=appveyor">
   </a>
 </p>
 <h1 align="center">
@@ -16,27 +16,29 @@
   <br>
 </h1>
 <h3>
-<a href="https://github.com/Auroots/Auins/blob/main/doc/update.md">
+📦 Version: v4.7, Please use the latest archiso
+<a href="https://github.com/Auroots/Auins/blob/main/doc/update-zh.md">
     <img src="https://img.shields.io/badge/journal-%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97-brightgreen?style=flat-square&logo=appveyor">
 </a>
 </h3>
 
-📦 It is recommended to use `curl` download script `auin.sh`
 
-- stable：`http://auroot.cn/auin.sh`
-- beta：`http://auroot.cn/auin_test.sh`
-- script configuration file（<font color='blue'>Modifiable </font>）：```./local/script.conf```；
+It is recommended to use `curl` download script `auin.sh`
+
+- stable：`http://auins.auroot.cn/auins`
+- beta：`http://test.auroot.cn/auins`
+- script configuration file（<font color='blue'>Modifiable </font>）：```./local/profile.conf```；
 - installation info file（<font color='red'>Not editable </font>）：```./local/auins.info```；
 
 ### 💾 Quick start
 
 ```bash
 # auroot.cn 
-curl -fsSL http://auins.auroot.cn > auin.sh  
+curl -fsSL http://auins.auroot.cn > auins
 #Gitee
-curl -fsSL https://gitee.com/auroot/Auins/raw/main/auin.sh > auin.sh
+curl -fsSL https://gitee.com/auroot/Auins/raw/main/auin.sh > auins
 # Github
-curl -fsSL https://raw.githubusercontent.com/Auroots/Auins/main/auin.sh > auin.sh
+curl -fsSL https://raw.githubusercontent.com/Auroots/Auins/main/auin.sh > auins
 # exec
 chmod +x auin.sh && bash auin.sh
 ```
@@ -44,20 +46,34 @@ chmod +x auin.sh && bash auin.sh
 ### :rocket:  How to use ？
 
 ```
-1. (1) Update source  
-2. (2) Configure the network 
-3. (3) Openssh and  Configure
-4. (4) Secondary menu
-5. (4-> 1) partition mount:   skippable
-6. (4-> 2) Install system:    (4-> 1)after;
-7. (4-> 3) configure system   (4-> 2)after;
-8. (4-> 4) install desktop    (4-> 3)after;
-9. (4->11) install driver 	  (4-> 2)after;
-10.(4->22) install Virtualization tools  (Vmware/Virtual);
-11.(4-> 0) Chroot             (4-> 2)after;
+# LiveCD mode: Automatically open only in archiso
+[1] Configure Mirrorlist
+[2] Configure Netword
+[3] Configure SSH
+[4] Installation System (Secondary Menu)
+[4->1] Disk Partition
+[4->2] Installation Base System
+[4->3] Configure System
+[4->4] Configure Users
+[4->5] Installation Desktop
+[4->11] Installation Drive
+[4->22] Install virtualization tools
+[4->0]  arch-chroot /mnt
+
+# Normal Mode: Automatically open only after system installation is completed or in a new system.
+[1] Configure Mirrorlist
+[2] Configure Netword
+[3] Configure SSH
+[4] Configure Users
+[5] Installation Desktop
+[5] Installation Fonts
+[11] Installation Drive
+[22] Install virtualization tools (Vmware / VirturlBox) 
+[D] Delete auins & caches  
+[Q] Exit Auins 
 ```
 
-### 💻 Other options
+### 💻 Options
 
 ```bash
 :: Auins is a script for ArchLinux installation and deployment.
