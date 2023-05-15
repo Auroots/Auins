@@ -12,25 +12,24 @@
   </a>
 </p>
 <h1 align="center">
-  <a href="https://github.com/Auroots/Auins" alt="logo" ><img src="https://gitee.com/auroot/Auins/raw/main/local/Auins.png" width="1000"/></a>
+  <a href="https://github.com/Auroots/Auins" alt="logo" ><img src="http://auins.auroot.cn/local/Auins.jpg" width="1200"/></a>
   <br>
 </h1>
-<h3>
-📦 Version: v4.7, Please use the latest archiso
+<h4>
+📦 Please use the latest archiso
 <a href="https://github.com/Auroots/Auins/blob/main/doc/update-zh.md">
     <img src="https://img.shields.io/badge/journal-%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97-brightgreen?style=flat-square&logo=appveyor">
 </a>
-</h3>
+</h4>
 
-
-It is recommended to use `curl` download script `auin.sh`
+>   Using the following recommended method to obtain `auins` can greatly shorten your installation time:
 
 - stable：`http://auins.auroot.cn/auins`
 - beta：`http://test.auroot.cn/auins`
 - script configuration file（<font color='blue'>Modifiable </font>）：```./local/profile.conf```；
 - installation info file（<font color='red'>Not editable </font>）：```./local/auins.info```；
 
-### 💾 Quick start
+## 💾 Quick start
 
 ```bash
 # auroot.cn 
@@ -43,7 +42,7 @@ curl -fsSL https://raw.githubusercontent.com/Auroots/Auins/main/auin.sh > auins
 chmod +x auin.sh && bash auin.sh
 ```
 
-### :rocket:  How to use ？
+## :rocket:  How to use ？
 
 ```
 # LiveCD mode: Automatically open only in archiso
@@ -73,7 +72,7 @@ chmod +x auin.sh && bash auin.sh
 [Q] Exit Auins 
 ```
 
-### 💻 Options
+## 💻 Options
 
 ```bash
 :: Auins is a script for ArchLinux installation and deployment.
@@ -95,6 +94,7 @@ usage: auins [-h] [-V] command ...
              
     Global Options:
             --update        Auins and modules are updated in real time, Options: [enable], [disable].
+            --iso-check     Switch for auins version check, Options: [enable], [disable].
         -e, --edit-conf     Edit ("local/profile.conf").
         -f, --show-conf     Show ("local/profile.conf").
         -i, --show-info     Show ("local/auins.info").
@@ -105,20 +105,22 @@ usage: auins [-h] [-V] command ...
 
 
 
-## :sparkles: Features  [Desktop renderings](https://gitee.com/auroot/Auins/blob/main/doc/Picture.md)
+## :sparkles: Features
 
-- ⏳ The script homepage can check whether it is currently in `Chroot` model `[ON] / [OFF]`.
-- 🔗 Script homepage shows `IP address`，Tip: Connect SSH service command.
-- 🔗 One-click configuration `SSH service`, `mirror` source.
-- 🔗（<font color='blue'>To be optimised </font>）Network configuration: `WIFI`、`Ethernet`.
-- 📦  `auin.sh -vm`  according to your hardware installation `virtualbox` or `vmware-tools`.
-- 🙎 Automatically configure common users and permissions.
-- 🖴  File system：`ext2/3/4`、`btrfs`、`jfs`、`vfat`、`ntfs-3g`、`f2fs`、`reiserfs`.
-- 🗔  Desktop environment：`Plasma(Min)` `Gnome` `Deepin` `Xfce` `mate` `lxde` `Cinnamon` `i3wm` `Openbox(slim)` .
-- 🗔  Desktop Manager：`sddm` `gdm` `lightdm` `lxdm`, can be chosen arbitrarily.
-- 💻（<font color='blue'>To be optimised </font>）Automatic configuration of I/O, audio, bluetooth；
-- 💻（<font color='blue'>To be optimised </font>）Optional install `Intel` `AMD` `Nvidia`.
-- 💿 Automatically install according to hardware  `UEFI` or `Boot Legacy` .
-- 💿 Custom multi-partition mount.
+>    [Desktop renderings](https://gitee.com/auroot/Auins/blob/main/doc/Picture.md)
+
+- ⏳  The script homepage can check whether it is currently in `Chroot` model `[ON] / [OFF]`
+- 🔗  Script homepage shows `IP address`，Tip: Connect SSH service command
+- 🔗  One-click configuration `SSH service`, `mirror` source
+- 🔗  Network configuration: `WIFI`、`Ethernet`
+- 📦  `auin.sh -vm`  according to your hardware installation `virtualbox` or `vmware-tools`
+- 🙎  Automatically configure common users and permissions
+- 📦  File system：`ext2/3/4`  `btrfs`  `jfs`  `vfat`  `ntfs-3g`  `f2fs`  `reiserfs`
+- 📦  Desktop environment：`Plasma(Min)` `Gnome` `Deepin` `Xfce` `mate` `lxde` `Cinnamon` `i3wm` `Openbox(slim)` 
+- 📦  Desktop Manager：`sddm` `gdm` `lightdm` `lxdm`, can be chosen arbitrarily
+- ## 💻  Automatic configuration of I/O, audio, bluetooth
+- 💻  Optional install `Intel` `AMD` `Nvidia`
+- 💿  Automatically install according to hardware  `UEFI` or `Boot Legacy` 
+- 💿  Custom multi-partition mount
 
  
