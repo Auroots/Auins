@@ -5,7 +5,7 @@
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
-set -x
+# set -x
 # https://www.jianshu.com/p/ca79f476b3f3
 
 function include(){
@@ -20,7 +20,7 @@ function include(){
 }
 # 小型重复性高的模块调用管理器
 function run_tools(){
-    bash "$Tools_modules" "$config_File" "$info_File" "$1" "$2" "$3" "$4" "$5"
+    bash "$Tools_modules" "$config_File" "$info_File" " " "$1" "$2" "$3" "$4" "$5"
 }
 
 # @install Programs 安装包

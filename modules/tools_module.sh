@@ -5,18 +5,21 @@
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
-# set -xe
+# set -x
 
 function include(){
     declare -a argu=("$@")
-    export config_File info_File
+    export config_File info_File local_Dir
     config_File="${argu[0]}"
     info_File="${argu[1]}"
-    main_option="${argu[2]}"
-    other_option_1="${argu[3]}"
-    other_option_2="${argu[4]}"
-    other_option_3="${argu[5]}"
-    other_option_4="${argu[6]}"
+    local_Dir="${argu[2]}"
+    main_option="${argu[3]}"
+    other_option_1="${argu[4]}"
+    other_option_2="${argu[5]}"
+    other_option_3="${argu[6]}"
+    other_option_4="${argu[7]}"
+
+    Auins_api_file="${local_Dir}/api.json" 
 }
 
 set -e
@@ -158,6 +161,44 @@ function make_tmp_dir(){
     trap 'rm -rf $tmp' EXIT
     cd "$tmp" || err "Could not enter directory $tmp"
 }
+# https://ipdata.co/flags/cn.png
+# https://api.ip.sb/geoip
+# api查询地区 IP 国家等消息, 获取途径不一样,即匹配方式也不一样
+ip_api(){
+    [ ! -e "$Auins_api_file" ] && curl -fsSL --fail http://ip-api.com/json > "$Auins_api_file"
+    case $1 in 
+        region  ) show=regionName ;; # 省份
+        country ) show=country ;; #国家
+        country_code) show=countryCode ;; #国家简写
+        timezone) show=timezone ;; # 时区
+        proxy) show=proxy ;; # 代理
+    esac
+    sed 's#,#\n#g' "$Auins_api_file" | sed 's#"##g' | grep -w "$show" | awk -F':' '{print $2}'
+}
+ipapi(){
+    [ ! -e "$Auins_api_file" ] &&  curl -fsSL --fail https://ipapi.co/json > "$Auins_api_file"
+    case $1 in 
+        ip      ) show=ip ;;
+        region  ) show=region ;; # 省份
+        country ) show=country_name ;; #国家
+        country_code) show=country_code ;; #国家简写
+        timezone) show=timezone ;; # 时区null
+    esac
+    grep -w "$show" "$Auins_api_file" | sed 's#,##g' | sed 's#"##g' | awk -F':' '{print $2}'
+}
+ipinfo(){ 
+    [ ! -e "$Auins_api_file" ] &&  curl -fsSL --fail https://ipinfo.io/json > "$Auins_api_file"
+    case $1 in 
+        ip      ) show=ip ;;
+        country_code) show=country ;; #国家简写
+        timezone) show=timezone ;; # 时区
+    esac
+    grep -w "$show" "$Auins_api_file" | sed 's#,##g' | sed 's#"##g' | awk -F':' '{print $2}'
+}
+# 获取ip
+ipify(){
+    curl -fsSL --fail https://api.ipify.org
+}
 
 main(){
     main_option=$1
@@ -192,6 +233,14 @@ main(){
         test_Part ) testPartition "$2";;
 # 进程管理 1:{start|restart|stop}, 2[进程名], 3:[需要输出的错误信息]
         process ) Process_Manager "$2" "$3" "$4";;
+# 使用ip-api.com获取信息
+        ip_api) ip_api "$2" ;;
+# 使用ipapi.co获取信息
+        ipapi) ipapi "$2";;
+# 使用https://ipinfo.io获取信息
+        ipinfo) ipinfo "$2";;
+# 使用https://api.ipify.org获取ip
+        ipify) ipify;;
     esac
 }
 

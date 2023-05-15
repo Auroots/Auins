@@ -6,7 +6,7 @@
 ChrootPatterns =
 Public_IP =
 Country =
-Country_Name =
+Country_Code =
 Timezone =
 Auins_version =
 Archiso_version =

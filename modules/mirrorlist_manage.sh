@@ -56,7 +56,7 @@ Server = https://mirrors.bfsu.edu.cn/arch4edu/\$arch
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 # 小型重复性高的模块调用管理器
 function run_tools(){
-    bash "$Tools_modules" "$config_File" "$info_File" "$1" "$2" "$3" "$4" "$5"
+    bash "$Tools_modules" "$config_File" "$info_File" " " "$1" "$2" "$3" "$4" "$5"
 }
 
 # 根据profile.conf设置pacman.conf

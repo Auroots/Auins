@@ -5,7 +5,7 @@
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins   
-set -xe
+# set -xe
 
 function include(){
     declare -a argu=("$@")
@@ -23,7 +23,7 @@ function include(){
 }
 # 小型重复性高的模块调用管理器
 function run_tools(){
-    bash "$Tools_modules" "$config_File" "$info_File" "$1" "$2" "$3" "$4" "$5"
+    bash "$Tools_modules" "$config_File" "$info_File" "$local_Dir" "$1" "$2" "$3" "$4" "$5"
 }
 # 信息打印,详细参数看auins
 function run_print_info(){
@@ -144,7 +144,7 @@ echo &>/dev/null
 include "$@"
 run_tools "ck_p"
 CONF_local_source=$(run_tools file_rw CONF Read local_source)
-run_tools "feed" "local_source: $CONF_local_source" "Please update mirror." 
+run_tools "feed" "source: $CONF_local_source" "Please update mirror." 
 
 # 获取配置文件中的软件包名
 export CONF_PGK_FONTS CONF_PGK_FONTS_ADOBE CONF_Install_Font_Common CONF_Install_Font_Adobe CONF_Install_Font_JetBrains_Fira

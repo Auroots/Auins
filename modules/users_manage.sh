@@ -19,7 +19,7 @@ function include(){
 }
 # 小型重复性高的模块调用管理器
 function run_tools(){
-    bash "$Tools_modules" "$config_File" "$info_File" "$1" "$2" "$3" "$4" "$5"
+    bash "$Tools_modules" "$config_File" "$info_File" " " "$1" "$2" "$3" "$4" "$5"
 }
 
 function Configure_users_password(){ 

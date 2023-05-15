@@ -25,7 +25,6 @@ function Auins_Variable_init(){
     local_Dir="${Auins_Dir}/local" 
     config_File="${local_Dir}/profile.conf"  
     info_File="${local_Dir}/auins.info"  
-    Auins_api_file="${local_Dir}/api.json"  
     Mirrorlist_modules="${modules_Dir}/mirrorlist_manage.sh"
     Users_modules="${modules_Dir}/users_manage.sh"
     Partition_modules="${modules_Dir}/partition_disk.sh"
@@ -48,7 +47,7 @@ function Auins_Variable_init(){
 # check for root privilege
 function check_priv(){
   if [ "$(id -u)" -ne 0 ]; then
-    # err "you must be root"
+    err(){ echo -e >&2 "\033[1;37m:: $(tput bold; tput setaf 1)[ x Error ] => \033[1;31m${*}\033[0m$(tput sgr0)"; exit 255; } 
     err "Please use command: \033[1;33m\"sudo\"\033[1;31m or user: \033[1;33m\"root\"\033[1;31m to execute.\033[0m"
   fi
 }
@@ -102,22 +101,26 @@ function run_configure_fonts(){
 function run_tools(){
     # 需要引用: 1:配置文件, 2:信息文件, 主选项, 其他选项1, 其他选项3, 其他选项4, 其他选项5
         # 主选项:
-            # warn  警告
-            # run   开始运行     
-            # skip  跳过
-            # err   错误
+            # warn  警告 [输出信息]
+            # run   开始运行 [输出信息]     
+            # skip  跳过 [输出信息]
+            # err   错误 [输出信息]
             # feed  结果提示, 1:正常结束要显示的信息, 2:非正常结束要显示的信息
             # read  获取用户输入
             # ck_p  检查权限,如果非root,则退出
-            # tips_w    提示输入-白
-            # tips_y    提示输入-黄
+            # tips_w    提示输入-白 [输出信息]
+            # tips_y    提示输入-黄 [输出信息]
             # file_rw   读写文件 [INFO / CONF] [Read / Write] [头部参数] [修改内容(Write)]
             # mt_dir    创建临时目录
             # show_Disk 输出磁盘表及UUID
-            # test_Disk 检查磁盘名是否合法
-            # test_Part 检查分区名是否合法
+            # test_Disk 检查磁盘名是否合法 [磁盘名]
+            # test_Part 检查分区名是否合法 [分区名]
             # process   进程管理 1:{start|restart|stop}, 2[进程名], 3:[需要输出的错误信息]
-    bash "$Tools_modules" "$config_File" "$info_File" "$1" "$2" "$3" "$4" "$5"
+            # ip_api    使用api获取信息  [查询信息]:{region | country | country_code | timezone}
+            # ipapi     使用api获取信息  [查询信息]:比以上多一个ip,但处于null
+            # ipinfo    使用api获取信息(推荐)  [查询信息]:{ip | country_code | timezone}
+            # ipify     使用api获取信息, 仅ip
+    bash "$Tools_modules" "$config_File" "$info_File" "$local_Dir" "$1" "$2" "$3" "$4" "$5"
 }
 # 信息打印
 function run_print_info(){
@@ -188,9 +191,9 @@ function Script_init(){
     # 查询并写入主机环境信息
     lspci | grep -i "virtualbox" &>/dev/null && Host_Environment="VirtualBox";
     lspci | grep -i "vmware" &>/dev/null     && Host_Environment="Vmware"; 
-    [[ $Host_Environment == "" ]] && Host_Environment="Computer"
+    [[ $Host_Environment == "" ]] && Host_Environment="Computer"; SHOW_Host_Env=""
     run_tools file_rw INFO Write Host_Environment "$Host_Environment";
-    
+
     # 查询并写入Boot类型
     if [ -d /sys/firmware/efi ]; then
         BOOT_TYPE="UEFI" DISK_TYPE="GPT"
@@ -202,24 +205,16 @@ function Script_init(){
     INFO_Boot_way=$(run_tools file_rw INFO Read "Boot_Type")
 
     # 查询并写入地区 IP 国家
-    Country_Name=$(run_tools file_rw INFO Read "Country_Name")
-    if [ -z  "$Country_Name" ] ; then
-        # http://ip-api.com/json
-        # https://ipdata.co/flags/cn.png
-        # https://api.ip.sb/geoip
-        curl -fsSL --fail https://ipapi.co/json > "$Auins_api_file"
-        CONF_Timezone=$(run_tools file_rw CONF Read Timezone)
-        if [[ "$CONF_Timezone" == "" ]]; then
-            API_Timezone=$(grep -w "timezone" "$Auins_api_file" | awk '{print $2}' | sed 's#",##' | sed 's#"##')
-            run_tools file_rw INFO Write Timezone "$API_Timezone"
-        else
-            run_tools file_rw INFO Write Timezone "$CONF_Timezone";
-        fi
-        # 从api中获取ip，国家，时区信息，写入到info文件，暂时无其他作用
-        API_Public_IP=$(grep -w "ip" "$Auins_api_file" | awk '{print $2}' | sed 's#",##' | sed 's#"##')      && run_tools file_rw INFO Write Public_IP "$API_Public_IP";
-        API_Country=$(grep -w "country" "$Auins_api_file" | awk '{print $2}' | sed 's#",##' | sed 's#"##')   && run_tools file_rw INFO Write Country "$API_Country";
-        API_Country_Name=$(grep -w "country_name" "$Auins_api_file" | awk '{print $2}' | sed 's#",##' | sed 's#"##')  && run_tools file_rw INFO Write Country_Name "$API_Country_Name";
+    CONF_Timezone=$(run_tools file_rw CONF Read Timezone)
+    if [ -z "$CONF_Timezone" ] ; then
+        # run_tools file_rw INFO Write Country "$(run_tools ipinfo "country")";
+        run_tools file_rw INFO Write Timezone "$(run_tools ipinfo timezone)"
+    else
+        run_tools file_rw INFO Write Timezone "$CONF_Timezone";  
     fi
+    # 从api中获取ip，国家，时区信息，写入到info文件，暂时无其他作用
+    run_tools file_rw INFO Write Public_IP "$(run_tools ipinfo ip)"
+    run_tools file_rw INFO Write Country_Code "$(run_tools ipinfo country_code)"
     # 校准live环境的时间
     ln -sf "/usr/share/zoneinfo/$(run_tools file_rw INFO Read Timezone)" /etc/localtime &>/dev/null && hwclock --systohc --utc
      
@@ -240,9 +235,6 @@ function Script_init(){
             # 根据配置文件, 判断是否开启SSH远程服务, Chroot下不执行
             case $CONF_Service_SSH in [Yy]*) Open_SSH; esac
     esac
-    # 确认当前运行环境
-    INFO_Host_Env=$(run_tools file_rw INFO Read Host_Environment)
-    [[ "$INFO_Host_Env" == "Computer" ]] && INFO_Host_Env="" || INFO_Host_Env=" $INFO_Host_Env"
 }
 
 # @下载所需的脚本模块
@@ -843,14 +835,13 @@ function Configure_System(){
 }
 
 # @删除脚本和缓存
-function Delete_Script(){
-    run_tools warn "Deleting scripts and cache!"
-    sudo pacman -Scc
-    rm -rf "$modules_Dir"
-    rm -rf "$local_Dir"
-    run_tools warn "  "
+function Auins_delete(){
+    run_tools warn "Removing auins and cache!"
+    pacman -Scc --clean
+    rm -rfv "$modules_Dir"
+    rm -rfv "$local_Dir"
     echo -e "\033[1;37m:: $(tput bold; tput setaf 2) ʕ ᵔᴥᵔ ʔ  =>$(tput sgr0) Bye-bye~"
-    rm -rf "$0" && sleep 5;
+    rm -rf "$0"
 }     
 
 # @ Archiso LiveCD 下自动启用
@@ -918,8 +909,8 @@ function Normal_Mode(){
             run_configure_desktop ;;
         6)  run_configure_fonts "Script_Runing_install_fonts" ;;
         11) run_configure_drive;; # 安装I/O驱动
-        22) install_virtualization_service "$Host_Environment"; bash "$0" ;; # 安装Vm tools
-        [Dd]) Delete_Script ;;
+        22) install_virtualization_service "$Host_Environment" ;; # 安装Vm tools
+        [Dd]) Auins_delete ;;
         [Ss]*) bash ;;
         [Qq]* | *) run_tools process stop "$0" 
     esac
@@ -1006,7 +997,7 @@ function Auins_Options(){
                             clear; less "${info_File}" 
                             exit 0 ;;
         -c | --clean-cache) 
-                            Delete_Script 
+                            Auins_delete 
                             exit 0 ;;
         -h | --help     ) 
                             run_print_info auins_usage 
@@ -1046,8 +1037,8 @@ function Set_Color_Variable(){
 
 # Start Script | 从这里开始
 # >> >> >> >> >> >> >> >> >> >> >> >> 
-Auins_Variable_init
 check_priv
+Auins_Variable_init
 Set_Color_Variable
 Update_Share auins_download_url "$SCRIPTS_SOURCE"  # 锁定脚本下载源
 Update_Share download_script        # 下载脚本需要的脚本
@@ -1058,7 +1049,7 @@ Auins_Options "$1" "$2"
 # exec_mode $CHROOT_PATTERNS_PRINT
 case "$CHROOT_PATTERNS_PRINT" in 
         Chroot-OFF)
-            Chroot_status="${white}::${INFO_Host_Env} ${green}=> ${yellow}Not Chroot.${suffix}"
+            Chroot_status="${white}::${SHOW_Host_Env} ${green}=> ${yellow}Not Chroot.${suffix}"
             input_System_Module_Chroot="${outY} \t${white}[${yellow}0${white}]${yellow}  arch-chroot ${System_Root}     \t\t${red}**${suffix}\n"
             [ -e $System_Root/root/local/Chroot_ON ] && Auins_chroot 2> /dev/null; 
             START_MODE="LiveCD"

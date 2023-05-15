@@ -6,7 +6,7 @@
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
 echo &>/dev/null
-
+# set -x
 # 列出需要包含的配置文件或模块
 function include(){
     set +e
@@ -23,7 +23,7 @@ function include(){
 }
 # 小型重复性高的模块调用管理器
 function run_tools(){
-    bash "$Tools_modules" "$config_File" "$info_File" "$1" "$2" "$3" "$4" "$5"
+    bash "$Tools_modules" "$config_File" "$info_File" " " "$1" "$2" "$3" "$4" "$5"
 }
 
 # 网络部分
