@@ -12,7 +12,7 @@
   </a>
 </p>
 <h1 align="center">
-  <a href="https://github.com/Auroots/Auins" alt="logo" ><img src="http://auins.auroot.cn/local/Auins.jpg" width="1200"/></a>
+  <a href="https://github.com/Auroots/Auins" alt="logo" ><img src="https://gitee.com/auroot/Auins/raw/main/local/Auins.jpg" width="1200"/></a>
   <br>
 </h1>
 <h4>
@@ -21,6 +21,7 @@
     <img src="https://img.shields.io/badge/journal-%E6%9B%B4%E6%96%B0%E6%97%A5%E5%BF%97-brightgreen?style=flat-square&logo=appveyor">
 </a>
 </h4>
+
 
 >   Using the following recommended method to obtain `auins` can greatly shorten your installation time:
 
