@@ -233,14 +233,15 @@ function Disk_Filesystem(){
 # 格式化并挂载Root分区, 输入: /dev/sdX[0-9] | sdX[0-9]
 function partition_root(){
     set +e
-    umount -R $System_Root* 2>/dev/null
+    umount -R $System_Root 2>/dev/null
+    set -e
     Format "$System_Root" 'root(/)' # 请求输入磁盘地址和文件系统类型，格式化, 会生成变量：Format_return_partition_name
     partition_facts _Open_mount_ "/dev/$Format_return_partition_name" "$System_Root" # 挂载
-    set -e
     run_tools file_rw INFO Write Root_partition "/dev/$Format_return_partition_name"
     run_tools file_rw INFO Write Root_SystemFile "$Root_SystemFiles"
-    Boot_partition=$(echo "/dev/$Format_return_partition_name" | awk '{sub(/[1-9]*$/,"");print}')
-    if [ $Boot_Type = "BIOS" ]; then run_tools file_rw INFO Write Boot_partition "$Boot_partition"; fi
+    if [ $Boot_Type = "BIOS" ]; then
+        partition_booting_BIOS
+    fi
 }
 
 # 格式化并挂载 UEFI引导分区，输入: /dev/sdX[0-9] | sdX[0-9]
@@ -259,16 +260,12 @@ function partition_booting_UEFI(){
     Disk_Filesystem 5 "/dev/$UEFI_partition_name" 
     partition_facts _Open_mount_ "/dev/$UEFI_partition_name" "$Boot_Dir"
     run_tools file_rw INFO Write Boot_partition "/dev/$UEFI_partition_name"
-    run_tools file_rw INFO Write Boot_SystemFile "$Root_SystemFiles"
 }
 
 # 格式化并挂载 BIOS引导分区，输入: /dev/sdX[0-9] | sdX[0-9]
 function partition_booting_BIOS(){
-    Boot_Dir="${System_Root}/boot"
-    umount -R ${Boot_Dir} 2&>/dev/null
-    if [ -d ${Boot_Dir} ]; then
-        mkdir -p ${Boot_Dir} 2>/dev/null 
-    fi
+    Boot_partition=$(echo "/dev/$Format_return_partition_name" | awk '{sub(/[1-9]*$/,"");print}')
+    run_tools file_rw INFO Write Boot_partition "$Boot_partition"
 }
 
 # 格式化并挂载虚拟的Swap分区，可自定义大小
@@ -279,7 +276,7 @@ function partition_swap(){
             || run_tools err "Create Swap failed." # 创建指定大小的swap虚拟化文件
         chmod 600 /mnt/swapfile # 设置权限
         mkswap /mnt/swapfile    # 格式化swap文件
-        swapon -cf /mnt/swapfile    # 挂载swap文件
+        swapon -f /mnt/swapfile    # 挂载swap文件
         run_tools file_rw INFO Write Swap "/mnt/swapfile"
         run_tools file_rw INFO Write Swap_size "${1}"
         run_tools feed "Successfully created Swap."
@@ -330,7 +327,7 @@ clear; init
 partition # 选择磁盘 #parted /dev/sdb mklabel gpt   转换格式 GPT
 partition_root
 Conf_New_Other_Partition=$(run_tools file_rw CONF Read "New_Other_Partition")
-if [ "$Boot_Type" = "UEFI" ]; then partition_booting_UEFI; else partition_booting_BIOS; fi  
+if [ "$Boot_Type" = "UEFI" ]; then partition_booting_UEFI else partition_booting_BIOS; fi  
 partition_swap  #swap file 虚拟文件(类似与win里的虚拟文件) 对于swap分区我更推荐这个，后期灵活更变
 if [ "$Conf_New_Other_Partition" = yes ]; then partition_other; fi
 run_tools feed "${wg} Partition complete. ${suffix}"
