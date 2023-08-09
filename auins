@@ -1073,7 +1073,4 @@ case "$CHROOT_PATTERNS_PRINT" in
     - [ ] ⏳  尝试加入Wayland的桌面环境，比如：Sway，Plasma-Wayland等等
     - [ ] ⏳  会继续尝试DWM桌面环境
     - [ ] ⏳  会尝试维护Openbox桌面环境
-    - [x] 删除aliyun源
-    - [x] 优化部分代码
-    - [x] 更新: ip-api信息渠道
 EOF

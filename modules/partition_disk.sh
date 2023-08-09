@@ -263,7 +263,7 @@ function partition_booting_UEFI(){
 }
 
 # 格式化并挂载 BIOS引导分区，输入: /dev/sdX[0-9] | sdX[0-9]
-function partition_booting_BOIS(){
+function partition_booting_BIOS(){
     Boot_Dir="${System_Root}/boot"
     umount -R ${Boot_Dir} 2&>/dev/null
     if [ -d ${Boot_Dir} ]; then
