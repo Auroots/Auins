@@ -107,6 +107,7 @@ function pacman-conf-update(){
 
 # 写入新的镜像源 reflector真他妈慢
 function reflector_update(){
+    INFO_Country_Name=$(run_tools file_rw INFO Read Country_Name)
     # reflector --country "$INFO_Country_Name"  --protocol http --protocol https
     [ ! -e /usr/bin/reflector ] && pacman -Sy --needed --noconfirm reflector
     reflector --country "$INFO_Country_Name" > $MirrorList_file
@@ -118,7 +119,7 @@ function reflector_update(){
 # 使用arch官方的api获取mirrorlist, 速度快,[推荐]
 function arch_api_update() {
     # 读取auins.info中的国家简称[CN] [US] ...
-    country="country=$(run_tools file_rw INFO Read Country)"
+    country="country=$(run_tools file_rw INFO Read Country_Code)"
     # 读取profile.conf中的设置，可以选择性的开启 
     [[ "$(run_tools file_rw CONF Read mirrorlist_http)" == 'yes' ]] && http='&protocol=http' 
     [[ "$(run_tools file_rw CONF Read mirrorlist_https)" == 'yes' ]] && https='&protocol=https'
@@ -143,15 +144,16 @@ function main(){
     cp "$Pacman_conf_file" "$Source_Backup_Dir/pacman.conf.$Exec_Time" 2> /dev/null
     cp "$MirrorList_file" "$Source_Backup_Dir/mirrorlist.$Exec_Time" 2> /dev/null
     # 根据profile.con中的设置，获取mirrorlist
-    case "$(run_tools file_rw CONF Read update_method)" in 
-         api)
-            arch_api_update
-    ;;
-         ref)
-            reflector_update
-    ;;
-    esac 
-
+    # case "$(run_tools file_rw CONF Read update_method)" in 
+    #      api)
+    #         arch_api_update
+    # ;;
+    #      ref)
+    #         reflector_update
+    # ;;
+    # esac 
+    arch_api_update
+    
     pacman-conf-update
     pacman -Sy --needed --noconfirm archlinux-keyring
     pacman-key --init
@@ -163,5 +165,4 @@ echo &>/dev/null
 include "$@"
 Pacman_conf_file="/etc/pacman.conf"
 MirrorList_file="/etc/pacman.d/mirrorlist"
-INFO_Country_Name=$(run_tools file_rw INFO Read Country_Name)
 main
