@@ -173,7 +173,7 @@ function Desktop_Xorg_Config(){
         # sed -i "$startLine"','"$endLine"'d' "$xinitrc_file"
         echo "exec ${2}" >> /etc/X11/xinit/xinitrc 
         cp -rf /etc/X11/xinit/xinitrc  /home/"$INFO_UserName"/.xinitrc 
-        run_tools feed "[${white} ${Desktop_Name} ${green}]Desktop environment configuration completed." "xinitrc configuration failed." 
+        run_tools feed "[${white} ${Desktop_Name} ${green}] Desktop environment configuration completed." "xinitrc configuration failed." 
     fi
 }
 
