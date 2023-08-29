@@ -13,7 +13,7 @@ export CONFIGURE_SYSTEM config_File info_File
 # @ script source
 # auroot  |  gitee  |  github  |  test
 SCRIPTS_SOURCE="auroot"
-AUINS_VERSION="ArchLinux User Install Scripts v4.7.1" 
+AUINS_VERSION="ArchLinux User Install Scripts v4.7.6" 
 # sed -i.bak 's/^aaa=yes/aaa=no/' [file] # 替换并备份
 
 # @脚本初始化

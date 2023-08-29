@@ -1,7 +1,7 @@
 #!/bin/bash
 # Author: Auroot
 # QQ： 2763833502
-# Description：Auto Install Desktop -> Auins v4.7.1
+# Description：Auto Install Desktop -> Auins v4.7.6
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
@@ -45,6 +45,7 @@ function Install_Program() {
     set -e
 }
 
+# Desktop_Tuple [0]:桌面名称 [1]:桌面管理器 [2]:xinit启动命令 [3]:桌面安装包
 export Desktop_Tuple
 function Desktop_Env_ID {
     case ${1} in
@@ -64,8 +65,12 @@ function Desktop_Env_ID {
             Desktop_Tuple=("cinnamon" "lightdm" "cinnamon-session" "PGK_Cinnamon");;
         8)  
             Desktop_Tuple=("mate" "lightdm" "mate" "PGK_Mate") ;;
-        # 9)  Desktop_Tuple=("Plasma & Wayland" "sddm" "" "P_plasma_Wayland") ;;
-        # 10)  run_openbox" ;;
+        9)  
+            Desktop_Tuple=( "openbox" "lxdm" "openbox-session" "PGK_Openbox") ;;
+        10)  
+            Desktop_Tuple=("Plasma & Wayland" "sddm" "" "PGK_Wayland_Plasma") ;;
+        11)  
+            Desktop_Tuple=("Sway & Wayland" "sddm" "" "PGK_Wayland_Sway") ;;
         *) 
             run_tools process stop "$0" "Selection error.";;
     esac
@@ -130,6 +135,8 @@ function Desktop_Manager(){
             DmS="lightdm" ;;
         4) 
             DmS="lxdm" ;;
+        5) 
+            DmS="Skip" ;;
         *) 
             DmS="$1" ;;
     esac
@@ -146,8 +153,12 @@ function Desktop_Manager(){
         lxdm)
             Install_Program "lxdm" && systemctl enable lxdm ;;
     esac
-    run_tools feed "Desktop manager installed successfully -=> [${white} $DmS ${green}]."
-    sleep 3;
+    if [ "$DmS" = "Skip" ] ; then
+        run_tools "skip" "Skip desktop manager installation."
+    else
+        run_tools feed "Desktop manager installed successfully -=> [${white} $DmS ${green}]."
+    fi
+    sleep 2;
 }
 
 # @configure desktop environment
