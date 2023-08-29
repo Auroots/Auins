@@ -5,7 +5,7 @@
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
-set -xe
+# set -xe
 
 function include(){
     set +e

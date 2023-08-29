@@ -6,7 +6,7 @@
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
 echo &>/dev/null
-set -xe
+# set -xe
 # 列出需要包含的配置文件或模块
 function include(){
     set +e
