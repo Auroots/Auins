@@ -5,7 +5,8 @@
 # URL Blog  : www.auroot.cn 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
-# set -x
+set -xe
+
 function include(){
     set +e
     declare -a argu=("$@")
@@ -58,7 +59,7 @@ function Desktop_Env_ID {
         4)  
             Desktop_Tuple=("xfce4" "lightdm" "startxfce4" "PGK_Xfce4");;
         5)  
-            Desktop_Tuple=("i3wm" "sddm" "i3" "PGK_I3wm") ;;
+            Desktop_Tuple=("i3wm" "lxdm" "i3" "PGK_I3wm") ;;
         6)  
             Desktop_Tuple=("lxde" "lxdm" "startlxde" "PGK_Lxde") ;;
         7)  
@@ -68,9 +69,9 @@ function Desktop_Env_ID {
         9)  
             Desktop_Tuple=( "openbox" "lxdm" "openbox-session" "PGK_Openbox") ;;
         10)  
-            Desktop_Tuple=("Plasma & Wayland" "sddm" "" "PGK_Wayland_Plasma") ;;
+            Desktop_Tuple=("Plasma_Wayland" "sddm" "wayland" "PGK_Wayland_Plasma") ;;
         11)  
-            Desktop_Tuple=("Sway & Wayland" "sddm" "" "PGK_Wayland_Sway") ;;
+            Desktop_Tuple=("Sway_Wayland" "sddm" "wayland" "PGK_Wayland_Sway") ;;
         *) 
             run_tools process stop "$0" "Selection error.";;
     esac
@@ -83,7 +84,7 @@ function Set_Desktop_Env(){
     if "$CONF_Desktop_Environment" &> /dev/null ; then
         # 查询Profile中的Desktop设置
         declare -A PROFILE_DESKTOP_ID
-        PROFILE_DESKTOP_ID=([plasma]=1 [gnome]=2 [deepin]=3 [xfce4]=4 [i3wm]=5 [lxde]=6 [cinnamon]=7 [mate]=8)
+        PROFILE_DESKTOP_ID=([plasma]=1 [gnome]=2 [deepin]=3 [xfce4]=4 [i3wm]=5 [lxde]=6 [cinnamon]=7 [mate]=8 [openbox]=9 [wplasma]=10 [Sway]=11)
         DESKTOP_ID="${PROFILE_DESKTOP_ID[$CONF_Desktop_Environment]}"
         # 查询Profile中的DM设置, 并覆盖默认DM设置
         Desktop_Env_ID "$DESKTOP_ID"
@@ -105,17 +106,22 @@ function Set_Desktop_Env(){
 
 # @桌面环境安装 $1(桌面名称) $2(xinitrc配置 "exec desktop") $3(包列表)
 function Install_Desktop_Env(){
-    local Desktop_Name Desktop_Xinit Desktop_Program CONF_PGK_Xorg CONF_PGK_Gui_Package;
+    local Desktop_Name Desktop_Xinit Desktop_Program CONF_PGK_Window_System CONF_PGK_Gui_Package;
 
     Desktop_Name="${Desktop_Tuple[0]}"
     Default_DM="${Desktop_Tuple[1]}"
     Desktop_Xinit="${Desktop_Tuple[2]}"
     Desktop_Program=$(run_tools file_rw CONF Read "${Desktop_Tuple[3]}")
-    CONF_PGK_Xorg=$(run_tools file_rw CONF Read "PGK_Xorg")
     CONF_PGK_Gui_Package=$(run_tools file_rw CONF Read "PGK_Gui_Package")
+
+    if [[ "$Desktop_Xinit" == "wayland" ]]; then
+        CONF_PGK_Window_System=$(run_tools file_rw CONF Read "PGK_Wayland")
+    else 
+        CONF_PGK_Window_System=$(run_tools file_rw CONF Read "PGK_Xorg")
+    fi
     
     run_tools run "Configuring desktop environment [${white} $Desktop_Name ${green}]."; sleep 1;
-    Install_Program "$CONF_PGK_Xorg"
+    Install_Program "$CONF_PGK_Window_System"
     Install_Program "$Desktop_Program"
     Install_Program "$CONF_PGK_Gui_Package"
     Desktop_Manager "$Default_DM"
@@ -145,7 +151,7 @@ function Desktop_Manager(){
     echo "$DmS" > "${local_Dir}/Desktop_Manager"
     case ${DmS} in
         sddm)
-            Install_Program "sddm sddm-kcm" && systemctl enable sddm ;;
+            Install_Program "sddm" && systemctl enable sddm ;;
         gdm)
             Install_Program "gdm" && systemctl enable gdm ;;
         lightdm)
@@ -153,7 +159,7 @@ function Desktop_Manager(){
         lxdm)
             Install_Program "lxdm" && systemctl enable lxdm ;;
     esac
-    if [ "$DmS" = "Skip" ] ; then
+    if [[ "$DmS" == "Skip" ]] ; then
         run_tools "skip" "Skip desktop manager installation."
     else
         run_tools feed "Desktop manager installed successfully -=> [${white} $DmS ${green}]."

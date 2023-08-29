@@ -6,7 +6,7 @@
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
 echo &>/dev/null
-# set -x
+set -xe
 # 列出需要包含的配置文件或模块
 function include(){
     set +e
@@ -255,13 +255,13 @@ ${outB} \t${blue}[1]${blue}${green}   KDE plasma. \tDefault: ${blue}sddm     ${s
 ${outB} \t${white}[2]${white}${green}   Gnome.    \tDefault: ${yellow}gdm      ${suffix}
 ${outB} \t${blue}[3]${blue}${green}   Deepin.     \tDefault: ${green}lightdm  ${suffix}  
 ${outB} \t${white}[4]${white}${green}   Xfce4.    \tDefault: ${green}lightdm  ${suffix}
-${outB} \t${blue}[5]${blue}${green}   i3wm.       \tDefault: ${blue}sddm     ${suffix}
+${outB} \t${blue}[5]${blue}${green}   i3wm.       \tDefault: ${blue}lxdm     ${suffix}
 ${outB} \t${white}[6]${blue}${green}   lxde.       \tDefault: \033[1;34mlxdm     ${suffix}
 ${outB} \t${blue}[7]${white}${green}   Cinnamon. \tDefault: ${green}lightdm  ${suffix}
 ${outB} \t${white}[8]${blue}${green}   Mate.       \tDefault: ${green}lightdm  ${suffix}
-${outB} \t${white}[9]${blue}${green}   Openbox.    \tDefault: ${blue}sddm     ${suffix}
+${outB} \t${white}[9]${blue}${green}   Openbox.    \tDefault: ${blue}lxdm     ${suffix}
 ${outB} \t${blue}[10]${blue}${green}  Plasma_Wayland. \tDefault: ${blue}sddm     ${suffix}
-${outB} \t${blue}[11]${blue}${green}  Sway & Wayland. \tDefault: ${blue}None     ${suffix}
+${outB} \t${blue}[11]${blue}${green}  Sway_Wayland. \tDefault: ${blue}None     ${suffix}
 ------------------------------------------------\n"  
 }
 

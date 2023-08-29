@@ -3,7 +3,7 @@
 # Script name: Auins (ArchLinux User Installation Scripts) 
 # URL GitHub: https://github.com/Auroots/Auins
 # URL Gitee : https://gitee.com/auroot/Auins
-# set -xe
+set -xe
 # set -eu
 echo &>/dev/null
 export AUINS_SCRIPT_NAME SOURCE_MODULES SOURCE_LOCAL TIME_ARCHISO SCRIPTS_SOURCE
@@ -13,7 +13,7 @@ export CONFIGURE_SYSTEM config_File info_File
 # @ script source
 # auroot  |  gitee  |  github  |  test
 SCRIPTS_SOURCE="auroot"
-AUINS_VERSION="ArchLinux User Install Scripts v4.7.6" 
+AUINS_VERSION="ArchLinux User Install Scripts v4.7.8" 
 # sed -i.bak 's/^aaa=yes/aaa=no/' [file] # 替换并备份
 
 # @脚本初始化
