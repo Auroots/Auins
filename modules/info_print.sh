@@ -259,9 +259,9 @@ ${outB} \t${blue}[5]${blue}${green}   i3wm.       \tDefault: ${blue}sddm     ${s
 ${outB} \t${white}[6]${blue}${green}   lxde.       \tDefault: \033[1;34mlxdm     ${suffix}
 ${outB} \t${blue}[7]${white}${green}   Cinnamon. \tDefault: ${green}lightdm  ${suffix}
 ${outB} \t${white}[8]${blue}${green}   Mate.       \tDefault: ${green}lightdm  ${suffix}
-${outB} \t${white}[9]${blue}${green}  Openbox.    \tDefault: ${blue}sddm     ${suffix}
-${outB} \t${blue}[10]${blue}${green}   Plasma_Wayland. \tDefault: ${blue}sddm     ${suffix}
-${outB} \t${blue}[11]${blue}${green}   Sway & Wayland. \tDefault: ${blue}None     ${suffix}
+${outB} \t${white}[9]${blue}${green}   Openbox.    \tDefault: ${blue}sddm     ${suffix}
+${outB} \t${blue}[10]${blue}${green}  Plasma_Wayland. \tDefault: ${blue}sddm     ${suffix}
+${outB} \t${blue}[11]${blue}${green}  Sway & Wayland. \tDefault: ${blue}None     ${suffix}
 ------------------------------------------------\n"  
 }
 
